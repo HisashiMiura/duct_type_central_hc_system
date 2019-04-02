@@ -558,12 +558,8 @@ def get_each_supply_air_volume_for_heating(
         supply air volume, m3/h (5 rooms * 8760 times)
     """
 
-    if system_spec.vav_system:
-        return get_each_supply_air_volume_for_heating_with_vav(
-            region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-    else:
-        return get_each_supply_air_volume_for_heating_without_vav(
-            region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
+    return get_each_supply_air_volume_for_heating_without_vav(
+        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
 
 
 def get_each_supply_air_volume_for_cooling(
@@ -579,12 +575,8 @@ def get_each_supply_air_volume_for_cooling(
         supply air volume, m3/h (5 rooms * 8760 times)
     """
 
-    if system_spec.vav_system:
-        return get_each_supply_air_volume_for_cooling_with_vav(
-            region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-    else:
-        return get_each_supply_air_volume_for_cooling_without_vav(
-            region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
+    return get_each_supply_air_volume_for_cooling_without_vav(
+        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
 
 
 def get_non_occupant_room_temperature_for_heating(
