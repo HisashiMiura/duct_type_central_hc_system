@@ -431,68 +431,6 @@ def get_heat_source_supply_air_volume_for_cooling(
     return np.vectorize(f)(q_dash_hs_c)
 
 
-def get_each_supply_air_volume_for_heating_with_vav(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        supply air volume, m3/h (5 rooms * 8760 times)
-    """
-
-    # heating load, MJ/h (5 rooms * 8760 times)
-    l_h = read_load.get_heating_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
-
-    l_h_sum = np.sum(l_h, axis=0)
-
-    # valance ratio of the air volume with VAV system
-    r_vav = np.vectorize(lambda x, y: 0.0 if y == 0.0 else x / y)(l_h, l_h_sum)
-
-    # total supply air volume for heating, m3/h
-    v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-
-    # mechanical ventilation, m3/h (5 rooms * 1 value)
-    v_vent = get_mechanical_ventilation(floor_area).reshape(1, 5).T
-
-    return np.maximum(v_hs_supply_h * r_vav, v_vent)
-
-
-def get_each_supply_air_volume_for_cooling_with_vav(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        supply air volume, m3/h (5 rooms * 8760 times)
-    """
-
-    # sensible cooling load, MJ/h (5 rooms * 8760 times)
-    l_cs = read_load.get_sensible_cooling_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
-
-    l_cs_sum = np.sum(l_cs, axis=0)
-
-    # valance ratio of the air volume with VAV system
-    r_vav = np.vectorize(lambda x, y: 0.0 if y == 0.0 else x / y)(l_cs, l_cs_sum)
-
-    # total supply air volume for cooling, m3/h
-    v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-
-    # mechanical ventilation, m3/h (5 rooms * 1 value)
-    v_vent = get_mechanical_ventilation(floor_area).reshape(1, 5).T
-
-    return np.maximum(v_hs_supply_c * r_vav, v_vent)
-
-
 def get_each_supply_air_volume_for_heating_without_vav(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
