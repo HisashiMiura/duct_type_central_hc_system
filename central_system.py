@@ -431,7 +431,7 @@ def get_heat_source_supply_air_volume_for_cooling(
     return np.vectorize(f)(q_dash_hs_c)
 
 
-def get_each_supply_air_volume_for_heating_without_vav(
+def get_each_supply_air_volume_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -457,7 +457,7 @@ def get_each_supply_air_volume_for_heating_without_vav(
     return np.maximum(v_hs_supply_h * r_supply_des, v_vent)
 
 
-def get_each_supply_air_volume_for_cooling_without_vav(
+def get_each_supply_air_volume_for_cooling(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -481,40 +481,6 @@ def get_each_supply_air_volume_for_cooling_without_vav(
     v_vent = get_mechanical_ventilation(floor_area).reshape(1, 5).T
 
     return np.maximum(v_hs_supply_c * r_supply_des, v_vent)
-
-
-def get_each_supply_air_volume_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        supply air volume, m3/h (5 rooms * 8760 times)
-    """
-
-    return get_each_supply_air_volume_for_heating_without_vav(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-
-
-def get_each_supply_air_volume_for_cooling(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        supply air volume, m3/h (5 rooms * 8760 times)
-    """
-
-    return get_each_supply_air_volume_for_cooling_without_vav(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
 
 
 def get_non_occupant_room_temperature_for_heating(
