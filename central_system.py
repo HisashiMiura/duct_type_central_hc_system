@@ -272,8 +272,8 @@ def get_rated_cooling_output(system_spec: SystemSpec) -> float:
 
 def get_heating_output_for_supply_air_estimation(
         region: int, floor_area: envelope.FloorArea, envelope_spec: envelope.Spec) -> np.ndarray:
-    """
-    calculate the system supply air volume for heating
+    """calculate the system supply air volume for heating
+    eq.(12)
     Args:
         region: region 1-8
         floor_area: floor area
@@ -312,8 +312,8 @@ def get_heating_output_for_supply_air_estimation(
 
 def get_cooling_output_for_supply_air_estimation(
         region: int, floor_area: envelope.FloorArea, envelope_spec: envelope.Spec) -> np.ndarray:
-    """
-    calculate the system supply air volume for cooling
+    """calculate the system supply air volume for cooling
+    eq.(27)
     Args:
         region: region 1-8
         floor_area: floor area
