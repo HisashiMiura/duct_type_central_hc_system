@@ -431,58 +431,6 @@ def get_heat_source_supply_air_volume_for_cooling(
     return np.vectorize(f)(q_dash_hs_c)
 
 
-# def get_each_supply_air_volume_for_heating_with_vav_old(
-#         region: int, floor_area: envelope.FloorArea,
-#         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-#     """
-#     Args:
-#         region: region
-#         floor_area: floor area class
-#         envelope_spec: envelope spec
-#         system_spec: system spec
-#     Returns:
-#         supply air volume, m3/h ( 5 rooms * 8760 times )
-#     """
-#
-#     # total supply air volume for heating, m3/h
-#     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(
-#         region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-#
-#     # specific heat, J/m3K
-#     c = get_specific_heat()
-#
-#     # air density, kg/m3
-#     rho = get_air_density()
-#
-#     # linear heat loss coefficient, W/mK
-#     psi = get_duct_linear_heat_loss_coefficient()
-#
-#     # air conditioned temperature at the heating season, degree C
-#     theta_ac_h = get_air_conditioned_temperature_for_heating()
-#
-#     # inside duct length for 5 rooms, external duct length for 5 rooms, total duct length for 5 rooms
-#     # In this case, only total duct length is used.
-#     # Parameter 'l_duct' is the list, the length of which is 5.
-#     l_duct = np.array(get_duct_length(total_floor_area=floor_area.total)[2]).reshape(1, 5).T
-#
-#     # ambient temperatures around the ducts, degree C
-#     theta_sur_h, theta_sur_c\
-#         = get_duct_ambient_air_temperature(total_floor_area=floor_area.total, region=region, spec=system_spec)
-#
-#     # heating load, MJ/h
-#     l_h = read_load.get_heating_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
-#
-#     # supply air temperature at the output of the heat source for heating,
-#     # for the estimation of supply air volume, degree C
-#     theta_dash_hs_h = (v_hs_supply_h * c * rho * theta_ac_h
-#                        - np.sum(l_duct * theta_sur_h * psi * 3600, axis=0)
-#                        + np.sum(l_h, axis=0) * 10**6)\
-#         / (v_hs_supply_h * c * rho - np.full(8760, psi * np.sum(l_duct) * 3600))
-#
-#     return ((theta_dash_hs_h - theta_sur_h) * psi * l_duct * 3600 + l_h * 10**6) /\
-#         ((theta_dash_hs_h - theta_ac_h) * c * rho)
-
-
 def get_each_supply_air_volume_for_heating_with_vav(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
