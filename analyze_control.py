@@ -103,7 +103,7 @@ def get_average(v: np.ndarray, name):
 def get_three_characteristics(v, name):
     return [(np.min(v.reshape(365, 24).T, axis=0), name + '_min'),
             (np.mean(v.reshape(365, 24).T, axis=0), name + '_mean'),
-            (np.max(v.reshape(365, 24).T, axis=0), name + '_ave')]
+            (np.max(v.reshape(365, 24).T, axis=0), name + '_max')]
 
 
 def get_five_characteristics(v, name):
