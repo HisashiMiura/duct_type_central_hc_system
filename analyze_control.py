@@ -327,6 +327,16 @@ def get_maximum_output_for_cooling(cn: int) -> np.ndarray:
     return cs.get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
 
 
+def get_treated_untreated_heat_load_for_heating(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_treated_untreated_heat_load_for_heating(region, floor_area, envelope_spec, system_spec)
+
+
+def get_treated_untreated_heat_load_for_cooling(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+
 def get_heat_source_heating_output(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_heat_source_heating_output(region, floor_area, envelope_spec, system_spec)
