@@ -303,6 +303,8 @@ def get_each_supply_air_volume_for_cooling(cn: int) -> np.ndarray:
 # endregion
 
 
+# region non occupant room temperature
+
 def get_non_occupant_room_temperature_for_heating(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
@@ -311,6 +313,9 @@ def get_non_occupant_room_temperature_for_heating(cn: int) -> np.ndarray:
 def get_non_occupant_room_temperature_for_cooling(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+# endregion
+
 
 
 def get_heat_source_heating_output(cn: int) -> np.ndarray:
