@@ -317,6 +317,15 @@ def get_non_occupant_room_temperature_for_cooling(cn: int) -> np.ndarray:
 # endregion
 
 
+def get_maximum_output_for_heating(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
+
+
+def get_maximum_output_for_cooling(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
+
 
 def get_heat_source_heating_output(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
