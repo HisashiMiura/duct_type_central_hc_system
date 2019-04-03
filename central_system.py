@@ -645,54 +645,6 @@ def get_heat_gain_through_partition_for_cooling(
     return u_prt * a_prt * (theta_nac_c - theta_ac_c) * 3600 * 10**(-6)
 
 
-def get_maximum_output_for_heating_old(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    calculate maximum output for heating
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        maximum output for heating, MJ/h, (5 rooms * 8760 times)
-    """
-
-    # inlet air temperature of the heat source for heating, degree C (8760 times)
-    theta_hs_in_h = get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # maximum heating output, MJ/h (8760 times)
-    q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
-
-    # specific heat of air, J/kgK
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # maximum outlet air temperature of heat source, degree C, (8760 times)
-    theta_hs_out_max_h = theta_hs_in_h + q_hs_max_h / (c * rho * np.sum(v_supply_h, axis=0)) * 10**6
-
-    # air conditioned temperature for heating, degree C
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-
-    # linear heat loss coefficient of the duct, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
-
-    # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
-
-    # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-    return ((theta_hs_out_max_h - theta_ac_h) * c * rho * v_supply_h
-            - psi * l_duct * (theta_hs_out_max_h - theta_sur_h) * 3600) * 10**(-6)
-
-
 def get_maximum_output_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
@@ -746,71 +698,6 @@ def get_maximum_output_for_heating(
 
     return get_load_from_upside_temperature(
         t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_supply_h, t_ac=theta_ac_h, psi=psi, length=l_duct)
-
-
-def get_maximum_output_for_cooling_old(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
-    """
-    calculate maximum output for cooling
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
-    Returns:
-        maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times), maximum output for latent cooling, MJ/h, (5 rooms * 8760 times)
-    """
-
-    # inlet air temperature of the heat source for cooling, degree C (8760 times)
-    theta_hs_in_c = get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
-
-    # sensible cooling load, MJ/h (5 rooms * 8760 times)
-    l_cs = read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)[0:5]
-
-    # latent cooling load, MJ/h (5 rooms * 8760 times)
-    l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)[0:5]
-
-    # heat gain from non occupant room into occupant room through partition for cooling, MJ/h (5 rooms * 8760 times)
-    q_trs_part_c = get_heat_gain_through_partition_for_cooling(region, floor_area,envelope_spec, system_spec)
-
-    # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
-    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(system_spec, l_cs, q_trs_part_c, l_cl)
-
-    # specific heat of air, J/kgK
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # supply air volume for cooling, m3/h (5 rooms * 8760 times)
-    v_supply_c = get_each_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
-
-    # minimum outlet air temperature of heat source, degree C, (8760 times)
-    theta_hs_out_min_c = theta_hs_in_c - q_hs_max_cs / (c * rho * np.sum(v_supply_c, axis=0)) * 10**6
-
-    # air conditioned temperature for cooling, degree C
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    # linear heat loss coefficient of the duct, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
-
-    # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
-
-    # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-    q_max_cs = ((theta_ac_c - theta_hs_out_min_c) * c * rho * v_supply_c
-                - psi * l_duct * (theta_sur_c - theta_hs_out_min_c) * 3600) * 10**(-6)
-
-    l_cl_sum = np.sum(l_cl, axis=0)
-
-    r = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_cl, l_cl_sum)
-
-    q_max_cl = r * q_hs_max_cl
-
-    return q_max_cs, q_max_cl
 
 
 def get_maximum_output_for_cooling(
