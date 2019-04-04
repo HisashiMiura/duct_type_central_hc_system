@@ -853,11 +853,12 @@ def get_requested_supply_air_temperature_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+    calculate the requested supply air temperature for heating
+    :param region: region
+    :param floor_area: floor area class
+    :param envelope_spec: envelope spec
+    :param system_spec: system spec
+    :return: requested temperature, degree C, (5 rooms * 8760 times)
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -885,18 +886,19 @@ def get_requested_supply_air_temperature_for_heating(
     l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return theta_sur_h + (theta_ac_h + q_t_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
-           * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
+        * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
 
 
 def get_requested_supply_air_temperature_for_cooling(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+    calculate the requested supply air temperature for heating
+    :param region: region
+    :param floor_area: floor area class
+    :param envelope_spec: envelope spec
+    :param system_spec: system spec
+    :return: requested temperature, degree C, (5 rooms * 8760 times)
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -925,19 +927,21 @@ def get_requested_supply_air_temperature_for_cooling(
     l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return theta_sur_c - (theta_sur_c - theta_ac_c + q_t_cs * 10 ** 6 / (v_supply_c * c * rho)) \
-           * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
+        * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
 
 
 def get_decided_outlet_supply_air_temperature_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+    decide the outlet supply air temperature for heating
+    :param region: region
+    :param floor_area: floor area
+    :param envelope_spec: envelope spec
+    :param system_spec: system spec
+    :return: decided outlet supply air temperature, degree C, (8760 times)
     """
+
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
     return np.max(theta_duct_up_h, axis=0)
 
@@ -946,12 +950,14 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
-    Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+    decide the outlet supply air temperature for cooling
+    :param region: region
+    :param floor_area: floor area
+    :param envelope_spec: envelope spec
+    :param system_spec: system spec
+    :return: decided outlet supply air temperature, degree C, (8760 times)
     """
+
     theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
     return np.min(theta_duct_up_c, axis=0)
 
