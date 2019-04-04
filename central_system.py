@@ -1062,7 +1062,7 @@ def get_duct_heat_loss_for_heating(
         theta_sur_h, theta_hs_out_h, v_supply_h, t_ac, psi, l_duct)
 
 
-def get_treated_load_for_heating(
+def get_actual_treated_load_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
