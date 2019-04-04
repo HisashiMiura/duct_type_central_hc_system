@@ -341,6 +341,25 @@ def get_treated_untreated_heat_load_for_cooling(cn: int) -> np.ndarray:
 # endregion
 
 
+def get_requested_supply_air_temperature_for_heating(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_requested_supply_air_temperature_for_heating(region,floor_area,envelope_spec, system_spec)
+
+
+def get_requested_supply_air_temperature_for_cooling(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_requested_supply_air_temperature_for_cooling(region,floor_area,envelope_spec, system_spec)
+
+
+def get_decided_outlet_supply_air_temperature_for_heating(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
+
+
+def get_decided_outlet_supply_air_temperature_for_cooling(cn: int) -> np.ndarray:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+
 
 def get_heat_source_heating_output(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
@@ -355,11 +374,6 @@ def get_heat_source_sensible_cooling_output(cn: int) -> np.ndarray:
 def get_heat_source_latent_cooling_output(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_heat_source_cooling_output(region, floor_area, envelope_spec, system_spec)[1]
-
-
-def get_decided_outlet_supply_air_temperature_for_heating(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
 
 
 def get_air_conditioned_temperature_for_heating(cn: int) -> np.ndarray:
