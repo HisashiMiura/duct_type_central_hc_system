@@ -168,9 +168,9 @@ def draw_sum_bar_graph(x_title, ys):
     titles = [y[1] for y in ys]
     xs = np.arange(len(ys))
 
-    ax.barh(xs+0.5, values)
+    ax.barh(xs+0.5, values, tick_label=titles)
     ax.set_yticks(xs + 0.5)
-    ax.set_yticklabels(titles)
+    ax.set_xlabel(x_title)
     plt.show()
 
 
