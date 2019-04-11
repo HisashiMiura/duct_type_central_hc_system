@@ -854,11 +854,13 @@ def get_requested_supply_air_temperature_for_heating(
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
     calculate the requested supply air temperature for heating
-    :param region: region
-    :param floor_area: floor area class
-    :param envelope_spec: envelope spec
-    :param system_spec: system spec
-    :return: requested temperature, degree C, (5 rooms * 8760 times)
+    Args
+        region: region
+        floor_area: floor area
+        envelope_spec: envelope spec
+        system_spec: system spec
+    Returns
+        requested temperature, degree C, (5 rooms * 8760 times)
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -894,11 +896,13 @@ def get_requested_supply_air_temperature_for_cooling(
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
     calculate the requested supply air temperature for heating
-    :param region: region
-    :param floor_area: floor area class
-    :param envelope_spec: envelope spec
-    :param system_spec: system spec
-    :return: requested temperature, degree C, (5 rooms * 8760 times)
+    Args
+        region: region
+        floor_area: floor area
+        envelope_spec: envelope spec
+        system_spec: system spec
+    Returns:
+        requested temperature, degree C, (5 rooms * 8760 times)
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -935,11 +939,13 @@ def get_decided_outlet_supply_air_temperature_for_heating(
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
     decide the outlet supply air temperature for heating
-    :param region: region
-    :param floor_area: floor area
-    :param envelope_spec: envelope spec
-    :param system_spec: system spec
-    :return: decided outlet supply air temperature, degree C, (8760 times)
+    Args:
+        region: region
+        floor_area: floor area
+        envelope_spec: envelope spec
+        system_spec: system spec
+    Returns:
+        decided outlet supply air temperature, degree C, (8760 times)
     """
 
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
@@ -951,11 +957,13 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
     decide the outlet supply air temperature for cooling
-    :param region: region
-    :param floor_area: floor area
-    :param envelope_spec: envelope spec
-    :param system_spec: system spec
-    :return: decided outlet supply air temperature, degree C, (8760 times)
+    Args:
+        region: region
+        floor_area: floor area
+        envelope_spec: envelope spec
+        system_spec: system spec
+    Returns:
+        decided outlet supply air temperature, degree C, (8760 times)
     """
 
     theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
@@ -966,11 +974,14 @@ def get_heat_source_heating_output(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
+    calculate heat source heating output
     Args:
         region: region
         floor_area: floor area class
         envelope_spec: envelope spec
         system_spec: system spec
+    Returns:
+        heating output, MJ/h, (8760 times)
     """
 
     # supply air temperature, degree C
