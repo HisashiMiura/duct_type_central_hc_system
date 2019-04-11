@@ -1000,7 +1000,7 @@ def get_heat_source_heating_output(
     # supply air volume for heating, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
 
-    return (theta_hs_out_h - theta_hs_in_h) * c * rho * np.sum(v_supply_h, axis=0) * 10 ** (-6)
+    return np.maximum((theta_hs_out_h - theta_hs_in_h) * c * rho * np.sum(v_supply_h, axis=0) * 10 ** (-6), 0.0)
 
 
 def get_heat_source_cooling_output(
@@ -1033,7 +1033,7 @@ def get_heat_source_cooling_output(
     # latent cooling load, MJ/h
     l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
 
-    q_hs_cs = (theta_hs_in_c - theta_hs_out_c) * c * rho * np.sum(v_supply_c, axis=0) * 10 ** (-6)
+    q_hs_cs = np.maximum((theta_hs_in_c - theta_hs_out_c) * c * rho * np.sum(v_supply_c, axis=0) * 10 ** (-6), 0.0)
 
     q_hs_cl = np.sum(l_cl[0:5], axis=0)
 
