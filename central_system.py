@@ -49,6 +49,8 @@ def get_heat_loss_coefficient_of_partition() -> float:
 # endregion
 
 
+# region duct length
+
 def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
     """
     get duct length of standard house
@@ -68,6 +70,8 @@ def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
     total = internal + external
 
     return internal, external, total
+
+# endregion
 
 
 def get_duct_length(total_floor_area: float) -> (np.ndarray, np.ndarray, np.ndarray):
