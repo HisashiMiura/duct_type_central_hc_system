@@ -11,7 +11,8 @@ from appendix import SystemSpec
 # region physical property
 
 def get_air_density() -> float:
-    """air density
+    """
+    air density
     Returns:
         air density, kg/m3
     """
@@ -19,7 +20,8 @@ def get_air_density() -> float:
 
 
 def get_specific_heat() -> float:
-    """specific heat of air
+    """
+    specific heat of air
     Returns:
         specific heat of air, J/kgK
     """
@@ -27,7 +29,8 @@ def get_specific_heat() -> float:
 
 
 def get_duct_linear_heat_loss_coefficient() -> float:
-    """get the liner heat loss coefficient (W/mK) of the duct
+    """
+    get the liner heat loss coefficient (W/mK) of the duct
     Returns:
           liner heat loss coefficient, W/mK
     """
