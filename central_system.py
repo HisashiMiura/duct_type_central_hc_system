@@ -166,7 +166,7 @@ def get_main_value(
     }
 
 
-def get_attic_temperature(region: int, h: float = 1.0) -> (np.ndarray, np.ndarray):
+def calc_attic_temperature(region: int, h: float = 1.0) -> (np.ndarray, np.ndarray):
     """calculate the attic temperature
     Args:
         region: region 1-8
@@ -218,7 +218,7 @@ def get_duct_ambient_air_temperature(total_floor_area: float, region: int, spec:
         # get the lengths of the ducts, m connected to the each 5 rooms
         internal_lengths, external_lengths, total_lengths = get_standard_house_duct_length()
         # attic temperatures(8760), degree C
-        t_attic_h, t_attic_c = get_attic_temperature(region=region)
+        t_attic_h, t_attic_c = calc_attic_temperature(region=region)
         # If the duct NOT insulated, the duct ambient temperatures are
         # between the attic temperatures and the air conditioned temperatures.
         heating = np.array([f(internal_length, external_length, t_ac_h, t_attic_h)
