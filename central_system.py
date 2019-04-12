@@ -103,6 +103,28 @@ def calc_duct_length(a_a: float) -> np.ndarray:
 # endregion
 
 
+# region air conditioned temperature
+
+def get_air_conditioned_temperature_for_heating() -> float:
+    """
+    get air conditioned temperature for heating
+    Returns:
+        temperature, degree C
+    """
+    return 20.0
+
+
+def get_air_conditioned_temperature_for_cooling() -> float:
+    """
+    get air conditioned temperature for cooling
+    Returns:
+        temperature, degree c
+    """
+    return 27.0
+
+# endregion
+
+
 def get_main_value(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec,
@@ -121,24 +143,6 @@ def get_main_value(
     return {
         'duct_length': l_duct_i,
     }
-
-
-def get_air_conditioned_temperature_for_heating() -> float:
-    """
-    get air conditioned temperature for heating
-    Returns:
-        temperature, degree C
-    """
-    return 20.0
-
-
-def get_air_conditioned_temperature_for_cooling() -> float:
-    """
-    get air conditioned temperature for cooling
-    Returns:
-        temperature, degree c
-    """
-    return 27.0
 
 
 def get_attic_temperature(region: int, h: float = 1.0) -> (np.ndarray, np.ndarray):
