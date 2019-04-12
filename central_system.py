@@ -25,7 +25,7 @@ def get_specific_heat() -> float:
     Returns:
         specific heat of air, J/kgK
     """
-    return 1006
+    return 1006.0
 
 
 def get_duct_linear_heat_loss_coefficient() -> float:
