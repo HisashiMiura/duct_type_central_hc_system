@@ -125,6 +125,36 @@ def get_air_conditioned_temperature_for_cooling() -> float:
 # endregion
 
 
+# region attic temperature
+
+def get_attic_temperature_for_heating(theta_sat: np.ndarray, theta_ac_h: np.ndarray, h: float) -> np.ndarray:
+    """
+    calculate attic temperature for heating
+    Args:
+        theta_sat: SAT temperature, degree C, (8760 times)
+        theta_ac_h: air conditioned temperature for heating, degree C, (8760 times)
+        h: temperature difference coefficient, -
+    Returns:
+        attic temperature for heating, degree C, (8760 times)
+    """
+    return theta_sat * h + theta_ac_h * (1 - h)
+
+
+def get_attic_temperature_for_cooling(theta_sat: np.ndarray, theta_ac_c: np.ndarray, h: float) -> np.ndarray:
+    """
+    calculate attic temperature for cooling
+    Args:
+        theta_sat: SAT temperature, degree C, (8760 times)
+        theta_ac_c: air conditioned temperature for cooling, degree C, (8760 times)
+        h: temperature difference coefficient, -
+    Returns:
+        attic temperature for cooling, degree C, (8760 times)
+    """
+    return theta_sat * h + theta_ac_c * (1 - h)
+
+# endregion
+
+
 def get_main_value(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec,
@@ -142,9 +172,16 @@ def get_main_value(
     # duct length for each room, m, (5 rooms)
     l_duct_i = calc_duct_length(a_a=floor_area.total)
 
-    # air conditioned temperature, degree C
+    # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
     theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
+
+    # SAT temperature, degree C, (8760 times)
+    theta_sat = read_conditions.get_sat_temperature(region)
+
+    # attic temperature, degree C, (8760 times)
+    theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h, 1.0)
+    theta_attic_c = get_attic_temperature_for_cooling(theta_sat, theta_ac_c, 1.0)
 
     if pt is not None:
         print('duct length:')
@@ -156,6 +193,9 @@ def get_main_value(
         print('air conditioned temperature, degree C:')
         print('  heating:' + str(theta_ac_h[pt]))
         print('  cooling:' + str(theta_ac_c[pt]))
+        print('attic temperature, degree C:')
+        print('  heating:' + str(theta_attic_h[pt]))
+        print('  cooling:' + str(theta_attic_c[pt]))
 
     return {
         'duct_length': l_duct_i,
@@ -163,6 +203,10 @@ def get_main_value(
             'heating': theta_ac_h,
             'cooling': theta_ac_c,
         },
+        'attic_temperature': {
+            'heating': theta_attic_h,
+            'cooling': theta_attic_c,
+        }
     }
 
 
@@ -217,8 +261,15 @@ def get_duct_ambient_air_temperature(total_floor_area: float, region: int, spec:
     else:
         # get the lengths of the ducts, m connected to the each 5 rooms
         internal_lengths, external_lengths, total_lengths = get_standard_house_duct_length()
+        # SAT temperatures, degree C, (8760 times)
+        sat_temperature = read_conditions.get_sat_temperature(region)
+        # air conditioned temperature, degree C, (8760 times)
+        theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
+        theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
         # attic temperatures(8760), degree C
-        t_attic_h, t_attic_c = calc_attic_temperature(region=region)
+        t_attic_h = get_attic_temperature_for_heating(sat_temperature, theta_ac_h, 1.0)
+        t_attic_c = get_attic_temperature_for_cooling(sat_temperature, theta_ac_c, 1.0)
+
         # If the duct NOT insulated, the duct ambient temperatures are
         # between the attic temperatures and the air conditioned temperatures.
         heating = np.array([f(internal_length, external_length, t_ac_h, t_attic_h)
