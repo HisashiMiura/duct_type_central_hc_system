@@ -103,6 +103,26 @@ def calc_duct_length(a_a: float) -> np.ndarray:
 # endregion
 
 
+def get_main_value(
+        region: int, floor_area: envelope.FloorArea,
+        envelope_spec: envelope.Spec,
+        system_spec: SystemSpec):
+    """
+    Args:
+        region: region
+        floor_area: floor area class
+        envelope_spec: envelope spec
+        system_spec: system spec
+    """
+
+    # duct length for each room, m, (5 rooms)
+    l_duct_i = calc_duct_length(a_a=floor_area.total)
+
+    return {
+        'duct_length': l_duct_i,
+    }
+
+
 def get_air_conditioned_temperature_for_heating() -> float:
     """
     get air conditioned temperature for heating

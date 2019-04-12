@@ -177,6 +177,10 @@ def draw_sum_bar_graph(x_title, ys):
 # endregion
 
 
+def get_main_value(cn: int) -> dict:
+    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    return cs.get_main_value(region, floor_area, envelope_spec, system_spec)
+
 # region external conditions
 
 def get_outdoor_temperature(cn: int) -> np.ndarray:
