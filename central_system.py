@@ -156,7 +156,7 @@ def get_main_value(
 
     return {
         'duct_length': l_duct_i,
-        'air conditioned temperature': {
+        'air_conditioned_temperature': {
             'heating': theta_ac_h,
             'cooling': theta_ac_c,
         },
