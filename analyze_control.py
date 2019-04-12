@@ -386,10 +386,6 @@ def get_heat_source_latent_cooling_output(cn: int) -> np.ndarray:
 
 # region EXTRA
 
-def get_air_conditioned_temperature_for_heating(cn: int) -> np.ndarray:
-    return np.full(8760, cs.get_air_conditioned_temperature_for_heating())
-
-
 def get_non_occupant_room_load(cn: int) -> np.ndarray:
 
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
