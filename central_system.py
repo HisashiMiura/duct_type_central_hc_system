@@ -210,30 +210,6 @@ def get_main_value(
     }
 
 
-def calc_attic_temperature(region: int, h: float = 1.0) -> (np.ndarray, np.ndarray):
-    """calculate the attic temperature
-    Args:
-        region: region 1-8
-        h: temperature difference coefficient 0.0 - 1.0
-        the default value is 1.0
-    Returns:
-        attic temperature for heating (8760 times), attic temperature for cooling(8760 times)
-    """
-
-    # SAT temperatures(8760)
-    sat_temperature = read_conditions.get_sat_temperature(region)
-
-    # air conditioned temperature, degree C
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    # attic temperatures(8760), degree C
-    heating = sat_temperature * h + np.full(8760, theta_ac_h) * (1 - h)
-    cooling = sat_temperature * h + np.full(8760, theta_ac_c) * (1 - h)
-
-    return heating, cooling
-
-
 def get_duct_ambient_air_temperature(total_floor_area: float, region: int, spec: SystemSpec) \
         -> (np.ndarray, np.ndarray):
     """get duct ambient air temperature
