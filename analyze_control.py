@@ -177,9 +177,9 @@ def draw_sum_bar_graph(x_title, ys):
 # endregion
 
 
-def get_main_value(cn: int) -> dict:
+def get_main_value(cn: int, pt: int = None) -> dict:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_main_value(region, floor_area, envelope_spec, system_spec)
+    return cs.get_main_value(region, floor_area, envelope_spec, system_spec, pt)
 
 # region external conditions
 

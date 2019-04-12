@@ -128,13 +128,15 @@ def get_air_conditioned_temperature_for_cooling() -> float:
 def get_main_value(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec,
-        system_spec: SystemSpec):
+        system_spec: SystemSpec,
+        print_time: int = None):
     """
     Args:
         region: region
         floor_area: floor area class
         envelope_spec: envelope spec
         system_spec: system spec
+        print_time: time(0~8759) for printing the values
     """
 
     # duct length for each room, m, (5 rooms)
@@ -143,6 +145,15 @@ def get_main_value(
     # air conditioned temperature, degree C
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
     theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
+
+    if print_time is not None:
+        print('duct length:')
+        print('  room1:' + str(l_duct_i[0]))
+        print('  room2:' + str(l_duct_i[1]))
+        print('  room3:' + str(l_duct_i[2]))
+        print('  room4:' + str(l_duct_i[3]))
+        print('  room5:' + str(l_duct_i[4]))
+
     return {
         'duct_length': l_duct_i,
         'air conditioned temperature': {
