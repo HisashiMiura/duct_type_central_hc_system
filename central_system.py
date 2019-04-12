@@ -50,7 +50,8 @@ def get_heat_loss_coefficient_of_partition() -> float:
 
 
 def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
-    """get duct length(m) of standard house
+    """
+    get duct length of standard house
     Returns:
         duct length of standard house through the inside space of the insulated space, m (5 rooms)
         duct length of standard house through the outside space of the insulated space, m (5 rooms)
