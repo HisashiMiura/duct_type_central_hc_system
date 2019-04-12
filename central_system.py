@@ -153,6 +153,9 @@ def get_main_value(
         print('  room3:' + str(l_duct_i[2]))
         print('  room4:' + str(l_duct_i[3]))
         print('  room5:' + str(l_duct_i[4]))
+        print('air conditioned temperature, degree C:')
+        print('  heating:' + str(theta_ac_h[pt]))
+        print('  cooling:' + str(theta_ac_c[pt]))
 
     return {
         'duct_length': l_duct_i,
