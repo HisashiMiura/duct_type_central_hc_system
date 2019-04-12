@@ -74,7 +74,7 @@ def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
 # endregion
 
 
-def get_duct_length(total_floor_area: float) -> (np.ndarray, np.ndarray, np.ndarray):
+def calc_duct_length(total_floor_area: float) -> (np.ndarray, np.ndarray, np.ndarray):
     """get duct length(m)
     Returns
         duct length of standard house through the inside space of the insulated space, m (5 rooms)
@@ -169,7 +169,7 @@ def get_duct_ambient_air_temperature(total_floor_area: float, region: int, spec:
         return np.full((5, 8760), t_ac_h), np.full((5, 8760), t_ac_c)
     else:
         # get the lengths of the ducts, m connected to the each 5 rooms
-        internal_lengths, external_lengths, total_lengths = get_duct_length(total_floor_area=total_floor_area)
+        internal_lengths, external_lengths, total_lengths = calc_duct_length(total_floor_area=total_floor_area)
         # attic temperatures(8760), degree C
         t_attic_h, t_attic_c = get_attic_temperature(region=region)
         # If the duct NOT insulated, the duct ambient temperatures are
@@ -693,7 +693,7 @@ def get_maximum_output_for_heating(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
     theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
@@ -757,7 +757,7 @@ def get_maximum_output_for_cooling(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
     theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
@@ -893,7 +893,7 @@ def get_requested_supply_air_temperature_for_heating(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return theta_sur_h + (theta_ac_h + q_t_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
         * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
@@ -936,7 +936,7 @@ def get_requested_supply_air_temperature_for_cooling(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return theta_sur_c - (theta_sur_c - theta_ac_c + q_t_cs * 10 ** 6 / (v_supply_c * c * rho)) \
         * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
@@ -1075,7 +1075,7 @@ def get_duct_heat_loss_for_heating(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return get_duct_heat_loss_from_upside_temperature(
         theta_sur_h, theta_hs_out_h, v_supply_h, t_ac, psi, l_duct)
@@ -1108,7 +1108,7 @@ def get_actual_treated_load_for_heating(
     psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length, m
-    l_duct = np.array(get_duct_length(floor_area.total)[2]).reshape(1, 5).T
+    l_duct = np.array(calc_duct_length(floor_area.total)[2]).reshape(1, 5).T
 
     return get_load_from_upside_temperature(
         theta_sur_h, theta_hs_out_h, v_supply_h, t_ac, psi, l_duct)
