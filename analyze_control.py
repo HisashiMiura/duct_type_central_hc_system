@@ -259,7 +259,7 @@ def get_duct_ambient_air_temperature(cn: int) -> np.ndarray:
 
 def get_total_duct_length(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.calc_duct_length(floor_area.total)[2]
+    return cs.calc_duct_length(floor_area.total)
 
 # endregion
 
