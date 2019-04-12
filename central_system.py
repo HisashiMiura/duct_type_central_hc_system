@@ -140,8 +140,15 @@ def get_main_value(
     # duct length for each room, m, (5 rooms)
     l_duct_i = calc_duct_length(a_a=floor_area.total)
 
+    # air conditioned temperature, degree C
+    theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
+    theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
     return {
         'duct_length': l_duct_i,
+        'air conditioned temperature': {
+            'heating': theta_ac_h,
+            'cooling': theta_ac_c,
+        },
     }
 
 
