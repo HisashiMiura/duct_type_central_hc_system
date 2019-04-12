@@ -1015,7 +1015,7 @@ def get_requested_supply_air_temperature_for_cooling(
         * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
 
 
-def get_decided_outlet_supply_air_temperature_for_heating(
+def calc_decided_outlet_supply_air_temperature_for_heating(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -1033,7 +1033,7 @@ def get_decided_outlet_supply_air_temperature_for_heating(
     return np.max(theta_duct_up_h, axis=0)
 
 
-def get_decided_outlet_supply_air_temperature_for_cooling(
+def calc_decided_outlet_supply_air_temperature_for_cooling(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -1051,7 +1051,7 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
     return np.min(theta_duct_up_c, axis=0)
 
 
-def get_heat_source_heating_output(
+def calc_heat_source_heating_output(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -1066,7 +1066,7 @@ def get_heat_source_heating_output(
     """
 
     # supply air temperature, degree C
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(
         region, floor_area, envelope_spec, system_spec)
 
     # inlet air temperature of the heat source for heating, degree C (8760 times)
@@ -1084,7 +1084,7 @@ def get_heat_source_heating_output(
     return np.maximum((theta_hs_out_h - theta_hs_in_h) * c * rho * np.sum(v_supply_h, axis=0) * 10 ** (-6), 0.0)
 
 
-def get_heat_source_cooling_output(
+def calc_heat_source_cooling_output(
         region: int, floor_area: envelope.FloorArea,
         envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
     """
@@ -1099,7 +1099,7 @@ def get_heat_source_cooling_output(
     theta_hs_in_c = get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     # supply air temperature, degree C
-    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(
+    theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(
         region, floor_area, envelope_spec, system_spec)
 
     # specific heat of air, J/kgK
@@ -1136,7 +1136,7 @@ def get_duct_heat_loss_for_heating(
     theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # supply air temperature, degree C
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(
         region, floor_area, envelope_spec, system_spec)
 
     # supply air volume for heating, m3/h (5 rooms * 8760 times)
@@ -1169,7 +1169,7 @@ def get_actual_treated_load_for_heating(
     theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # supply air temperature, degree C
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(
         region, floor_area, envelope_spec, system_spec)
 
     # supply air volume for heating, m3/h (5 rooms * 8760 times)
@@ -1368,6 +1368,49 @@ def get_main_value(
         system_spec.is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_h, theta_attic_h)
     theta_sur_c = get_duct_ambient_air_temperature_for_cooling(
         system_spec.is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic_c)
+
+    r_supply_des = get_supply_air_volume_valance(floor_area)
+
+    v_vent = get_mechanical_ventilation(floor_area)
+
+    v_hs_min_h, v_hs_min_c = get_minimum_air_volume(floor_area)
+
+    a_part = get_partition_area(floor_area)
+
+    q_hs_rtd_h = get_rated_heating_output(system_spec)
+    q_hs_rtd_c = get_rated_cooling_output(system_spec)
+
+    q_d_hs_h = get_heating_output_for_supply_air_estimation(region, floor_area, envelope_spec)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation(region, floor_area, envelope_spec)
+
+    v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
+    v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
+    v_supply_c = get_each_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    theta_nac_h = get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
+    theta_nac_c = get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    q_trs_prt_h = get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
+    q_trs_prt_c = get_heat_gain_through_partition_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    q_max_h = get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
+    q_max_c = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(region, floor_area, envelope_spec, system_spec)
+    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    theta_duct_up_h = get_requested_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
+    theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    # outlet temperature of heat source, degree C, (8760 times)
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
+    theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+
+    # output of heat source, MJ/h, (8760 times)
+    q_hs_h = calc_heat_source_heating_output(region, floor_area, envelope_spec, system_spec)
+    q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(region, floor_area, envelope_spec, system_spec)
 
     if pt is not None:
         print('duct length:')
