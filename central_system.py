@@ -210,7 +210,7 @@ def get_main_value(
     }
 
 
-def get_duct_ambient_air_temperature(total_floor_area: float, region: int, spec: SystemSpec) \
+def calc_duct_ambient_air_temperature(total_floor_area: float, region: int, spec: SystemSpec) \
         -> (np.ndarray, np.ndarray):
     """get duct ambient air temperature
     Args:
@@ -770,7 +770,7 @@ def get_maximum_output_for_heating(
     l_duct = np.array(calc_duct_length(floor_area.total)).reshape(1, 5).T
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     #    return ((theta_hs_out_max_h - theta_ac_h) * c * rho * v_supply_h
     #            - psi * l_duct * (theta_hs_out_max_h - theta_sur_h) * 3600) * 10**(-6)
@@ -834,7 +834,7 @@ def get_maximum_output_for_cooling(
     l_duct = np.array(calc_duct_length(floor_area.total)).reshape(1, 5).T
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     #    q_max_cs = ((theta_ac_c - theta_hs_out_min_c) * c * rho * v_supply_c
     #                - psi * l_duct * (theta_sur_c - theta_hs_out_min_c) * 3600) * 10**(-6)
@@ -946,7 +946,7 @@ def get_requested_supply_air_temperature_for_heating(
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # air conditioned temperature for heating, degree C
     theta_ac_h = get_air_conditioned_temperature_for_heating()
@@ -988,7 +988,7 @@ def get_requested_supply_air_temperature_for_cooling(
     """
 
     # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # air conditioned temperature for cooling, degree C
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
@@ -1134,7 +1134,7 @@ def get_duct_heat_loss_for_heating(
     """
 
     # duct ambient temperature, degree C
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # supply air temperature, degree C
     theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
@@ -1167,7 +1167,7 @@ def get_actual_treated_load_for_heating(
     """
 
     # duct ambient temperature, degree C
-    theta_sur_h, theta_sur_c = get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
     # supply air temperature, degree C
     theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(

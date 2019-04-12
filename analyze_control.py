@@ -248,7 +248,7 @@ def get_latent_cooling_load(cn: int) -> np.ndarray:
 
 def get_duct_ambient_air_temperature(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_duct_ambient_air_temperature(floor_area.total, region, system_spec)
+    return cs.calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
 
 
 def get_total_duct_length(cn: int) -> np.ndarray:
