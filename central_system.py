@@ -1405,7 +1405,7 @@ def get_main_value(
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     q_max_h = get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
-    q_max_c = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
+    q_max_cs, q_max_cl = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(region, floor_area, envelope_spec, system_spec)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
