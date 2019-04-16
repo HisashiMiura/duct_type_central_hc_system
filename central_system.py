@@ -1425,7 +1425,7 @@ def get_main_value(
     q_act_h = get_actual_treated_load_for_heating(region, floor_area, envelope_spec, system_spec)
 
     return {
-        'constant_value' : {
+        'constant_value': {
             'air_density_kg/m3': rho,
             'air_specific_heat_J/kgK': c,
             'duct_length_room1_m': l_duct_i[0],
@@ -1453,7 +1453,7 @@ def get_main_value(
             'rated_capacity_heating_MJ/h': q_hs_rtd_h,
             'rated_capacity_cooling_MJ/h': q_hs_rtd_c,
         },
-        'time_value' : {
+        'time_value': {
             'heating_load_room1_MJ/h': l_h[0],
             'heating_load_room2_MJ/h': l_h[1],
             'heating_load_room3_MJ/h': l_h[2],
