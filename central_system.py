@@ -1422,6 +1422,8 @@ def get_main_value(
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(region, floor_area, envelope_spec, system_spec)
 
     q_loss_duct_h = get_duct_heat_loss_for_heating(region, floor_area, envelope_spec, system_spec)
+
+    # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
     q_act_h = get_actual_treated_load_for_heating(region, floor_area, envelope_spec, system_spec)
 
     return {
