@@ -146,7 +146,7 @@ def draw_graph(y_title, ys, op: str ='ave'):
     }[op]
 
     for y in ys:
-        ysds = f(y[0], y[1])
+        ysds = f(np.array(y[0]), y[1])
         for ysd in ysds:
             ax.plot(xs, ysd[0], label=ysd[1])
 
