@@ -4,6 +4,7 @@ import pandas as pd
 
 import analyze_control as ac
 
+
 class TestMain(unittest.TestCase):
 
     def test_total_result(self):
