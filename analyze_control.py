@@ -359,10 +359,6 @@ def get_decided_outlet_supply_air_temperature_for_cooling(cn: int) -> np.ndarray
 # endregion
 
 
-def get_heat_source_heating_output(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.calc_heat_source_heating_output(region, floor_area, envelope_spec, system_spec)
-
 # region EXTRA
 
 
