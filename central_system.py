@@ -1395,6 +1395,7 @@ def get_main_value(
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
+    # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = theta_nac_h
     theta_hs_in_c = theta_nac_c
 
