@@ -1052,45 +1052,33 @@ def calc_decided_outlet_supply_air_temperature_for_cooling(
 
 
 def calc_heat_source_heating_output(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        theta_hs_out_h: np.ndarray,
+        theta_hs_in_h: np.ndarray,
+        c: float,
+        rho: float,
+        v_supply_h: np.ndarray) -> np.ndarray:
     """
     calculate heat source heating output
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        theta_hs_out_h: supply air temperature, degree C, (5 rooms * 8760 times)
+        theta_hs_in_h: inlet air temperature of the heat source for heating, degree C (8760 times)
+        c: specific heat of air, J/kgK
+        rho: air density, kg/m3
+        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
     Returns:
         heating output, MJ/h, (8760 times)
     """
-
-    # supply air temperature, degree C
-    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(
-        region, floor_area, envelope_spec, system_spec)
-
-    # inlet air temperature of the heat source for heating, degree C (8760 times)
-    theta_hs_in_h = get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # specific heat of air, J/kgK
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
 
     return np.maximum((theta_hs_out_h - theta_hs_in_h) * c * rho * np.sum(v_supply_h, axis=0) * 10 ** (-6), 0.0)
 
 
 def calc_heat_source_cooling_output(
-        theta_hs_in_c: np.array,
-        theta_hs_out_c: np.array,
+        theta_hs_in_c: np.ndarray,
+        theta_hs_out_c: np.ndarray,
         c: float,
         rho: float,
-        v_supply_c: np.array,
-        l_cl: np.array) -> np.ndarray:
+        v_supply_c: np.ndarray,
+        l_cl: np.ndarray) -> np.ndarray:
     """
     Args:
         theta_hs_in_c: inlet air temperature of the heat source for cooling, degree C (8760 times)
@@ -1407,10 +1395,11 @@ def get_main_value(
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
+    theta_hs_in_h = theta_nac_h
     theta_hs_in_c = theta_nac_c
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = calc_heat_source_heating_output(region, floor_area, envelope_spec, system_spec)
+    q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_hs_in_h, c, rho, v_supply_h)
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_hs_in_c, theta_hs_out_c, c, rho, v_supply_c, l_cl)
 
     # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
