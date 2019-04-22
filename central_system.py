@@ -1016,20 +1016,15 @@ def get_requested_supply_air_temperature_for_cooling(
 
 
 def calc_decided_outlet_supply_air_temperature_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        theta_duct_up_h: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for heating
     Args:
-        region: region
-        floor_area: floor area
-        envelope_spec: envelope spec
-        system_spec: system spec
+        theta_duct_up_h: requested temperature, degree C, (5 rooms * 8760 times)
     Returns:
         decided outlet supply air temperature, degree C, (8760 times)
     """
 
-    theta_duct_up_h = get_requested_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
     return np.max(theta_duct_up_h, axis=0)
 
 
@@ -1392,7 +1387,7 @@ def get_main_value(
     theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_duct_up_h)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     # inlet air temperature of heat source,degree C, (8760 times)
