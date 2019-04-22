@@ -357,35 +357,3 @@ def get_decided_outlet_supply_air_temperature_for_cooling(cn: int) -> np.ndarray
     return cs.calc_decided_outlet_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
 # endregion
-
-
-# region EXTRA
-
-
-def get_non_occupant_room_load(cn: int) -> np.ndarray:
-
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-
-    temp_nor = cs.get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
-    temp_or = np.full(8760, cs.get_air_conditioned_temperature_for_heating())
-
-    # specific heat of air, J/kgK
-    c = cs.get_specific_heat()
-
-    # air density, kg/m3
-    rho = cs.get_air_density()
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_h_each = cs.get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
-    # total supply air volume for heating, m3/h (8760 times)
-    v_supply_h = np.sum(v_supply_h_each, axis=0)
-
-    return (temp_or - temp_nor) * v_supply_h * c * rho * 10**(-6)
-
-
-def get_heat_loss_through_partition_for_heating(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
-
-# endregion
-
