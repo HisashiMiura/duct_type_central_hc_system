@@ -401,10 +401,5 @@ def get_heat_loss_through_partition_for_heating(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
 
-
-def get_duct_heat_loss_for_heating(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_duct_heat_loss_for_heating(region, floor_area, envelope_spec, system_spec)
-
 # endregion
 

@@ -1122,36 +1122,26 @@ def calc_heat_source_cooling_output(
 
 
 def get_duct_heat_loss_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        theta_sur_h: np.array,
+        theta_hs_out_h: np.array,
+        v_supply_h: np.array,
+        theta_ac_h: np.array,
+        psi: float,
+        l_duct: np.array) -> np.ndarray:
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        theta_sur_h: duct ambient temperature, degree C, (5 rooms * 8760 times)
+        theta_hs_out_h: outlet temperature of heat source, degree C, (8760 times)
+        v_supply_h: supply air volume, m3/h (5 rooms * 8760 times)
+        theta_ac_h: air conditioned temperature, degree C, (8760 times)
+        psi: liner heat loss coefficient, W/mK
+        l_duct: duct length, m, (5 rooms)
     """
 
-    # duct ambient temperature, degree C
-    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-    # supply air temperature, degree C
-    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(
-        region, floor_area, envelope_spec, system_spec)
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # air conditioned temperature, degree C
-    t_ac = get_air_conditioned_temperature_for_heating()
-
-    psi = get_duct_linear_heat_loss_coefficient()
-
-    # duct length, m
-    l_duct = np.array(calc_duct_length(floor_area.total)).reshape(1, 5).T
+    l_duct = np.array(l_duct).reshape(1,5).T
 
     return get_duct_heat_loss_from_upside_temperature(
-        theta_sur_h, theta_hs_out_h, v_supply_h, t_ac, psi, l_duct)
+        theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
 
 def get_actual_treated_load_for_heating(
@@ -1407,6 +1397,7 @@ def get_main_value(
     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
     v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
 
+    # supply air volume, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
     v_supply_c = get_each_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
 
@@ -1433,7 +1424,8 @@ def get_main_value(
     q_hs_h = calc_heat_source_heating_output(region, floor_area, envelope_spec, system_spec)
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(region, floor_area, envelope_spec, system_spec)
 
-    q_loss_duct_h = get_duct_heat_loss_for_heating(region, floor_area, envelope_spec, system_spec)
+    # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
+    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct_i)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
     q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct_i)
