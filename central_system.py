@@ -293,16 +293,16 @@ def get_mechanical_ventilation(zone_floor_area: envelope.FloorArea) -> np.ndarra
     return v_vent_r * a_hcz / a_hcz_r
 
 
-def get_minimum_air_volume(zone_floor_area: envelope.FloorArea) -> (float, float):
+def get_minimum_air_volume(v_vent: np.ndarray) -> (float, float):
     """
     Args:
-        zone_floor_area: floor area of each zones, m2
+        v_vent: supply air volume of mechanical ventilation, m3/h, (5 rooms)
     Returns:
         minimum supply air volume of the system for heating and cooling
     """
 
-    htg = np.sum(get_mechanical_ventilation(zone_floor_area))
-    clg = np.sum(get_mechanical_ventilation(zone_floor_area))
+    htg = np.sum(v_vent)
+    clg = np.sum(v_vent)
 
     return htg, clg
 
@@ -1182,7 +1182,7 @@ def get_main_value(
 
     v_vent = get_mechanical_ventilation(floor_area)
 
-    v_hs_min_h, v_hs_min_c = get_minimum_air_volume(floor_area)
+    v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
 
     a_part = get_partition_area(floor_area)
 
