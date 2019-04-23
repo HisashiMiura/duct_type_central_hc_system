@@ -1,0 +1,14 @@
+{
+    "region": 6,
+    "a_mr": 29.81,
+    "a_or": 51.34,
+    "a_a": 120.08,
+    "r_env": 2.95556,
+    "insulation": "h11",
+    "solar_gain": "middle",
+    "default_heat_source_spec": true,
+    "supply_air_rtd_h": 1800.0,
+    "supply_air_rtd_c": 1800.0,
+    "is_duct_insulated": true,
+    "vav_system": false
+}
