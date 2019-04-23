@@ -1306,18 +1306,18 @@ def get_main_value(
             'heating_load_room3': l_h[2],  # MJ/h
             'heating_load_room4': l_h[3],  # MJ/h
             'heating_load_room5': l_h[4],  # MJ/h
-            'old_heating_load_sum_of_12_rooms': np.sum(l_h, axis=0),  # MJ/h
             'sensible_cooling_load_room1': l_cs[0],  # MJ/h
             'sensible_cooling_load_room2': l_cs[1],  # MJ/h
             'sensible_cooling_load_room3': l_cs[2],  # MJ/h
             'sensible_cooling_load_room4': l_cs[3],  # MJ/h
             'sensible_cooling_load_room5': l_cs[4],  # MJ/h
-            'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
             'latent_cooling_load_room1': l_cl[0],  # MJ/h
             'latent_cooling_load_room2': l_cl[1],  # MJ/h
             'latent_cooling_load_room3': l_cl[2],  # MJ/h
             'latent_cooling_load_room4': l_cl[3],  # MJ/h
             'latent_cooling_load_room5': l_cl[4],  # MJ/h
+            'old_heating_load_sum_of_12_rooms': np.sum(l_h, axis=0),  # MJ/h
+            'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
             'old_latent_cooling_load_sum_of_12_rooms': np.sum(l_cl, axis=0),  # MJ/h
             'air_conditioned_temperature_heating': theta_ac_h,  # degree C
             'air_conditioned_temperature_cooling': theta_ac_c,  # degree C

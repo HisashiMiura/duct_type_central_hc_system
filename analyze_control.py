@@ -181,45 +181,6 @@ def get_main_value(cn: int) -> dict:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return cs.get_main_value(region, floor_area, envelope_spec, system_spec)
 
-# region external conditions
-
-def get_outdoor_temperature(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.read_temperature(region)
-
-
-def get_outdoor_absolute_humidity(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.read_absolute_humidity(region)
-
-
-def get_direct_solar(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.read_direct_solar(region)
-
-
-def get_horizontal_sky_solar(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.read_horizontal_sky_solar(region)
-
-
-def get_night_radiation(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.read_night_radiation(region)
-
-
-def get_horizontal_solar(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.get_horizontal_solar(region)
-
-
-def get_sat_temperature(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return read_conditions.get_sat_temperature(region)
-
-# endregion
-
-
 # region heat load
 
 
