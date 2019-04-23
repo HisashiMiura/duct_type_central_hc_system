@@ -353,7 +353,6 @@ def get_rated_cooling_output(system_spec: SystemSpec) -> float:
 
 
 def get_heating_output_for_supply_air_estimation(
-        region: int, floor_area: envelope.FloorArea, envelope_spec: envelope.Spec,
         l_h: np.ndarray,
         q: float,
         theta_ac_h: np.ndarray,
@@ -364,9 +363,6 @@ def get_heating_output_for_supply_air_estimation(
     """calculate the system supply air volume for heating
     eq.(12)
     Args:
-        region: region 1-8
-        floor_area: floor area
-        envelope_spec: envelop spec
         l_h: heating load, MJ/h, (12 rooms * 8760 times)
         q: q value, W/m2K
         theta_ac_h: air conditioned temperature for heating, degree C
@@ -389,42 +385,37 @@ def get_heating_output_for_supply_air_estimation(
 
 
 def get_cooling_output_for_supply_air_estimation(
-        region: int, floor_area: envelope.FloorArea, envelope_spec: envelope.Spec) -> np.ndarray:
+        l_cs: np.ndarray,
+        l_cl: np.ndarray,
+        q: float,
+        theta_ac_c: np.ndarray,
+        theta_ex: np.ndarray,
+        mu_c: float,
+        j: np.ndarray,
+        a_nr: float) -> np.ndarray:
     """calculate the system supply air volume for cooling
     eq.(27)
     Args:
-        region: region 1-8
-        floor_area: floor area
-        envelope_spec: envelop spec
+        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
+        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
+        q: q value, W/m2K
+        theta_ac_c: air conditioned temperature for cooling, degree C
+        theta_ex: outdoor temperature, degree C
+        mu_c: mu value, (W/m2)/(W/m2)
+        j: horizontal solar radiation, W/m2
+        a_nr: floor area of non occupant room, m2
     Returns:
         sensible and latent cooling output for supply air estimation, MJ/h
     """
+
     # sensible cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cs = read_load.get_sensible_cooling_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
+    l_cs = l_cs[0:5]
 
     # latent cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cl = read_load.get_latent_cooling_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
-
-    # q value, W/m2K
-    q = envelope_spec.get_q_value(region=region)
-
-    # air conditioned temperature for cooling, degree C
-    theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
-
-    # outdoor temperature, degree C
-    theta_ex = read_conditions.read_temperature(region=region)
-
-    # mu value, (W/m2)/(W/m2)
-    mu_c = envelope_spec.get_mu_c_value(region=region)
-
-    # horizontal solar radiation, W/m2
-    j = read_conditions.get_horizontal_solar(region)
-
-    # floor area of non occupant room, m2
-    a_nr = floor_area.nor
+    l_cl = l_cl[0:5]
 
     q_dash_hs_c = np.sum(l_cs, axis=0) + np.sum(l_cl, axis=0) \
-                  + ((theta_ex - theta_ac_c) * q + j * mu_c) * a_nr * 3600 * 10 ** (-6)
+        + ((theta_ex - theta_ac_c) * q + j * mu_c) * a_nr * 3600 * 10 ** (-6)
 
     # This operation is not described in the specification document
     # The supply air has lower limitation. This operation does not eventually effect the result.
@@ -1204,11 +1195,9 @@ def get_main_value(
     # outdoor temperature, degree C
     theta_ex = read_conditions.read_temperature(region=region)
 
-    # mu value, (W/m2K)/(W/m2K)
-    mu_value = envelope_spec.get_mu_h_value(region=region)
     # mu value, (W/m2)/(W/m2)
     mu_h = envelope_spec.get_mu_h_value(region=region)
-
+    mu_c = envelope_spec.get_mu_c_value(region=region)
 
     # horizontal solar radiation, W/m2K
     j = read_conditions.get_horizontal_solar(region=region)
@@ -1216,8 +1205,8 @@ def get_main_value(
     # floor area of non occupant room, m2
     a_nr = floor_area.nor
 
-    q_d_hs_h = get_heating_output_for_supply_air_estimation(region, floor_area, envelope_spec, l_h, q_value, theta_ac_h, theta_ex, mu_h, j, a_nr)
-    q_d_hs_c = get_cooling_output_for_supply_air_estimation(region, floor_area, envelope_spec)
+    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q_value, theta_ac_h, theta_ex, mu_h, j, a_nr)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q_value, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
     # rated (maximum) supply air volume, m3/h
     v_hs_rtd_h = system_spec.supply_air_rtd_h
@@ -1234,11 +1223,11 @@ def get_main_value(
     u_prt = get_heat_loss_coefficient_of_partition()
 
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
-        q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
+        q_value, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
     theta_nac_c = get_non_occupant_room_temperature_for_cooling(
-        q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
+        q_value, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
-    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part,theta_ac_h, theta_nac_h)
+    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_nac_c)
 
     # maximum heating output, MJ/h (8760 times)
