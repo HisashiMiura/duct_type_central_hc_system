@@ -670,30 +670,22 @@ def get_non_occupant_room_temperature_for_cooling(
 
 
 def get_heat_loss_through_partition_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        u_prt: float,
+        a_prt: np.ndarray,
+        theta_ac_h: np.ndarray,
+        theta_nac_h: np.ndarray) -> np.ndarray:
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        theta_ac_h: air conditioned temperature for heating, degree C
+        theta_nac_h: non occupant room temperature, degree C (8760 times)
     Returns:
         heat loss through the partition, MJ/h (5 rooms * 8760 times)
     """
 
-    # heat loss coefficient of the partition wall, W/m2K
-    u_prt = get_heat_loss_coefficient_of_partition()
-
     # area of the partition, m2
-    a_prt = get_partition_area(floor_area=floor_area).reshape(1, 5).T
-
-    # air conditioned temperature for heating, degree C
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-
-    # non occupant room temperature, degree C (8760 times)
-    theta_nac_h = get_non_occupant_room_temperature_for_heating(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
+    a_prt = a_prt.reshape(1, 5).T
 
     return u_prt * a_prt * (theta_ac_h - theta_nac_h) * 3600 * 10 ** (-6)
 
@@ -1304,7 +1296,10 @@ def get_main_value(
     theta_nac_h = get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
     theta_nac_c = get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
 
-    q_trs_prt_h = get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
+    # heat loss coefficient of the partition wall, W/m2K
+    u_prt = get_heat_loss_coefficient_of_partition()
+
+    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part,theta_ac_h, theta_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     # maximum heating output, MJ/h (8760 times)
