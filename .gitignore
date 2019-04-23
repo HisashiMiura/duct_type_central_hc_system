@@ -3,3 +3,4 @@ __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/v/cache/lastfailed
 .pytest_cache/
+result.csv
