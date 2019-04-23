@@ -961,43 +961,30 @@ def get_requested_supply_air_temperature_for_heating(
 
 
 def get_requested_supply_air_temperature_for_cooling(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        theta_sur_c: np.ndarray,
+        theta_ac_c: np.ndarray,
+        q_t_cs: np.ndarray,
+        v_supply_c: np.ndarray,
+        c: float,
+        rho: float,
+        psi: float,
+        l_duct: np.ndarray) -> np.ndarray:
     """
     calculate the requested supply air temperature for heating
-    Args
-        region: region
-        floor_area: floor area
-        envelope_spec: envelope spec
-        system_spec: system spec
+    Args:
+        theta_sur_c: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        theta_ac_c: air conditioned temperature for cooling, degree C
+        q_t_cs: treated heat load for cooling, MJ/h, (5 rooms * 8760 times)
+        v_supply_c: supply air volume for heating, m3/h (5 rooms * 8760 times)
+        c: specific heat of air, J/kgK
+        rho: air density, kg/m3
+        psi: linear heat loss coefficient of the duct, W/mK
+        l_duct: duct length, m
     Returns:
         requested temperature, degree C, (5 rooms * 8760 times)
     """
 
-    # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-    # air conditioned temperature for cooling, degree C
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    # get treated heat load for cooling, MJ/h, (5 rooms * 8760 times), ---(not used)
-    q_t_cs, q_ut_cs, q_ut_cl, q_ut_cl \
-        = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_c = get_each_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
-
-    # specific heat of air, J/kgK
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # linear heat loss coefficient of the duct, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
-
-    # duct length, m
-    l_duct = np.array(calc_duct_length(floor_area.total)).reshape(1, 5).T
+    l_duct = np.array(l_duct).reshape(1,5).T
 
     return theta_sur_c - (theta_sur_c - theta_ac_c + q_t_cs * 10 ** 6 / (v_supply_c * c * rho)) \
         * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
@@ -1368,7 +1355,8 @@ def get_main_value(
 
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
         theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct_i)
-    theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+    theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(
+        theta_sur_c, theta_ac_c, q_t_cs, v_supply_c, c, rho, psi, l_duct_i)
 
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_duct_up_h)
