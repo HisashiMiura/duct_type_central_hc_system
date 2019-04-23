@@ -354,38 +354,32 @@ def get_rated_cooling_output(system_spec: SystemSpec) -> float:
 
 def get_heating_output_for_supply_air_estimation(
         region: int, floor_area: envelope.FloorArea, envelope_spec: envelope.Spec,
-        l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr) -> np.ndarray:
+        l_h: np.ndarray,
+        q: float,
+        theta_ac_h: np.ndarray,
+        theta_ex: np.ndarray,
+        mu_h: float,
+        j: np.ndarray,
+        a_nr: float) -> np.ndarray:
     """calculate the system supply air volume for heating
     eq.(12)
     Args:
         region: region 1-8
         floor_area: floor area
         envelope_spec: envelop spec
+        l_h: heating load, MJ/h, (12 rooms * 8760 times)
+        q: q value, W/m2K
+        theta_ac_h: air conditioned temperature for heating, degree C
+        theta_ex: outdoor temperature, degree C
+        mu_h: mu value, (W/m2)/(W/m2)
+        j: horizontal solar radiation, W/m2
+        a_nr: floor area of non occupant room, m2
     Returns:
         heating output for supply air estimation, MJ/h
     """
 
-    # heating load in the main occupant room and the other occupant rooms, MJ/h
-#    l_h = read_load.get_heating_load(region=region, envelope_spec=envelope_spec, floor_area=floor_area)[0:5]
+    # heating load in the main occupant room and the other occupant rooms, MJ/h, (5 rooms * 8760 times)
     l_h = l_h[0:5]
-
-    # q value, W/m2K
-#    q = envelope_spec.get_q_value(region=region)
-
-    # air conditioned temperature for heating, degree C
-#    theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
-
-    # outdoor temperature, degree C
-#    theta_ex = read_conditions.read_temperature(region=region)
-
-    # mu value, (W/m2)/(W/m2)
-#    mu_h = envelope_spec.get_mu_h_value(region=region)
-
-    # horizontal solar radiation, W/m2
-#    j = read_conditions.get_horizontal_solar(region)
-
-    # floor area of non occupant room, m2
-#    a_nr = floor_area.nor
 
     q_dash_hs_h = np.sum(l_h, axis=0) + ((theta_ac_h - theta_ex) * q - j * mu_h) * a_nr * 3600 * 10 ** (-6)
 
