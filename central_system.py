@@ -879,14 +879,18 @@ def get_treated_untreated_heat_load_for_heating(
 
 
 def get_treated_untreated_heat_load_for_cooling(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        l_cs: np.ndarray,
+        l_cl: np.ndarray,
+        q_trs_prt_c: np.ndarray,
+        q_max_cs: np.ndarray,
+        q_max_cl: np.ndarray) -> np.ndarray:
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        l_cs: sensible cooling load, MJ/h (5 rooms * 8760 times)
+        l_cl: latent cooling load, MJ/h (5 rooms, 8760 times)
+        q_trs_prt_c: heat gain from the non occupant room into the occupant room through the partition, MJ/h (5 rooms * 8760 times)
+        q_max_cs: maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times)
+        q_max_cl: maximum output for latent cooling, MJ/h, (5 rooms * 8760 times)
     Returns:
         (a,b,c,d)
             a: treated sensible heating load, MJ/h, (5 rooms * 8760 times)
@@ -896,17 +900,10 @@ def get_treated_untreated_heat_load_for_cooling(
     """
 
     # sensible cooling load, MJ/h (5 rooms * 8760 times)
-    l_cs = read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)[0:5]
+    l_cs = l_cs[0:5]
 
     # latent cooling load, MJ/h (5 rooms, 8760 times)
-    l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)[0:5]
-
-    # heat gain from the non occupant room into the occupant room through the partition, MJ/h (5 rooms * 8760 times)
-    q_trs_prt_c = get_heat_gain_through_partition_for_cooling(region, floor_area, envelope_spec, system_spec)
-
-    # maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times)
-    # maximum output for latent cooling, MJ/h, (5 rooms * 8760 times),
-    q_max_cs, q_max_cl = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
+    l_cl = l_cl[0:5]
 
     # treated load, MJ/h
     #  sensible
@@ -1344,7 +1341,8 @@ def get_main_value(
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_trs_prt_h, q_max_h)
-    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
+    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(
+        l_cs, l_cl, q_trs_prt_c, q_max_cs, q_max_cl)
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
