@@ -603,55 +603,29 @@ def get_non_occupant_room_temperature_for_heating(
 
 
 def get_non_occupant_room_temperature_for_cooling(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_c) -> np.ndarray:
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        q_value: Q value, W/m2K
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mu_value: mu value, (W/m2K)/(W/m2K)
+        j: horizontal solar radiation, W/m2, (8760 times)
+        a_nr: floor area of non occupant room, m2
+        c: specific heat of air, J/kg K
+        rho: air density, kg/m3
+        v_supply_c: supply air volume, m3/h, (5 rooms * 8760 times)
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        theta_ac_c: air conditioned temperature for heating, degree C, (8760 times)
     Returns:
         non occupant room temperature, degree C (8760 times)
     """
 
-    # Q value, W/m2K
-    q_value = envelope_spec.get_q_value(region=region)
-
-    # outdoor temperature, degree C
-    theta_ex = read_conditions.read_temperature(region=region)
-
-    # mu value, (W/m2K)/(W/m2K)
-    mu_value = envelope_spec.get_mu_c_value(region=region)
-
-    # horizontal solar radiation, W/m2K
-    j = read_conditions.get_horizontal_solar(region=region)
-
-    # floor area of non occupant room, m2
-    a_nr = floor_area.nor
-
-    # specific heat of air, J/kg K
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # supply air volume, m3/h
-    v_supply_c = get_each_supply_air_volume_for_cooling(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec, system_spec=system_spec)
-
-    # heat loss coefficient of the partition wall, W/m2K
-    u_prt = get_heat_loss_coefficient_of_partition()
-
-    # area of the partition, m2
-    a_prt = get_partition_area(floor_area=floor_area).reshape(1, 5).T
-
-    # air conditioned temperature for heating, degree C
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
+    a_prt = a_prt.reshape(1, 5).T
 
     return ((q_value * theta_ex + mu_value * j) * a_nr
             + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0) * theta_ac_c) \
-           / (q_value * a_nr + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0))
+        / (q_value * a_nr + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0))
 
 
 def get_heat_loss_through_partition_for_heating(
@@ -1290,7 +1264,8 @@ def get_main_value(
 
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
         q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
-    theta_nac_c = get_non_occupant_room_temperature_for_cooling(region, floor_area, envelope_spec, system_spec)
+    theta_nac_c = get_non_occupant_room_temperature_for_cooling(
+        q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
     q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part,theta_ac_h, theta_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_nac_c)
