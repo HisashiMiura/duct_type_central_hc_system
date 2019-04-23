@@ -1353,6 +1353,7 @@ def get_main_value(
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(region, floor_area, envelope_spec, system_spec)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
 
+    # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
         theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct_i)
     theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(
