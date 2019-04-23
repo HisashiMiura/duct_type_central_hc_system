@@ -89,6 +89,8 @@ def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec)
     return region, floor_area, envelope_spec, system_spec
 
 
+# region graph
+
 # region convert function
 
 
@@ -116,9 +118,6 @@ def get_five_characteristics(v, name):
 
 
 # endregion
-
-
-# region graph
 
 
 def date_xs_range():
@@ -201,28 +200,5 @@ def get_latent_cooling_load(cn: int) -> np.ndarray:
     region, floor_area, envelope_spec, system_spec = get_spec(cn)
     return read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
 
-
-# endregion
-
-
-# region ducting
-
-def get_duct_ambient_air_temperature(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-
-def get_total_duct_length(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.calc_duct_length(floor_area.total)
-
-# endregion
-
-
-# region supply air volume
-
-def get_mechanical_ventilation(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_mechanical_ventilation(floor_area)
 
 # endregion

@@ -270,9 +270,16 @@ def get_heating_load(region: int, envelope_spec: envelope.Spec, floor_area: enve
     Returns:
         heating load, MJ/h (12 rooms * 8760 times)
     """
-    j, k = get_envelope_number(envelope_spec.insulation, envelope_spec.solar_gain)
-    referenced = np.array([get_L_dash_H_R_TSl_Qj_muH_j_k_d_t_i(
-        region=region, mode='全館連続', l=1, j=j, k=k, i=i, debug=debug) for i in np.arange(1, 13)])
+
+    if region == 8:
+        # Heating load is not defined in region 8.
+        # In case of region 8, the array(5 rooms * 8760 times) of value 0.0 as heating load is returned.
+        referenced = np.full((12, 8760), 0.0)
+    else:
+        j, k = get_envelope_number(envelope_spec.insulation, envelope_spec.solar_gain)
+        referenced = np.array([get_L_dash_H_R_TSl_Qj_muH_j_k_d_t_i(
+            region=region, mode='全館連続', l=1, j=j, k=k, i=i, debug=debug) for i in np.arange(1, 13)])
+
     r = get_size_factor(floor_area)
 
     return referenced * r
