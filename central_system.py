@@ -852,14 +852,14 @@ def get_maximum_output_for_cooling(
 
 
 def get_treated_untreated_heat_load_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        l_h: np.ndarray,
+        q_trs_prt_h: np.ndarray,
+        q_max_h: np.ndarray) -> np.ndarray:
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        l_h: heating load, MJ/h (12 rooms * 8760 times)
+        q_trs_prt_h: heat loss from the occupant room into the non occupant room through the partition, MJ/h (5 rooms * 8760 times)
+        q_max_h: maximum output for heating, MJ/h
     Returns:
         (a,b)
             a: treated heating load, MJ/h, (5 rooms * 8760 times)
@@ -867,16 +867,9 @@ def get_treated_untreated_heat_load_for_heating(
     """
 
     # heating load, MJ/h (5 rooms * 8760 times)
-    l_h = read_load.get_heating_load(region, envelope_spec, floor_area)[0:5]
-
-    # heat loss from the occupant room into the non occupant room through the partition, MJ/h (5 rooms * 8760 times)
-    q_trs_prt_h = get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # maximum output for heating, MJ/h
-    q_max_h = get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
+    l_h = l_h[0:5]
 
     # treated load, MJ/h
-    #    q_t_h = np.minimum(q_max_h, np.maximum(l_h + q_trs_prt_h, 0.0))
     q_t_h = np.clip(l_h + q_trs_prt_h, 0.0, q_max_h)
 
     # untreated load, MJ/h
@@ -1350,7 +1343,7 @@ def get_main_value(
     q_max_h = get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
 
-    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(region, floor_area, envelope_spec, system_spec)
+    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_trs_prt_h, q_max_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
