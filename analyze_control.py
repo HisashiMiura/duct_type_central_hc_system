@@ -86,7 +86,7 @@ def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec)
                                 supply_air_rtd_h=spec[7], supply_air_rtd_c=spec[8],
                                 is_duct_insulated=spec[9], vav_system=spec[10])
 
-    return region, floor_area, envelope_spec, system_spec
+    return region, floor_area, envelope_spec, system_spec, spec
 
 
 # region graph
@@ -177,14 +177,20 @@ def draw_sum_bar_graph(x_title, ys):
 
 
 def get_main_value(cn: int) -> dict:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
-    return cs.get_main_value(region, floor_area, envelope_spec, system_spec)
+    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
+    return cs.get_main_value(region=spec[0],
+                             a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4],
+                             insulation=spec[5], solar_gain=spec[6],
+                             default_heat_source_spec=True,
+                             supply_air_rtd_h=spec[7], supply_air_rtd_c=spec[8],
+                             is_duct_insulated=spec[9], vav_system=spec[10])
+
 
 # region heat load
 
 
 def get_heating_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
     if region == 8:
         return np.full((12, 8760), 0.0)
     else:
@@ -192,12 +198,12 @@ def get_heating_load(cn: int) -> np.ndarray:
 
 
 def get_sensible_cooling_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
     return read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)
 
 
 def get_latent_cooling_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec = get_spec(cn)
+    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
     return read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
 
 

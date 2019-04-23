@@ -8,6 +8,8 @@ import appendix
 from appendix import SystemSpec
 
 
+# region functions
+
 # region physical property
 
 def get_air_density() -> float:
@@ -1129,18 +1131,54 @@ def get_non_occupant_room_load(
 
     return (theta_ac_h - theta_nac_h) * np.sum(v_supply_h, axis=0) * c * rho * 10 ** (-6)
 
+# endregion
+
 
 def get_main_value(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec,
-        system_spec: SystemSpec):
+        region: int,
+        a_mr: float, a_or: float, a_a: float, r_env: float,
+        insulation: str, solar_gain: str,
+        default_heat_source_spec: bool,
+        supply_air_rtd_h: float, supply_air_rtd_c: float,
+        is_duct_insulated: bool, vav_system: bool,
+        cap_rtd_h: float =None, cap_rtd_c: float=None):
     """
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        region: region, 1-8
+        a_mr: main occupant floor area, m2
+        a_or: other occupant floor area, m2
+        a_a: total floor area, m2
+        r_env: ratio of the envelope total area to the total floor area, -
+        insulation: insulation level. specify the level as string following below:
+            's55': Showa 55 era level
+            'h4': Heisei 4 era level
+            'h11': Heisei 11 era level
+            'h11more': more than Heisei 11 era level
+        solar_gain: solar gain level. specify the level as string following below.
+            'small': small level
+            'middle': middle level
+            'large': large level
+        default_heat_source_spec: does use the default value for rated heating and cooling capacity ?
+        supply_air_rtd_h: rated supply air volume for heating, m3/h
+        supply_air_rtd_c: rated supply air volume for cooling, m3/h
+        is_duct_insulated: is the duct inside the insulated area or not
+        vav_system: is VAV system applied ?
+        cap_rtd_h: rated heating capacity, W
+        cap_rtd_c: rated cooling capacity, W
     """
+
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
+
+    # make envelope.Spec class
+    envelope_spec = envelope.Spec(insulation, solar_gain)
+
+    # set default value for heating and cooling capacity, W
+    if default_heat_source_spec:
+        cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, floor_area)
+
+    # make appendix.SystemSpec class
+    system_spec = SystemSpec(cap_rtd_h, cap_rtd_c, supply_air_rtd_h, supply_air_rtd_c, is_duct_insulated, vav_system)
 
     # air density, kg/m3
     rho = get_air_density()

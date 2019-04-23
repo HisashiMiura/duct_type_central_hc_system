@@ -26,10 +26,10 @@ class Spec:
                 'h4': Heisei 4 era level
                 'h11': Heisei 11 era level
                 'h11more': more than Heisei 11 era level
-        solar_gain: solar gain level. specify the level as string following below.
-            'small': small level
-            'middle': middle level
-            'large': large level
+            solar_gain: solar gain level. specify the level as string following below.
+                'small': small level
+                'middle': middle level
+                'large': large level
         """
         self.insulation = insulation
         self.solar_gain = solar_gain
