@@ -464,31 +464,20 @@ def get_heat_source_supply_air_volume_for_heating(
 
 
 def get_heat_source_supply_air_volume_for_cooling(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        q_dash_hs_c: np.ndarray,
+        q_hs_rtd_c: float,
+        v_hs_min_c: float,
+        v_hs_rtd_c: float) -> np.ndarray:
     """
     calculate the supply air volume for cooling
     Args:
-        region: region
-        floor_area: floor_area
-        envelope_spec: envelope spec
-        system_spec: system spec
+        q_dash_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
+        q_hs_rtd_c: rated cooling output, MJ/h
+        v_hs_min_c: minimum supply air volume, m3/h
+        v_hs_rtd_c: rated (maximum) supply air volume, m3/h
     Returns:
         supply air volume, m3/h (8760 times)
     """
-
-    # cooling output of the system for estimation of the supply air volume, MJ/h
-    q_dash_hs_c = get_cooling_output_for_supply_air_estimation(
-        region=region, floor_area=floor_area, envelope_spec=envelope_spec)
-
-    # rated cooling output, MJ/h
-    q_hs_rtd_c = get_rated_cooling_output(system_spec=system_spec)
-
-    # minimum supply air volume, m3/h
-    v_hs_min_c = get_minimum_air_volume(zone_floor_area=floor_area)[1]
-
-    # rated (maximum) supply air volume, m3/h
-    v_hs_rtd_c = system_spec.supply_air_rtd_c
 
     # get the supply air volume depending on the cooling output
     def f(q):
@@ -1218,9 +1207,10 @@ def get_main_value(
 
     # rated (maximum) supply air volume, m3/h
     v_hs_rtd_h = system_spec.supply_air_rtd_h
+    v_hs_rtd_c = system_spec.supply_air_rtd_c
 
     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
-    v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(region, floor_area, envelope_spec, system_spec)
+    v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
 
     # supply air volume, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
