@@ -7,22 +7,27 @@ import numpy as np
 
 @lru_cache()
 def read_csv(region: int):
-    """read conditions
+    """
+    read conditions
     cache the file
     Args:
         region: region 1-8
     Returns:
         data:
     """
+
     filename = 'climateData_' + str(region) + '.csv'
+
     path = os.path.join('climate_data', filename)
+
     return pd.read_csv(path, skiprows=1, nrows=24*365, names=(
         'date', 'hour', 'time', 'temperature', 'absolute_humidity', 'direct_solar', 'horizontal_sky_solar',
         'night_radiation', 'solar_altitude', 'solar_azimuth', 'blank'), encoding='shift_jis')
 
 
 def read_temperature(region: int) -> np.ndarray:
-    """read temperatures(8760)
+    """
+    read temperatures(8760)
     Args:
         region: region 1-8
     Returns:
@@ -35,7 +40,8 @@ def read_temperature(region: int) -> np.ndarray:
 
 
 def read_absolute_humidity(region: int) -> np.ndarray:
-    """read absolute humidity
+    """
+    read absolute humidity
     Args:
         region: region 1-8
     Returns:
@@ -48,7 +54,8 @@ def read_absolute_humidity(region: int) -> np.ndarray:
 
 
 def read_direct_solar(region: int) -> np.ndarray:
-    """read direct solar(8760)
+    """
+    read direct solar(8760)
     Args:
         region: region 1-8
     Returns:
@@ -61,7 +68,8 @@ def read_direct_solar(region: int) -> np.ndarray:
 
 
 def read_horizontal_sky_solar(region: int) -> np.ndarray:
-    """read horizontal sky solar(8760)
+    """
+    read horizontal sky solar(8760)
     Args:
         region: region 1-8
     Returns:
@@ -74,7 +82,8 @@ def read_horizontal_sky_solar(region: int) -> np.ndarray:
 
 
 def read_night_radiation(region: int) -> np.ndarray:
-    """read night radiation(8760)
+    """
+    read night radiation(8760)
     Args:
         region: region 1-8
     Returns:
@@ -87,7 +96,8 @@ def read_night_radiation(region: int) -> np.ndarray:
 
 
 def read_solar_altitude(region: int) -> np.ndarray:
-    """read night radiation(8760)
+    """
+    read solar altitude(8760)
     Args:
         region: region 1-8
     Returns:
@@ -100,7 +110,8 @@ def read_solar_altitude(region: int) -> np.ndarray:
 
 
 def read_solar_azimuth(region: int) -> np.ndarray:
-    """read night radiation(8760)
+    """
+    read solar azimuth(8760)
     Args:
         region: region 1-8
     Returns:
@@ -113,7 +124,8 @@ def read_solar_azimuth(region: int) -> np.ndarray:
 
 
 def get_horizontal_solar(region: int) -> np.ndarray:
-    """calculate horizontal solar radiation
+    """
+    calculate horizontal solar radiation
     Args:
         region: region
     Returns:
@@ -142,7 +154,8 @@ def get_horizontal_solar(region: int) -> np.ndarray:
 
 
 def get_sat_temperature(region: int) -> np.ndarray:
-    """calculate SAT temperature
+    """
+    calculate SAT temperature
     Args:
         region: region 1-8
     Returns:
