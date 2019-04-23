@@ -728,55 +728,35 @@ def get_heat_gain_through_partition_for_cooling(
 
 
 def get_maximum_output_for_heating(
-        region: int, floor_area: envelope.FloorArea,
-        envelope_spec: envelope.Spec, system_spec: SystemSpec) -> np.ndarray:
+        theta_hs_in_h: np.ndarray,
+        q_hs_max_h: np.ndarray,
+        c: float,
+        rho: float,
+        v_supply_h: np.ndarray,
+        theta_ac_h: np.ndarray,
+        psi: float,
+        l_duct: np.ndarray,
+        theta_sur_h: np.ndarray) -> np.ndarray:
     """
     calculate maximum output for heating
     Args:
-        region: region
-        floor_area: floor area class
-        envelope_spec: envelope spec
-        system_spec: system spec
+        theta_hs_in_h: inlet air temperature of the heat source for heating, degree C (8760 times)
+        q_hs_max_h: maximum heating output, MJ/h (8760 times)
+        c: specific heat of air, J/kgK
+        rho: air density, kg/m3
+        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
+        theta_ac_h: air conditioned temperature for heating, degree C
+        psi: linear heat loss coefficient of the duct, W/mK
+        l_duct: duct length, m, (5 rooms)
+        theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
     Returns:
         maximum output for heating, MJ/h, (5 rooms * 8760 times)
     """
 
-    # inlet air temperature of the heat source for heating, degree C (8760 times)
-    theta_hs_in_h = get_non_occupant_room_temperature_for_heating(region, floor_area, envelope_spec, system_spec)
-
-    # maximum heating output, MJ/h (8760 times)
-    q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
-
-    # specific heat of air, J/kgK
-    c = get_specific_heat()
-
-    # air density, kg/m3
-    rho = get_air_density()
-
-    # supply air volume for heating, m3/h (5 rooms * 8760 times)
-    v_supply_h = get_each_supply_air_volume_for_heating(region, floor_area, envelope_spec, system_spec)
-
     # maximum outlet air temperature of heat source, degree C, (8760 times)
     theta_hs_out_max_h = theta_hs_in_h + q_hs_max_h / (c * rho * np.sum(v_supply_h, axis=0)) * 10 ** 6
 
-    # air conditioned temperature for heating, degree C
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-
-    # linear heat loss coefficient of the duct, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
-
-    # duct length, m
-    l_duct = np.array(calc_duct_length(floor_area.total)).reshape(1, 5).T
-
-    # ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    theta_sur_h, theta_sur_c = calc_duct_ambient_air_temperature(floor_area.total, region, system_spec)
-
-    #    return ((theta_hs_out_max_h - theta_ac_h) * c * rho * v_supply_h
-    #            - psi * l_duct * (theta_hs_out_max_h - theta_sur_h) * 3600) * 10**(-6)
-
-    # return (theta_sur_h - theta_ac_h
-    #         + (theta_hs_out_max_h - theta_sur_h) / np.exp(psi * l_duct * 3600 / (c * rho * v_supply_h)))\
-    #     * c * rho * v_supply_h * 10**(-6)
+    l_duct = np.array(l_duct).reshape(1,5).T
 
     return get_load_from_upside_temperature(
         t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_supply_h, t_ac=theta_ac_h, psi=psi, length=l_duct)
@@ -1337,7 +1317,15 @@ def get_main_value(
     q_trs_prt_h = get_heat_loss_through_partition_for_heating(region, floor_area, envelope_spec, system_spec)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(region, floor_area, envelope_spec, system_spec)
 
-    q_max_h = get_maximum_output_for_heating(region, floor_area, envelope_spec, system_spec)
+    # maximum heating output, MJ/h (8760 times)
+    q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
+
+    # inlet air temperature of heat source,degree C, (8760 times)
+    theta_hs_in_h = theta_nac_h
+    theta_hs_in_c = theta_nac_c
+
+    q_max_h = get_maximum_output_for_heating(
+        theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct_i, theta_sur_h)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(region, floor_area, envelope_spec, system_spec)
 
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_trs_prt_h, q_max_h)
@@ -1353,10 +1341,6 @@ def get_main_value(
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_duct_up_h)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_duct_up_c)
-
-    # inlet air temperature of heat source,degree C, (8760 times)
-    theta_hs_in_h = theta_nac_h
-    theta_hs_in_c = theta_nac_c
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_hs_in_h, c, rho, v_supply_h)
