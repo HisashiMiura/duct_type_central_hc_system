@@ -11,7 +11,7 @@ if __name__ == '__main__':
     js = open('input.json', 'r', encoding='utf-8')
     args = json.load(js)
 
-    print("readed args:")
+    print("read args:")
     print(args)
 
     d = cs.get_main_value(**args)
