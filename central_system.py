@@ -1186,6 +1186,7 @@ def get_main_value(
     # air specific heat, J/kg K
     c = get_specific_heat()
 
+    # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
 
     # heating load, MJ/h
