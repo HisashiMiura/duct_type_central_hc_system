@@ -10,7 +10,9 @@ from appendix import SystemSpec
 
 # region functions
 
+
 # region physical property
+
 
 def get_air_density() -> float:
     """
@@ -39,6 +41,45 @@ def get_duct_linear_heat_loss_coefficient() -> float:
     return 0.49
 
 
+# endregion
+
+
+def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
+        -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    get heating load, and sensible and latent cooling load
+    Args:
+        region: region
+        insulation: insulation level
+        solar_gain: solar gain level
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_a: total floor area, m2
+        r_env: ratio of total envelope area to total floor area
+    Returns:
+        heating load, MJ/h (12 rooms * 8760 times)
+        sensible cooling load, MJ/h (12 rooms * 8760 times)
+        latent cooling load, MJ/h (12 rooms * 8760 times)
+    """
+
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
+
+    # make envelope.Spec class
+    envelope_spec = envelope.Spec(insulation, solar_gain)
+
+    # heating load, MJ/h
+    l_h = read_load.get_heating_load(region, envelope_spec, floor_area)
+
+    # sensible cooling load, MJ/h
+    l_cs = read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)
+
+    # latent cooling load, MJ/h
+    l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
+
+    return l_h, l_cs, l_cl
+
+
 def get_heat_loss_coefficient_of_partition() -> float:
     """
     return the heat loss coefficient of the partition
@@ -46,9 +87,6 @@ def get_heat_loss_coefficient_of_partition() -> float:
         heat loss coefficient of the partition, W/m2K
     """
     return 1 / 0.46
-
-
-# endregion
 
 
 # region duct length
@@ -1189,10 +1227,8 @@ def get_main_value(
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
 
-    # heating load, MJ/h
-    l_h = read_load.get_heating_load(region, envelope_spec, floor_area)
-    l_cs = read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)
-    l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
+    # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
+    l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
 
     # duct length in the standard house, m, ((5 rooms), (5 rooms), (5 rooms))
     l_duct_in_r, l_duct_ex_r, l_duct_in_total = get_standard_house_duct_length()

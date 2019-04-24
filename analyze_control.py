@@ -185,26 +185,3 @@ def get_main_value(cn: int) -> dict:
                              supply_air_rtd_h=spec[7], supply_air_rtd_c=spec[8],
                              is_duct_insulated=spec[9], vav_system=spec[10])
 
-
-# region heat load
-
-
-def get_heating_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
-    if region == 8:
-        return np.full((12, 8760), 0.0)
-    else:
-        return read_load.get_heating_load(region, envelope_spec, floor_area)
-
-
-def get_sensible_cooling_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
-    return read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)
-
-
-def get_latent_cooling_load(cn: int) -> np.ndarray:
-    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
-    return read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
-
-
-# endregion
