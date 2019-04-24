@@ -1224,11 +1224,11 @@ def get_main_value(
     # air specific heat, J/kg K
     c = get_specific_heat()
 
-    # duct liner heat loss coefficient, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
-
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
+
+    # duct liner heat loss coefficient, W/mK
+    psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length in the standard house, m, ((5 rooms), (5 rooms), (5 rooms))
     l_duct_in_r, l_duct_ex_r, l_duct_in_total = get_standard_house_duct_length()
