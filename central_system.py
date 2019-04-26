@@ -32,16 +32,10 @@ def get_specific_heat() -> float:
     return 1006.0
 
 
-def get_duct_linear_heat_loss_coefficient() -> float:
-    """
-    get the liner heat loss coefficient (W/mK) of the duct
-    Returns:
-          liner heat loss coefficient, W/mK
-    """
-    return 0.49
-
-
 # endregion
+
+
+# region load
 
 
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
@@ -80,16 +74,44 @@ def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or:
     return l_h, l_cs, l_cl
 
 
-def get_heat_loss_coefficient_of_partition() -> float:
+# endregion
+
+
+# region air conditioned temperature
+
+
+def get_air_conditioned_temperature_for_heating() -> float:
     """
-    return the heat loss coefficient of the partition
+    get air conditioned temperature for heating
     Returns:
-        heat loss coefficient of the partition, W/m2K
+        temperature, degree C
     """
-    return 1 / 0.46
+    return 20.0
 
 
-# region duct length
+def get_air_conditioned_temperature_for_cooling() -> float:
+    """
+    get air conditioned temperature for cooling
+    Returns:
+        temperature, degree c
+    """
+    return 27.0
+
+
+# endregion
+
+
+# region duct
+
+
+def get_duct_linear_heat_loss_coefficient() -> float:
+    """
+    get the liner heat loss coefficient (W/mK) of the duct
+    Returns:
+          liner heat loss coefficient, W/mK
+    """
+    return 0.49
+
 
 def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -130,26 +152,13 @@ def get_duct_length(l_duct_r: np.ndarray, a_a: float) -> np.ndarray:
 # endregion
 
 
-# region air conditioned temperature
-
-def get_air_conditioned_temperature_for_heating() -> float:
+def get_heat_loss_coefficient_of_partition() -> float:
     """
-    get air conditioned temperature for heating
+    return the heat loss coefficient of the partition
     Returns:
-        temperature, degree C
+        heat loss coefficient of the partition, W/m2K
     """
-    return 20.0
-
-
-def get_air_conditioned_temperature_for_cooling() -> float:
-    """
-    get air conditioned temperature for cooling
-    Returns:
-        temperature, degree c
-    """
-    return 27.0
-
-# endregion
+    return 1 / 0.46
 
 
 # region attic temperature
@@ -1223,12 +1232,12 @@ def get_main_value(
     # duct length for each room, m, (5 rooms)
     l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=a_a)
 
+    # SAT temperature, degree C, (8760 times)
+    theta_sat = read_conditions.get_sat_temperature(region)
+
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
     theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
-
-    # SAT temperature, degree C, (8760 times)
-    theta_sat = read_conditions.get_sat_temperature(region)
 
     # attic temperature, degree C, (8760 times)
     theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h, 1.0)
