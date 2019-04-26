@@ -1221,7 +1221,7 @@ def get_main_value(
     l_duct_in_r, l_duct_ex_r, l_duct_r = get_standard_house_duct_length()
 
     # duct length for each room, m, (5 rooms)
-    l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=floor_area.total)
+    l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=a_a)
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
