@@ -245,51 +245,6 @@ def get_duct_ambient_air_temperature_for_cooling(
         return (l_in * theta_ac_c + l_ex * theta_attic) / (l_in + l_ex)
 
 
-def calc_duct_ambient_air_temperature(total_floor_area: float, region: int, spec: SystemSpec) \
-        -> (np.ndarray, np.ndarray):
-    """get duct ambient air temperature
-    Args:
-        total_floor_area: total floor area, m2
-        region: region 1-8
-        spec: central heating and cooling system spec
-    Returns:
-        ambient air temperature for heating season, ambient air temperature for cooling season, degree C
-            temperature is the list (5 rooms * 8760 times)
-            8760 is each time in the year.
-            5 is the ducts connecting to each 5 rooms heated or cooled.
-    """
-
-    # air conditioned temperature, degree C
-    t_ac_h = get_air_conditioned_temperature_for_heating()
-    t_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    def f(l_in: float, l_ex: float, t_ac, t_attic):
-        return (l_in * np.full(8760, t_ac) + l_ex * t_attic) / (l_in + l_ex)
-
-    if spec.is_duct_insulated:
-        # If the duct insulated, the duct ambient temperatures are equals to the air conditioned temperatures.
-        return np.full((5, 8760), t_ac_h), np.full((5, 8760), t_ac_c)
-    else:
-        # get the lengths of the ducts, m connected to the each 5 rooms
-        internal_lengths, external_lengths, total_lengths = get_standard_house_duct_length()
-        # SAT temperatures, degree C, (8760 times)
-        sat_temperature = read_conditions.get_sat_temperature(region)
-        # air conditioned temperature, degree C, (8760 times)
-        theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
-        theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
-        # attic temperatures(8760), degree C
-        t_attic_h = get_attic_temperature_for_heating(sat_temperature, theta_ac_h, 1.0)
-        t_attic_c = get_attic_temperature_for_cooling(sat_temperature, theta_ac_c, 1.0)
-
-        # If the duct NOT insulated, the duct ambient temperatures are
-        # between the attic temperatures and the air conditioned temperatures.
-        heating = np.array([f(internal_length, external_length, t_ac_h, t_attic_h)
-                            for (internal_length, external_length) in zip(internal_lengths, external_lengths)])
-        cooling = np.array([f(internal_length, external_length, t_ac_c, t_attic_c)
-                            for (internal_length, external_length) in zip(internal_lengths, external_lengths)])
-        return heating, cooling
-
-
 def get_supply_air_volume_valance(zone_floor_area: envelope.FloorArea) -> np.ndarray:
     """
     calculate supply air volume valance
