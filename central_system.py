@@ -11,7 +11,37 @@ from appendix import SystemSpec
 # region functions
 
 
-# region physical property
+def get_envelope_spec(region: int, insulation: str, solar_gain: str) -> (float, float, float):
+    """
+    get Q value, mu_h value, mu_c value
+    Args:
+        region: region, 1-8
+        insulation: insulation level. specify the level as string following below:
+            's55': Showa 55 era level
+            'h4': Heisei 4 era level
+            'h11': Heisei 11 era level
+            'h11more': more than Heisei 11 era level
+        solar_gain: solar gain level. specify the level as string following below.
+            'small': small level
+            'middle': middle level
+            'large': large level
+    Returns:
+        Q value, W/m2K
+        mu_h value, (W/m2)/(W/m2)
+        mu_c value, (W/m2)/(W/m2)
+    """
+
+    # make envelope.Spec class
+    envelope_spec = envelope.Spec(insulation, solar_gain)
+
+    # Q value, W/m2K
+    q = envelope_spec.get_q_value(region=region)
+
+    # mu value, (W/m2)/(W/m2)
+    mu_h = envelope_spec.get_mu_h_value(region=region)
+    mu_c = envelope_spec.get_mu_c_value(region=region)
+
+    return q, mu_h, mu_c
 
 
 def get_air_density() -> float:
@@ -30,12 +60,6 @@ def get_specific_heat() -> float:
         specific heat of air, J/kgK
     """
     return 1006.0
-
-
-# endregion
-
-
-# region load
 
 
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
@@ -74,34 +98,24 @@ def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or:
     return l_h, l_cs, l_cl
 
 
-# endregion
-
-
-# region air conditioned temperature
-
-
-def get_air_conditioned_temperature_for_heating() -> float:
+def get_air_conditioned_temperature_for_heating() -> np.ndarray:
     """
     get air conditioned temperature for heating
     Returns:
-        temperature, degree C
+        air conditioned temperature for heating, degree C, (8760 times)
     """
-    return 20.0
+
+    return np.full(8760, 20.0)
 
 
-def get_air_conditioned_temperature_for_cooling() -> float:
+def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
     """
     get air conditioned temperature for cooling
     Returns:
-        temperature, degree c
+        get air conditioned temperature for cooling, degree C, (8760 times)
     """
-    return 27.0
 
-
-# endregion
-
-
-# region duct
+    return np.full(8760, 27.0)
 
 
 def get_duct_linear_heat_loss_coefficient() -> float:
@@ -149,7 +163,40 @@ def get_duct_length(l_duct_r: np.ndarray, a_a: float) -> np.ndarray:
     return l_duct_r * np.sqrt(a_a / a_a_r)
 
 
-# endregion
+def get_sat_temperature(region: int) -> np.ndarray:
+    """
+    get SAT temperature
+    Args:
+        region: region, 1-8
+    Returns:
+        SAT temperature, degree C, (8760 times)
+    """
+
+    return read_conditions.get_sat_temperature(region)
+
+
+def get_outdoor_temperature(region: int) -> np.ndarray:
+    """
+    get outdoor temperature
+    Args:
+        region: region, 1-8
+    Returns:
+        outdoor temperature, degree C, (8760 times)
+    """
+
+    return read_conditions.read_temperature(region)
+
+
+def get_horizontal_solar(region: int) -> np.ndarray:
+    """
+    get horizontal solar radiation
+    Args:
+        region: region, 1-8
+    Returns:
+        horizontal solar radiation, W/m2, (8760 times)
+    """
+
+    return read_conditions.get_horizontal_solar(region)
 
 
 def get_heat_loss_coefficient_of_partition() -> float:
@@ -160,8 +207,6 @@ def get_heat_loss_coefficient_of_partition() -> float:
     """
     return 1 / 0.46
 
-
-# region attic temperature
 
 def get_attic_temperature_for_heating(theta_sat: np.ndarray, theta_ac_h: np.ndarray, h: float) -> np.ndarray:
     """
@@ -187,8 +232,6 @@ def get_attic_temperature_for_cooling(theta_sat: np.ndarray, theta_ac_c: np.ndar
         attic temperature for cooling, degree C, (8760 times)
     """
     return theta_sat * h + theta_ac_c * (1 - h)
-
-# endregion
 
 
 def get_duct_ambient_air_temperature_for_heating(
@@ -1169,14 +1212,33 @@ def get_main_value(
     # make appendix.SystemSpec class
     system_spec = SystemSpec(cap_rtd_h, cap_rtd_c, supply_air_rtd_h, supply_air_rtd_c, is_duct_insulated, vav_system)
 
+    # calculation start
+
+    # Q value, W/m2K
+    # mu_h value, mu_c value (W/m2)/(W/m2)
+    q, mu_h, mu_c = get_envelope_spec(region, insulation, solar_gain)
+
     # air density, kg/m3
     rho = get_air_density()
 
     # air specific heat, J/kg K
     c = get_specific_heat()
 
+    # outdoor temperature, degree C, (8760 times)
+    theta_ex = get_outdoor_temperature(region=region)
+
+    # horizontal solar radiation, W/m2K
+    j = get_horizontal_solar(region)
+
+    # SAT temperature, degree C, (8760 times)
+    theta_sat = get_sat_temperature(region)
+
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
+
+    # air conditioned temperature, degree C, (8760 times)
+    theta_ac_h = get_air_conditioned_temperature_for_heating()
+    theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
@@ -1186,13 +1248,6 @@ def get_main_value(
 
     # duct length for each room, m, (5 rooms)
     l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=a_a)
-
-    # SAT temperature, degree C, (8760 times)
-    theta_sat = read_conditions.get_sat_temperature(region)
-
-    # air conditioned temperature, degree C, (8760 times)
-    theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
-    theta_ac_c = np.full(8760, get_air_conditioned_temperature_for_cooling())
 
     # attic temperature, degree C, (8760 times)
     theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h, 1.0)
@@ -1215,24 +1270,11 @@ def get_main_value(
     q_hs_rtd_h = get_rated_heating_output(system_spec)
     q_hs_rtd_c = get_rated_cooling_output(system_spec)
 
-    # Q value, W/m2K
-    q_value = envelope_spec.get_q_value(region=region)
-
-    # outdoor temperature, degree C
-    theta_ex = read_conditions.read_temperature(region=region)
-
-    # mu value, (W/m2)/(W/m2)
-    mu_h = envelope_spec.get_mu_h_value(region=region)
-    mu_c = envelope_spec.get_mu_c_value(region=region)
-
-    # horizontal solar radiation, W/m2K
-    j = read_conditions.get_horizontal_solar(region=region)
-
     # floor area of non occupant room, m2
     a_nr = floor_area.nor
 
-    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q_value, theta_ac_h, theta_ex, mu_h, j, a_nr)
-    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q_value, theta_ac_c, theta_ex, mu_c, j, a_nr)
+    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
     # rated (maximum) supply air volume, m3/h
     v_hs_rtd_h = system_spec.supply_air_rtd_h
@@ -1249,9 +1291,9 @@ def get_main_value(
     u_prt = get_heat_loss_coefficient_of_partition()
 
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
-        q_value, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
+        q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
     theta_nac_c = get_non_occupant_room_temperature_for_cooling(
-        q_value, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
+        q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
     q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_nac_c)
