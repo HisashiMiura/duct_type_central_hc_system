@@ -94,6 +94,10 @@ def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec)
 # region convert function
 
 
+def get_raw(v, name):
+    return [(v, name)]
+
+
 def get_integration(v, name):
     return [(np.sum(v.reshape(365, 24).T, axis=0), name)]
 
@@ -120,18 +124,21 @@ def get_five_characteristics(v, name):
 # endregion
 
 
-def date_xs_range():
+def date_xs_range(op):
 
     start = datetime.strptime('2018-01-01', '%Y-%m-%d')
 
-    return np.array([start + timedelta(n) for n in range(365)])
+    if op == 'raw':
+        return np.array([start + timedelta(hours=n) for n in range(8760)])
+    else:
+        return np.array([start + timedelta(n) for n in range(365)])
 
 
-def draw_graph(y_title, ys, op: str ='ave'):
+def draw_graph(y_title, ys, op: str ='ave', display_date: str = 'year'):
 
     plt.style.use('seaborn-whitegrid')
 
-    xs = date_xs_range()
+    xs = date_xs_range(op)
 
     fig = plt.figure(figsize=(15, 4))
 
@@ -142,6 +149,7 @@ def draw_graph(y_title, ys, op: str ='ave'):
         'itg': get_integration,
         'a3': get_three_characteristics,
         'a5': get_five_characteristics,
+        'raw': get_raw,
     }[op]
 
     for y in ys:
@@ -149,9 +157,18 @@ def draw_graph(y_title, ys, op: str ='ave'):
         for ysd in ysds:
             ax.plot(xs, ysd[0], label=ysd[1])
 
-    ax.xaxis.set_major_locator(mdates.MonthLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    ax.set_xlim(datetime.strptime('2018-01-01', '%Y-%m-%d'), datetime.strptime('2019-01-01', '%Y-%m-%d'))
+    if display_date == 'year':
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+    else:
+        ax.xaxis.set_major_locator(mdates.HourLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
+    if display_date == 'year':
+        ax.set_xlim(datetime.strptime('2018-01-01', '%Y-%m-%d'), datetime.strptime('2019-01-01', '%Y-%m-%d'))
+    else:
+        start_date = datetime.strptime('2018/' + display_date, '%Y/%m/%d')
+        end_date = start_date + timedelta(days=1)
+        ax.set_xlim(start_date, end_date)
     ax.set_ylabel(y_title)
     plt.legend()
     plt.show()
