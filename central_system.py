@@ -112,16 +112,17 @@ def get_standard_house_duct_length() -> (np.ndarray, np.ndarray, np.ndarray):
     return internal, external, total
 
 
-def get_duct_length(l_duct_r_i: np.ndarray, a_a: float, a_a_r: float) -> np.ndarray:
+def get_duct_length(l_duct_r_i: np.ndarray, a_a: float) -> np.ndarray:
     """
     calculate duct length for each room in the estimated house
     Args:
         l_duct_r_i: duct length for each room in the standard house, m, (5 rooms)
         a_a: total floor area of the estimated house, m2
-        a_a_r: total floor area of the standard house, m2
     Returns:
         duct length for each room in estimated house, m, (5 rooms)
     """
+
+    a_a_r = 120.08
 
     return l_duct_r_i * np.sqrt(a_a / a_a_r)
 
@@ -138,7 +139,7 @@ def calc_duct_length(a_a: float) -> np.ndarray:
     # duct length for each room in the standard house, m ((5 rooms), (5 rooms), (5 rooms))
     internal, external, total = get_standard_house_duct_length()
 
-    return get_duct_length(l_duct_r_i=total, a_a=a_a, a_a_r=120.08)
+    return get_duct_length(l_duct_r_i=total, a_a=a_a)
 
 # endregion
 
