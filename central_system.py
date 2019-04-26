@@ -1221,7 +1221,7 @@ def get_main_value(
     l_duct_in_r, l_duct_ex_r, l_duct_r = get_standard_house_duct_length()
 
     # duct length for each room, m, (5 rooms)
-    l_duct_i = get_duct_length(l_duct_r=l_duct_r, a_a=floor_area.total)
+    l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=floor_area.total)
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
@@ -1302,10 +1302,10 @@ def get_main_value(
     theta_hs_in_c = theta_nac_c
 
     q_max_h = get_maximum_output_for_heating(
-        theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct_i, theta_sur_h)
+        theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(
         theta_hs_in_c, l_cs, l_cl, q_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
-        l_duct_i, theta_sur_c)
+        l_duct, theta_sur_c)
 
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_trs_prt_h, q_max_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(
@@ -1313,9 +1313,9 @@ def get_main_value(
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
-        theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct_i)
+        theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct)
     theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(
-        theta_sur_c, theta_ac_c, q_t_cs, v_supply_c, c, rho, psi, l_duct_i)
+        theta_sur_c, theta_ac_c, q_t_cs, v_supply_c, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_duct_up_h)
@@ -1326,10 +1326,10 @@ def get_main_value(
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_hs_in_c, theta_hs_out_c, c, rho, v_supply_c, l_cl)
 
     # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
-    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct_i)
+    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct_i)
+    q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
     l_nor = get_non_occupant_room_load(theta_nac_h, theta_ac_h, v_supply_h, c, rho)
 
@@ -1337,11 +1337,11 @@ def get_main_value(
         'constant_value': {
             'air_density': rho,  # kg/m3
             'air_specific_heat': c,  # J/kgK
-            'duct_length_room1': l_duct_i[0],  # m
-            'duct_length_room2': l_duct_i[1],  # m
-            'duct_length_room3': l_duct_i[2],  # m
-            'duct_length_room4': l_duct_i[3],  # m
-            'duct_length_room5': l_duct_i[4],  # m
+            'duct_length_room1': l_duct[0],  # m
+            'duct_length_room2': l_duct[1],  # m
+            'duct_length_room3': l_duct[2],  # m
+            'duct_length_room4': l_duct[3],  # m
+            'duct_length_room5': l_duct[4],  # m
             'supply_air_valance_room1': r_supply_des[0],
             'supply_air_valance_room2': r_supply_des[1],
             'supply_air_valance_room3': r_supply_des[2],
