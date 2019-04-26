@@ -1202,9 +1202,6 @@ def get_main_value(
     # make envelope.FloorArea class
     floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
 
-    # make envelope.Spec class
-    envelope_spec = envelope.Spec(insulation, solar_gain)
-
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
         cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, floor_area)
