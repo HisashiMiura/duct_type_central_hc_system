@@ -127,20 +127,6 @@ def get_duct_length(l_duct_r_i: np.ndarray, a_a: float) -> np.ndarray:
     return l_duct_r_i * np.sqrt(a_a / a_a_r)
 
 
-def calc_duct_length(a_a: float) -> np.ndarray:
-    """
-    calculate total duct length for each room in the estimated house
-    Args:
-        a_a: total floor area, m2
-    Returns
-        total duct length for each room in the estimated house, m (5 rooms)
-    """
-
-    # duct length for each room in the standard house, m ((5 rooms), (5 rooms), (5 rooms))
-    internal, external, total = get_standard_house_duct_length()
-
-    return get_duct_length(l_duct_r_i=total, a_a=a_a)
-
 # endregion
 
 
@@ -1235,7 +1221,7 @@ def get_main_value(
     l_duct_in_r, l_duct_ex_r, l_duct_in_total = get_standard_house_duct_length()
 
     # duct length for each room, m, (5 rooms)
-    l_duct_i = calc_duct_length(a_a=floor_area.total)
+    l_duct_i = get_duct_length(l_duct_r_i=l_duct_in_total, a_a=floor_area.total)
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = np.full(8760, get_air_conditioned_temperature_for_heating())
