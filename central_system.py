@@ -11,6 +11,35 @@ from appendix import SystemSpec
 # region functions
 
 
+def get_referenced_floor_area() -> np.ndarray:
+    """
+    get the referenced floor area of 12 rooms
+    Returns:
+        the referenced floor area, m2, (12 rooms)
+    """
+
+    return envelope.get_referenced_floor_area()
+
+
+def get_floor_area(a_mr: float, a_or: float, a_a: float, r_env: float) -> np.ndarray:
+    """
+    calculate the floor area of the evaluated house
+    Args:
+        a_mr: main occupant floor area, m2
+        a_or: other occupant floor area, m2
+        a_a: total floor area, m2
+        r_env: ratio of the envelope total area to the total floor area, -
+    Returns:
+        floor area of the evaluated house, m2, (12 rooms)
+    """
+
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
+
+    # floor area of the evaluated house, m2 (12 rooms)
+    return envelope.get_hc_floor_areas(floor_area)
+
+
 def get_envelope_spec(region: int, insulation: str, solar_gain: str) -> (float, float, float):
     """
     get Q value, mu_h value, mu_c value
@@ -1211,6 +1240,12 @@ def get_main_value(
 
     # calculation start
 
+    # referenced floor area, m2, (12 rooms)
+    a_hcz_r = get_referenced_floor_area()
+
+    # floor area, m2, (12 rooms)
+    a_hcz = get_floor_area(a_mr, a_or, a_a, r_env)
+
     # Q value, W/m2K
     # mu_h value, mu_c value (W/m2)/(W/m2)
     q, mu_h, mu_c = get_envelope_spec(region, insulation, solar_gain)
@@ -1256,8 +1291,6 @@ def get_main_value(
     theta_sur_c = get_duct_ambient_air_temperature_for_cooling(
         system_spec.is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic_c)
 
-    r_supply_des = get_supply_air_volume_valance(floor_area)
-
     v_vent = get_mechanical_ventilation(floor_area)
 
     v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
@@ -1279,6 +1312,8 @@ def get_main_value(
 
     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
     v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
+
+    r_supply_des = get_supply_air_volume_valance(floor_area)
 
     # supply air volume, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
