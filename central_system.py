@@ -1326,6 +1326,7 @@ def get_main_value(
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
+    # minimum supply air volume of the system for heating and cooling
     v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
 
     q_hs_rtd_h = get_rated_heating_output(system_spec)
