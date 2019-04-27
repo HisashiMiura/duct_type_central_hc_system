@@ -1270,6 +1270,9 @@ def get_main_value(
     # floor area, m2, (12 rooms)
     a_hcz = get_floor_area(a_mr, a_or, a_a, r_env)
 
+    # the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
+    a_part = get_partition_area(floor_area)
+
     # Q value, W/m2K
     # mu_h value, mu_c value (W/m2)/(W/m2)
     q, mu_h, mu_c = get_envelope_spec(region, insulation, solar_gain)
@@ -1319,8 +1322,6 @@ def get_main_value(
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
     v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
-
-    a_part = get_partition_area(floor_area)
 
     q_hs_rtd_h = get_rated_heating_output(system_spec)
     q_hs_rtd_c = get_rated_cooling_output(system_spec)
