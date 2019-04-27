@@ -11,6 +11,24 @@ from appendix import SystemSpec
 # region functions
 
 
+def get_non_occupant_room_floor_area(a_mr: float, a_or: float, a_a: float, r_env: float) -> float:
+    """
+    calculate the non occupant room floor area
+    Args:
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_a: total floor area, m2
+        r_env: the ratio of the total envelope area to the total floor area
+    Returns:
+        non occupant room floor area, m2
+    """
+
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
+
+    return floor_area.nor
+
+
 def get_referenced_floor_area() -> np.ndarray:
     """
     get the referenced floor area of 12 rooms
@@ -1244,7 +1262,7 @@ def get_main_value(
     # calculation start
 
     # floor area of non occupant room, m2
-    a_nr = floor_area.nor
+    a_nr = get_non_occupant_room_floor_area(a_mr, a_or, a_a, r_env)
 
     # referenced floor area, m2, (12 rooms)
     a_hcz_r = get_referenced_floor_area()
