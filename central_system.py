@@ -391,22 +391,24 @@ def get_minimum_air_volume(v_vent: np.ndarray) -> (float, float):
     return htg, clg
 
 
-def get_partition_area(floor_area: envelope.FloorArea):
+def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray:
     """
     calculate the areas of the partition
     Args:
-        floor_area: floor area of 3 zones, m2
+        a_hcz: the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_nr: non occupant room floor area, m2
+        r_env: ratio of the envelope total area to the total floor area, -
     Returns:
         the areas of the partitions, m2
     """
-    # floor area of each 12 zones, m2
-    a_hcz = envelope.get_hc_floor_areas(floor_area=floor_area)
 
     # calculate the partition area between main occupant room and non occupant room, m2
-    a_part_mr = a_hcz[0:1] * floor_area.r_env * floor_area.nor / (floor_area.oor + floor_area.nor)
+    a_part_mr = a_hcz[0:1] * r_env * a_nr / (a_or + a_nr)
 
     # calculate the partition areas between 4 other occupant rooms and non occupant room, m2
-    a_part_or = a_hcz[1:5] * floor_area.r_env * floor_area.nor / (floor_area.mor + floor_area.nor)
+    a_part_or = a_hcz[1:5] * r_env * a_nr / (a_mr + a_nr)
 
     # concatenate
     return np.concatenate((a_part_mr, a_part_or))
@@ -1271,7 +1273,7 @@ def get_main_value(
     a_hcz = get_floor_area(a_mr, a_or, a_a, r_env)
 
     # the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
-    a_part = get_partition_area(floor_area)
+    a_part = get_partition_area(a_hcz, a_mr, a_or, a_nr, r_env)
 
     # Q value, W/m2K
     # mu_h value, mu_c value (W/m2)/(W/m2)
