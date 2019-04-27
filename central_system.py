@@ -1275,6 +1275,9 @@ def get_main_value(
     # the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
     a_part = get_partition_area(a_hcz, a_mr, a_or, a_nr, r_env)
 
+    # heat loss coefficient of the partition wall, W/m2K
+    u_prt = get_heat_loss_coefficient_of_partition()
+
     # Q value, W/m2K
     # mu_h value, mu_c value (W/m2)/(W/m2)
     q, mu_h, mu_c = get_envelope_spec(region, insulation, solar_gain)
@@ -1343,9 +1346,6 @@ def get_main_value(
     # supply air volume, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
-
-    # heat loss coefficient of the partition wall, W/m2K
-    u_prt = get_heat_loss_coefficient_of_partition()
 
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
