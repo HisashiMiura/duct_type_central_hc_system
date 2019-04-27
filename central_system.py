@@ -1243,6 +1243,9 @@ def get_main_value(
 
     # calculation start
 
+    # floor area of non occupant room, m2
+    a_nr = floor_area.nor
+
     # referenced floor area, m2, (12 rooms)
     a_hcz_r = get_referenced_floor_area()
 
@@ -1303,9 +1306,6 @@ def get_main_value(
 
     q_hs_rtd_h = get_rated_heating_output(system_spec)
     q_hs_rtd_c = get_rated_cooling_output(system_spec)
-
-    # floor area of non occupant room, m2
-    a_nr = floor_area.nor
 
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
