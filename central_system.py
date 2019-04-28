@@ -11,6 +11,19 @@ from appendix import SystemSpec
 # region functions
 
 
+def get_rated_capacity(region: float, a_a: float) -> (float, float):
+    """
+    calculate rated heating and cooling capacity of heat source
+    Args:
+        region: region, 1-8
+        a_a: total floor area
+    Returns:
+        rated heating capacity, W
+        rated cooling capacity, W
+    """
+    return appendix.get_rated_capacity(region, a_a)
+
+
 def get_non_occupant_room_floor_area(a_mr: float, a_or: float, a_a: float, r_env: float) -> float:
     """
     calculate the non occupant room floor area
@@ -1249,7 +1262,7 @@ def get_main_value(
 
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
-        cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, a_a)
+        cap_rtd_h, cap_rtd_c = get_rated_capacity(region, a_a)
 
     # make appendix.SystemSpec class
     system_spec = SystemSpec(cap_rtd_h, cap_rtd_c, supply_air_rtd_h, supply_air_rtd_c, is_duct_insulated, vav_system)
