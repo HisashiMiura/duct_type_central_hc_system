@@ -1319,9 +1319,9 @@ def get_main_value(
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur_h = get_duct_ambient_air_temperature_for_heating(
-        system_spec.is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_h, theta_attic_h)
+        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_h, theta_attic_h)
     theta_sur_c = get_duct_ambient_air_temperature_for_cooling(
-        system_spec.is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic_c)
+        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic_c)
 
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
