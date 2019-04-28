@@ -348,20 +348,17 @@ def get_duct_ambient_air_temperature_for_cooling(
         return (l_in * theta_ac_c + l_ex * theta_attic) / (l_in + l_ex)
 
 
-def get_supply_air_volume_valance(zone_floor_area: envelope.FloorArea) -> np.ndarray:
+def get_supply_air_volume_valance(a_hcz: np.ndarray) -> np.ndarray:
     """
     calculate supply air volume valance
     Args:
-        zone_floor_area: fool area of each zones 'main occupant room', 'other occupant room', 'non occupant room'
+        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
     Returns:
         the ratio of the supply air volume valance for each 5 rooms (0.0-1.0)
     """
 
-    # floor areas (12 rooms)
-    floor_areas = envelope.get_hc_floor_areas(floor_area=zone_floor_area)
-
     # slice the list. 1: main occupant room, 2-5: other occupant rooms
-    occupant_rooms_floor_area = floor_areas[0:5]
+    occupant_rooms_floor_area = a_hcz[0:5]
 
     # calculate the ratio
     return occupant_rooms_floor_area / np.sum(occupant_rooms_floor_area)
@@ -1346,7 +1343,8 @@ def get_main_value(
     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
     v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
 
-    r_supply_des = get_supply_air_volume_valance(floor_area)
+    # the ratio of the supply air volume valance for each 5 rooms
+    r_supply_des = get_supply_air_volume_valance(a_hcz)
 
     # supply air volume, m3/h (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
