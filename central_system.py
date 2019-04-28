@@ -1254,9 +1254,6 @@ def get_main_value(
         q_rtd_c: rated cooling capacity, W
     """
 
-    # make envelope.FloorArea class
-    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
-
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
         q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
