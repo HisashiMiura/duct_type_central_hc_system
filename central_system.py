@@ -414,28 +414,21 @@ def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray
     return np.concatenate((a_part_mr, a_part_or))
 
 
-def get_rated_heating_output(system_spec: SystemSpec) -> float:
+def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
     """
-    calculate the rated heating output
+    calculate the rated heating and cooling output
     Args:
-        system_spec: spec of the system, class SystemSpec
+        cap_rtd_h: rated heating capacity, W
+        cap_rtd_c: rated cooling capacity, W
     Returns:
         rated heating output, MJ/h
-    """
-
-    return system_spec.cap_rtd_h * 3600 * 10 ** (-6)
-
-
-def get_rated_cooling_output(system_spec: SystemSpec) -> float:
-    """
-    calculate the rated cooling output
-    Args:
-        system_spec: spec of the system, class SystemSpec
-    Returns:
         rated cooling output, MJ/h
     """
 
-    return system_spec.cap_rtd_c * 3600 * 10 ** (-6)
+    q_hs_rtd_h = cap_rtd_h * 3600 * 10 ** (-6)
+    q_hs_rtd_c = cap_rtd_c * 3600 * 10 ** (-6)
+
+    return q_hs_rtd_h, q_hs_rtd_c
 
 
 def get_heating_output_for_supply_air_estimation(
@@ -1326,11 +1319,11 @@ def get_main_value(
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
-    # minimum supply air volume of the system for heating and cooling
+    # minimum supply air volume of the system for heating and cooling, (m3/h, m3/h)
     v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
 
-    q_hs_rtd_h = get_rated_heating_output(system_spec)
-    q_hs_rtd_c = get_rated_cooling_output(system_spec)
+    # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
+    q_hs_rtd_h, q_hs_rtd_c = get_rated_output(cap_rtd_h, cap_rtd_c)
 
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
