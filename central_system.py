@@ -1229,9 +1229,9 @@ def get_main_value(
         a_mr: float, a_or: float, a_a: float, r_env: float,
         insulation: str, solar_gain: str,
         default_heat_source_spec: bool,
-        supply_air_rtd_h: float, supply_air_rtd_c: float,
+        v_hs_rtd_h: float, v_hs_rtd_c: float,
         is_duct_insulated: bool, vav_system: bool,
-        cap_rtd_h: float =None, cap_rtd_c: float=None):
+        q_rtd_h: float =None, q_rtd_c: float=None):
     """
     Args:
         region: region, 1-8
@@ -1249,12 +1249,12 @@ def get_main_value(
             'middle': middle level
             'large': large level
         default_heat_source_spec: does use the default value for rated heating and cooling capacity ?
-        supply_air_rtd_h: rated supply air volume for heating, m3/h
-        supply_air_rtd_c: rated supply air volume for cooling, m3/h
+        v_hs_rtd_h: rated supply air volume for heating, m3/h
+        v_hs_rtd_c: rated supply air volume for cooling, m3/h
         is_duct_insulated: is the duct inside the insulated area or not
         vav_system: is VAV system applied ?
-        cap_rtd_h: rated heating capacity, W
-        cap_rtd_c: rated cooling capacity, W
+        q_rtd_h: rated heating capacity, W
+        q_rtd_c: rated cooling capacity, W
     """
 
     # make envelope.FloorArea class
@@ -1262,10 +1262,10 @@ def get_main_value(
 
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
-        cap_rtd_h, cap_rtd_c = get_rated_capacity(region, a_a)
+        q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
 
     # make appendix.SystemSpec class
-    system_spec = SystemSpec(cap_rtd_h, cap_rtd_c, supply_air_rtd_h, supply_air_rtd_c, is_duct_insulated, vav_system)
+    system_spec = SystemSpec(q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system)
 
     # calculation start
 
@@ -1336,7 +1336,7 @@ def get_main_value(
     v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
 
     # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
-    q_hs_rtd_h, q_hs_rtd_c = get_rated_output(cap_rtd_h, cap_rtd_c)
+    q_hs_rtd_h, q_hs_rtd_c = get_rated_output(q_rtd_h, q_rtd_c)
 
     # heating and cooling output for supply air estimation, MJ/h
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
