@@ -1338,6 +1338,7 @@ def get_main_value(
     # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
     q_hs_rtd_h, q_hs_rtd_c = get_rated_output(cap_rtd_h, cap_rtd_c)
 
+    # heating and cooling output for supply air estimation, MJ/h
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
