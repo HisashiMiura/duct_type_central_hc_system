@@ -452,8 +452,8 @@ def get_heating_output_for_supply_air_estimation(
         mu_h: float,
         j: np.ndarray,
         a_nr: float) -> np.ndarray:
-    """calculate the system supply air volume for heating
-    eq.(12)
+    """
+    calculate heating output for supply air estimation
     Args:
         l_h: heating load, MJ/h, (12 rooms * 8760 times)
         q: q value, W/m2K
@@ -485,8 +485,8 @@ def get_cooling_output_for_supply_air_estimation(
         mu_c: float,
         j: np.ndarray,
         a_nr: float) -> np.ndarray:
-    """calculate the system supply air volume for cooling
-    eq.(27)
+    """
+    calculate the cooling output for supply air estimation
     Args:
         l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
         l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
