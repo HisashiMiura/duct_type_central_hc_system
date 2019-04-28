@@ -1342,6 +1342,7 @@ def get_main_value(
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
+    # supply air volume of heat source for heating and cooling, m3/h
     v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
     v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
 
