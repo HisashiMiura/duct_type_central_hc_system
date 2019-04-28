@@ -27,12 +27,12 @@ class SystemSpec:
         self.vav_system = vav_system
 
 
-def get_rated_capacity(region: int, floor_area: envelope.FloorArea) -> (float, float):
+def get_rated_capacity(region: int, a_a: float) -> (float, float):
     """
     get the rated capacity
     Args:
         region: region 1-8
-        floor_area: floor area (class)
+        a_a: total floor area, m2
     Returns:
         rated heating capacity, rated cooling capacity, W
     """
@@ -55,7 +55,7 @@ def get_rated_capacity(region: int, floor_area: envelope.FloorArea) -> (float, f
             6: 61.34,
             7: 64.55,
         }[region]
-        q_rtd_h = q_rq_h * floor_area.total * f_ct * f_cl
+        q_rtd_h = q_rq_h * a_a * f_ct * f_cl
 
     q_rq_c = {
         1: 37.61,
@@ -68,7 +68,7 @@ def get_rated_capacity(region: int, floor_area: envelope.FloorArea) -> (float, f
         8: 61.56,
     }[region]
 
-    q_rtd_c = q_rq_c * floor_area.total * f_ct * f_cl
+    q_rtd_c = q_rq_c * a_a * f_ct * f_cl
 
     return q_rtd_h, q_rtd_c
 

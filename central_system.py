@@ -1256,7 +1256,7 @@ def get_main_value(
 
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
-        cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, floor_area)
+        cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, a_a)
 
     # make appendix.SystemSpec class
     system_spec = SystemSpec(cap_rtd_h, cap_rtd_c, supply_air_rtd_h, supply_air_rtd_c, is_duct_insulated, vav_system)

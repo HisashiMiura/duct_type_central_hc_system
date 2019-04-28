@@ -81,7 +81,7 @@ def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec)
     region = spec[0]
     floor_area = envelope.FloorArea(a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4])
     envelope_spec = envelope.Spec(insulation=spec[5], solar_gain=spec[6])
-    cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, floor_area)
+    cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, spec[3])
     system_spec = cs.SystemSpec(cap_rtd_h=cap_rtd_h, cap_rtd_c=cap_rtd_c,
                                 supply_air_rtd_h=spec[7], supply_air_rtd_c=spec[8],
                                 is_duct_insulated=spec[9], vav_system=spec[10])
