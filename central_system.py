@@ -1347,6 +1347,7 @@ def get_main_value(
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
+    # non occupant room temperature
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
     theta_nac_c = get_non_occupant_room_temperature_for_cooling(
