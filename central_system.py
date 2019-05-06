@@ -1348,13 +1348,13 @@ def get_main_value(
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
-    # non occupant room temperature with non overheated, degree C, (8760 times)
+    # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_valanced(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
     theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_valanced(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
-    # heat loss through partition, MJ/h, (5 rooms * 8760 times)
+    # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
     q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_d_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_d_nac_c)
 
