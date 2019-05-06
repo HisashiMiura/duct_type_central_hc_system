@@ -609,7 +609,7 @@ def get_each_supply_air_volume_for_cooling(
     return np.maximum(v_hs_supply_c * r_supply_des, v_vent)
 
 
-def get_non_occupant_room_temperature_for_heating(
+def get_non_occupant_room_temperature_for_heating_valanced(
         q_value: float,
         theta_ex: np.ndarray,
         mu_value: float,
@@ -646,7 +646,7 @@ def get_non_occupant_room_temperature_for_heating(
            / (q_value * a_nr + np.sum(c * rho * v_supply_h / 3600 + u_prt * a_prt, axis=0))
 
 
-def get_non_occupant_room_temperature_for_cooling(
+def get_non_occupant_room_temperature_for_cooling_valanced(
         q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_c) -> np.ndarray:
     """
     Args:
@@ -1348,15 +1348,15 @@ def get_main_value(
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
-    # non occupant room temperature, degree C, (8760 times)
-    theta_nac_h = get_non_occupant_room_temperature_for_heating(
+    # non occupant room temperature with non overheated, degree C, (8760 times)
+    theta_d_nac_h = get_non_occupant_room_temperature_for_heating_valanced(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
-    theta_nac_c = get_non_occupant_room_temperature_for_cooling(
+    theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_valanced(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
     # heat loss through partition, MJ/h, (5 rooms * 8760 times)
-    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_nac_h)
-    q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_nac_c)
+    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_d_nac_h)
+    q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_d_nac_c)
 
     # maximum heating output, MJ/h (8760 times)
     q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
@@ -1364,8 +1364,8 @@ def get_main_value(
     q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(system_spec, l_cs, q_trs_prt_c, l_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_hs_in_h = theta_nac_h
-    theta_hs_in_c = theta_nac_c
+    theta_hs_in_h = theta_d_nac_h
+    theta_hs_in_c = theta_d_nac_c
 
     q_max_h = get_maximum_output_for_heating(
         theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
@@ -1397,7 +1397,7 @@ def get_main_value(
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
     q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
-    l_nor = get_non_occupant_room_load(theta_nac_h, theta_ac_h, v_supply_h, c, rho)
+    l_nor = get_non_occupant_room_load(theta_d_nac_h, theta_ac_h, v_supply_h, c, rho)
 
     return {
         'constant_value': {
@@ -1476,8 +1476,8 @@ def get_main_value(
             'supply_air_volume_cooling_room3': v_supply_c[2],  # MJ/h
             'supply_air_volume_cooling_room4': v_supply_c[3],  # MJ/h
             'supply_air_volume_cooling_room5': v_supply_c[4],  # MJ/h
-            'non_occupant_room_temperature_heating': theta_nac_h,  # degree C
-            'non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
+            'non_occupant_room_temperature_heating': theta_d_nac_h,  # degree C
+            'non_occupant_room_temperature_cooling': theta_d_nac_c,  # degree C
             'heat_loss_through_partition_heating_room1': q_trs_prt_h[0],  # MJ/h
             'heat_loss_through_partition_heating_room2': q_trs_prt_h[1],  # MJ/h
             'heat_loss_through_partition_heating_room3': q_trs_prt_h[2],  # MJ/h
