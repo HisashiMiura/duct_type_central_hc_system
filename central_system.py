@@ -672,7 +672,7 @@ def get_non_occupant_room_temperature_for_cooling_balanced(
         / (q_value * a_nr + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0))
 
 
-def get_heat_loss_through_partition_for_heating(
+def get_heat_loss_through_partition_for_heating_balanced(
         u_prt: float,
         a_prt: np.ndarray,
         theta_ac_h: np.ndarray,
@@ -694,7 +694,7 @@ def get_heat_loss_through_partition_for_heating(
     return u_prt * a_prt * (theta_ac_h - theta_nac_h) * 3600 * 10 ** (-6)
 
 
-def get_heat_gain_through_partition_for_cooling(
+def get_heat_gain_through_partition_for_cooling_balanced(
         u_prt: float,
         a_prt: np.ndarray,
         theta_ac_c: np.ndarray,
@@ -1355,13 +1355,13 @@ def get_main_value(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
-    q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_d_nac_h)
-    q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_d_nac_c)
+    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_part, theta_ac_h, theta_d_nac_h)
+    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_part, theta_ac_c, theta_d_nac_c)
 
     # maximum heating output, MJ/h (8760 times)
     q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
     # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
-    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(system_spec, l_cs, q_trs_prt_c, l_cl)
+    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(system_spec, l_cs, q_d_trs_prt_c, l_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = theta_d_nac_h
@@ -1370,12 +1370,12 @@ def get_main_value(
     q_max_h = get_maximum_output_for_heating(
         theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(
-        theta_hs_in_c, l_cs, l_cl, q_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
+        theta_hs_in_c, l_cs, l_cl, q_d_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
         l_duct, theta_sur_c)
 
-    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_trs_prt_h, q_max_h)
+    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_d_trs_prt_h, q_max_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(
-        l_cs, l_cl, q_trs_prt_c, q_max_cs, q_max_cl)
+        l_cs, l_cl, q_d_trs_prt_c, q_max_cs, q_max_cl)
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
@@ -1478,16 +1478,16 @@ def get_main_value(
             'supply_air_volume_cooling_room5': v_supply_c[4],  # MJ/h
             'non_occupant_room_temperature_heating': theta_d_nac_h,  # degree C
             'non_occupant_room_temperature_cooling': theta_d_nac_c,  # degree C
-            'heat_loss_through_partition_heating_room1': q_trs_prt_h[0],  # MJ/h
-            'heat_loss_through_partition_heating_room2': q_trs_prt_h[1],  # MJ/h
-            'heat_loss_through_partition_heating_room3': q_trs_prt_h[2],  # MJ/h
-            'heat_loss_through_partition_heating_room4': q_trs_prt_h[3],  # MJ/h
-            'heat_loss_through_partition_heating_room5': q_trs_prt_h[4],  # MJ/h
-            'heat_gain_through_partition_cooling_room1': q_trs_prt_c[0],  # MJ/h
-            'heat_gain_through_partition_cooling_room2': q_trs_prt_c[1],  # MJ/h
-            'heat_gain_through_partition_cooling_room3': q_trs_prt_c[2],  # MJ/h
-            'heat_gain_through_partition_cooling_room4': q_trs_prt_c[3],  # MJ/h
-            'heat_gain_through_partition_cooling_room5': q_trs_prt_c[4],  # MJ/h
+            'heat_loss_through_partition_heating_room1': q_d_trs_prt_h[0],  # MJ/h
+            'heat_loss_through_partition_heating_room2': q_d_trs_prt_h[1],  # MJ/h
+            'heat_loss_through_partition_heating_room3': q_d_trs_prt_h[2],  # MJ/h
+            'heat_loss_through_partition_heating_room4': q_d_trs_prt_h[3],  # MJ/h
+            'heat_loss_through_partition_heating_room5': q_d_trs_prt_h[4],  # MJ/h
+            'heat_gain_through_partition_cooling_room1': q_d_trs_prt_c[0],  # MJ/h
+            'heat_gain_through_partition_cooling_room2': q_d_trs_prt_c[1],  # MJ/h
+            'heat_gain_through_partition_cooling_room3': q_d_trs_prt_c[2],  # MJ/h
+            'heat_gain_through_partition_cooling_room4': q_d_trs_prt_c[3],  # MJ/h
+            'heat_gain_through_partition_cooling_room5': q_d_trs_prt_c[4],  # MJ/h
             'maximum_output_heating_room1': q_max_h[0],  # MJ/h
             'maximum_output_heating_room2': q_max_h[1],  # MJ/h
             'maximum_output_heating_room3': q_max_h[2],  # MJ/h
