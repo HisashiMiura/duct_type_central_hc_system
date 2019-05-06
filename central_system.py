@@ -678,6 +678,7 @@ def get_heat_loss_through_partition_for_heating(
         theta_ac_h: np.ndarray,
         theta_nac_h: np.ndarray) -> np.ndarray:
     """
+    calculate heat loss through the partition
     Args:
         u_prt: heat loss coefficient of the partition wall, W/m2K
         a_prt: area of the partition, m2, (5 rooms)
@@ -1347,12 +1348,13 @@ def get_main_value(
     v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
-    # non occupant room temperature
+    # non occupant room temperature, degree C, (8760 times)
     theta_nac_h = get_non_occupant_room_temperature_for_heating(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
     theta_nac_c = get_non_occupant_room_temperature_for_cooling(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
+    # heat loss through partition, MJ/h, (5 rooms * 8760 times)
     q_trs_prt_h = get_heat_loss_through_partition_for_heating(u_prt, a_part, theta_ac_h, theta_nac_h)
     q_trs_prt_c = get_heat_gain_through_partition_for_cooling(u_prt, a_part, theta_ac_c, theta_nac_c)
 
