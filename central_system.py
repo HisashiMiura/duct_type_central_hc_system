@@ -609,7 +609,7 @@ def get_each_supply_air_volume_for_cooling(
     return np.maximum(v_hs_supply_c * r_supply_des, v_vent)
 
 
-def get_non_occupant_room_temperature_for_heating_valanced(
+def get_non_occupant_room_temperature_for_heating_balanced(
         q_value: float,
         theta_ex: np.ndarray,
         mu_value: float,
@@ -646,7 +646,7 @@ def get_non_occupant_room_temperature_for_heating_valanced(
            / (q_value * a_nr + np.sum(c * rho * v_supply_h / 3600 + u_prt * a_prt, axis=0))
 
 
-def get_non_occupant_room_temperature_for_cooling_valanced(
+def get_non_occupant_room_temperature_for_cooling_balanced(
         q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_c) -> np.ndarray:
     """
     Args:
@@ -1349,9 +1349,9 @@ def get_main_value(
     v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
-    theta_d_nac_h = get_non_occupant_room_temperature_for_heating_valanced(
+    theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
-    theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_valanced(
+    theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_balanced(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
