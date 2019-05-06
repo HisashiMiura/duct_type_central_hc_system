@@ -13,7 +13,7 @@ import read_load
 
 def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec):
 
-    spec = {
+    return {
         # 地域による違い
         1: [1, 29.81, 51.34, 120.08, 266.0 / 90.0, 'h11', 'middle', 1800.0, 1800.0, True, False],
         2: [2, 29.81, 51.34, 120.08, 266.0 / 90.0, 'h11', 'middle', 1800.0, 1800.0, True, False],
@@ -77,16 +77,6 @@ def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec)
         55: [6, 29.81, 51.34, 120.08, 266.0 / 90.0, 'h11', 'middle', 1800.0, 1800.0, True, True],
         56: [8, 29.81, 51.34, 120.08, 266.0 / 90.0, 'h11', 'middle', 1800.0, 1800.0, True, True],
     }[cn]
-
-    region = spec[0]
-    floor_area = envelope.FloorArea(a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4])
-    envelope_spec = envelope.Spec(insulation=spec[5], solar_gain=spec[6])
-    cap_rtd_h, cap_rtd_c = appendix.get_rated_capacity(region, spec[3])
-    system_spec = cs.SystemSpec(cap_rtd_h=cap_rtd_h, cap_rtd_c=cap_rtd_c,
-                                supply_air_rtd_h=spec[7], supply_air_rtd_c=spec[8],
-                                is_duct_insulated=spec[9], vav_system=spec[10])
-
-    return region, floor_area, envelope_spec, system_spec, spec
 
 
 # region graph
@@ -194,7 +184,7 @@ def draw_sum_bar_graph(x_title, ys):
 
 
 def get_main_value(cn: int) -> dict:
-    region, floor_area, envelope_spec, system_spec, spec = get_spec(cn)
+    spec = get_spec(cn)
     return cs.get_main_value(region=spec[0],
                              a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4],
                              insulation=spec[5], solar_gain=spec[6],
