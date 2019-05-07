@@ -1359,9 +1359,9 @@ def get_main_value(
     q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_part, theta_ac_c, theta_d_nac_c)
 
     # maximum heating output, MJ/h (8760 times)
-    q_hs_max_h = appendix.get_maximum_heating_output(region, system_spec)
+    q_hs_max_h = appendix.get_maximum_heating_output(region, q_rtd_h)
     # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
-    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(system_spec, l_cs, q_d_trs_prt_c, l_cl)
+    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(q_rtd_c, l_cs, q_d_trs_prt_c, l_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = theta_d_nac_h

@@ -73,27 +73,27 @@ def get_rated_capacity(region: int, a_a: float) -> (float, float):
     return q_rtd_h, q_rtd_c
 
 
-def get_maximum_heating_output(region: int, spec: SystemSpec) -> np.ndarray:
+def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     """
     calculate the maximum heating output of heat source
     Args:
         region: region
-        spec: system spec
+        q_rtd_h: rated heating capacity, W
     Returns:
         maximum heating output, MJ/h (8760 times)
     """
     # this coefficient is not implemented.
     c_df_h = 1.0
 
-    return np.full(8760, spec.cap_rtd_h * c_df_h * 3600 * 10**(-6))
+    return np.full(8760, q_rtd_h * c_df_h * 3600 * 10**(-6))
 
 
 def get_maximum_cooling_output(
-        spec: SystemSpec, l_cs: np.ndarray, q_trs_prt_c: np.ndarray, l_cl: np.ndarray) -> np.ndarray:
+        q_rtd_c: float, l_cs: np.ndarray, q_trs_prt_c: np.ndarray, l_cl: np.ndarray) -> np.ndarray:
     """
     calculate the corrected_latent_cooling_load
     Args:
-        spec: system spec
+        q_rtd_c: rated cooling capacity, W
         l_cs: sensible cooling load, MJ/h, (5 rooms * 8760 times)
         q_trs_prt_c: heat gain from the non occupant room into the occupant room through the partition, MJ/h,
             (5 rooms * 8760 times)
@@ -123,7 +123,7 @@ def get_maximum_cooling_output(
     shf_dash = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_dash2_cs, l_dash_c)
 
     # maximum cooling output, MJ/h, (8760 times)
-    q_hs_max_c = np.full(8760, spec.cap_rtd_c * 3600 * 10**(-6))
+    q_hs_max_c = np.full(8760, q_rtd_c * 3600 * 10**(-6))
 
     # maximum sensible cooling output, MJ/h, (8760 times)
     q_hs_max_cs = q_hs_max_c * shf_dash
