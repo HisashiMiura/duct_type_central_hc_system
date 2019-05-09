@@ -802,6 +802,30 @@ def get_heat_source_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l
     return appendix.get_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
 
+def get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac_h: np.ndarray) -> np.ndarray:
+    """
+    calculate the inlet air temperature of heat source
+    Args:
+        theta_d_nac_h: non occupant room temperature when balanced, degree C, (8760 times)
+    Returns:
+        the inlet air temperature of heat source when balanced, degree C, (8760 times)
+    """
+
+    return theta_d_nac_h
+
+
+def get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac_h: np.ndarray) -> np.ndarray:
+    """
+    calculate the inlet air temperature of heat source
+    Args:
+        theta_d_nac_h: non occupant room temperature when balanced, degree C, (8760 times)
+    Returns:
+        the inlet air temperature of heat source when balanced, degree C, (8760 times)
+    """
+
+    return theta_d_nac_h
+
+
 def get_maximum_output_for_heating(
         theta_hs_in_h: np.ndarray,
         q_hs_max_h: np.ndarray,
@@ -1449,15 +1473,15 @@ def get_main_value(
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt_h)
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt_c)
 
+    # inlet air temperature of heat source,degree C, (8760 times)
+    theta_d_hs_in_h = get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac_h)
+    theta_d_hs_in_c = get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac_c)
+
     # maximum heating output, MJ/h (8760 times)
     # heating
     q_hs_max_h = get_heat_source_maximum_heating_output(region, q_rtd_h)
     # sensible cooling & latent cooling
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
-
-    # inlet air temperature of heat source,degree C, (8760 times)
-    theta_d_hs_in_h = theta_d_nac_h
-    theta_d_hs_in_c = theta_d_nac_c
 
     q_max_h = get_maximum_output_for_heating(
         theta_d_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
