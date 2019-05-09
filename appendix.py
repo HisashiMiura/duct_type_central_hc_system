@@ -98,16 +98,13 @@ def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     return q_rtd_h * c_df_h * 3600 * 10**(-6)
 
 
-def get_maximum_cooling_output(
-        q_rtd_c: float, l_cs: np.ndarray, q_trs_prt_c: np.ndarray, l_cl: np.ndarray) -> np.ndarray:
+def get_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     calculate the corrected_latent_cooling_load
     Args:
         q_rtd_c: rated cooling capacity, W
-        l_cs: sensible cooling load, MJ/h, (5 rooms * 8760 times)
-        q_trs_prt_c: heat gain from the non occupant room into the occupant room through the partition, MJ/h,
-            (5 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h, (5 rooms * 8760 times)
+        l_d_cs: sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
+        l_d_cl: latent cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
     Returns:
         (a,b)
             a: sensible maximum cooling output, MJ/h, (8760 times)
@@ -115,22 +112,25 @@ def get_maximum_cooling_output(
     """
 
     # sensible cooling load including heat gain through the partition, MJ/h, (8760 times)
-    l_dash2_cs = np.clip(np.sum(l_cs, axis=0) + np.sum(q_trs_prt_c, axis=0), 0.0, None)
+    l_d_cs_total = np.sum(l_d_cs, axis=0)
+
+    # latent cooling load, MJ/h, (8760 times)
+    l_d_cl_total = np.sum(l_d_cl, axis=0)
 
     # minimum SHF for cooling
     shf_l_min_c = 0.4
 
     # maximum latent cooling load, MJ/h (8760 times)
-    l_max_cl = l_dash2_cs * (1 - shf_l_min_c) / shf_l_min_c
+    l_max_cl = l_d_cs_total * (1 - shf_l_min_c) / shf_l_min_c
 
     # corrected latent cooling load, MJ/h, (8760 times)
-    l_dash_cl = np.minimum(l_max_cl, np.sum(l_cl, axis=0))
+    l_d2_cl = np.minimum(l_max_cl, l_d_cl_total)
 
     # corrected cooling load, MJ/h, (8760 times)
-    l_dash_c = l_dash2_cs + l_dash_cl
+    l_d2_c = l_d_cs_total + l_d2_cl
 
     # corrected SHF for cooling load, (8760 times)
-    shf_dash = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_dash2_cs, l_dash_c)
+    shf_dash = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_d_cs_total, l_d2_c)
 
     # maximum cooling output, MJ/h, (8760 times)
     q_hs_max_c = np.full(8760, q_rtd_c * 3600 * 10**(-6))
@@ -139,7 +139,7 @@ def get_maximum_cooling_output(
     q_hs_max_cs = q_hs_max_c * shf_dash
 
     # maximum latent cooling output, MJ/h, (8760 times)
-    q_hs_max_cl = np.minimum(q_hs_max_c * (1 - shf_dash), l_dash_cl)
+    q_hs_max_cl = np.minimum(q_hs_max_c * (1 - shf_dash), l_d2_cl)
 
     return q_hs_max_cs, q_hs_max_cl
 
