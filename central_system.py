@@ -1450,8 +1450,9 @@ def get_main_value(
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt_c)
 
     # maximum heating output, MJ/h (8760 times)
+    # heating
     q_hs_max_h = get_heat_source_maximum_heating_output(region, q_rtd_h)
-    # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
+    # sensible cooling & latent cooling
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
