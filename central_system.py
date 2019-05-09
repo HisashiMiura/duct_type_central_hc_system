@@ -773,7 +773,7 @@ def get_occupant_room_load_for_cooling_balanced(
     return np.where(l_d_cs > 0.0, l_d_cs, 0.0), np.where(l_d_cl > 0.0, l_d_cl, 0.0)
 
 
-def get_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
+def get_heat_source_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
     """
     calculate maximum heating output
     Args:
@@ -786,7 +786,7 @@ def get_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
     return appendix.get_maximum_heating_output(region, q_rtd_h)
 
 
-def get_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
+def get_heat_source_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     calculate the corrected_latent_cooling_load
     Args:
@@ -1450,9 +1450,9 @@ def get_main_value(
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt_c)
 
     # maximum heating output, MJ/h (8760 times)
-    q_hs_max_h = get_maximum_heating_output(region, q_rtd_h)
+    q_hs_max_h = get_heat_source_maximum_heating_output(region, q_rtd_h)
     # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
-    q_hs_max_cs, q_hs_max_cl = get_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
+    q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = theta_d_nac_h
