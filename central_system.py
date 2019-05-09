@@ -826,7 +826,7 @@ def get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac_h: np
     return theta_d_nac_h
 
 
-def get_maximum_output_for_heating(
+def get_maximum_heating_supply(
         theta_hs_in_h: np.ndarray,
         q_hs_max_h: np.ndarray,
         c: float,
@@ -1483,7 +1483,7 @@ def get_main_value(
     # sensible cooling & latent cooling
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
-    q_max_h = get_maximum_output_for_heating(
+    q_max_h = get_maximum_heating_supply(
         theta_d_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(
         theta_d_hs_in_c, l_cs, l_cl, q_d_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
