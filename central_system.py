@@ -1456,13 +1456,13 @@ def get_main_value(
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_hs_in_h = theta_d_nac_h
-    theta_hs_in_c = theta_d_nac_c
+    theta_d_hs_in_h = theta_d_nac_h
+    theta_d_hs_in_c = theta_d_nac_c
 
     q_max_h = get_maximum_output_for_heating(
-        theta_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
+        theta_d_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
     q_max_cs, q_max_cl = get_maximum_output_for_cooling(
-        theta_hs_in_c, l_cs, l_cl, q_d_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
+        theta_d_hs_in_c, l_cs, l_cl, q_d_trs_prt_c, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi,
         l_duct, theta_sur_c)
 
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_d_trs_prt_h, q_max_h)
@@ -1480,8 +1480,8 @@ def get_main_value(
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_duct_up_c)
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_hs_in_h, c, rho, v_supply_h)
-    q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_hs_in_c, theta_hs_out_c, c, rho, v_supply_c, l_cl)
+    q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_supply_h)
+    q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_supply_c, l_cl)
 
     # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
     q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
