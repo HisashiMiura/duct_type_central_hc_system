@@ -768,6 +768,38 @@ def get_occupant_room_load_for_cooling_balanced(
     return l_cs[0:5] + q_d_trs_prt_c, l_cl[0:5]
 
 
+def get_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
+    """
+    calculate maximum heating output
+    Args:
+        region: region, 1-8
+        q_rtd_h: rated heating capacity, W
+    Returns:
+        maximum heating output, MJ/h
+    """
+
+    return appendix.get_maximum_heating_output(region, q_rtd_h)
+
+
+def get_maximum_cooling_output(
+        q_rtd_c: float, l_cs: np.ndarray, q_d_trs_prt_c: np.ndarray, l_cl: np.ndarray) -> np.ndarray:
+    """
+    calculate the corrected_latent_cooling_load
+    Args:
+        q_rtd_c: rated cooling capacity, W
+        l_cs: sensible cooling load, MJ/h, (5 rooms * 8760 times)
+        q_d_trs_prt_c: heat gain from the non occupant room into the occupant room through the partition, MJ/h,
+            (5 rooms * 8760 times)
+        l_cl: latent cooling load, MJ/h, (5 rooms * 8760 times)
+    Returns:
+        (a,b)
+            a: sensible maximum cooling output, MJ/h, (8760 times)
+            b: latent maximum cooling output, MJ/h, (8760 times)
+    """
+
+    return appendix.get_maximum_cooling_output(q_rtd_c, l_cs, q_d_trs_prt_c, l_cl)
+
+
 def get_maximum_output_for_heating(
         theta_hs_in_h: np.ndarray,
         q_hs_max_h: np.ndarray,
@@ -1416,9 +1448,9 @@ def get_main_value(
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt_c)
 
     # maximum heating output, MJ/h (8760 times)
-    q_hs_max_h = appendix.get_maximum_heating_output(region, q_rtd_h)
+    q_hs_max_h = get_maximum_heating_output(region, q_rtd_h)
     # maximum sensible cooling output, MJ/h (8760 times), maximum latent cooling output, MJ/h (8760 times)
-    q_hs_max_cs, q_hs_max_cl = appendix.get_maximum_cooling_output(q_rtd_c, l_cs, q_d_trs_prt_c, l_cl)
+    q_hs_max_cs, q_hs_max_cl = get_maximum_cooling_output(q_rtd_c, l_cs, q_d_trs_prt_c, l_cl)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = theta_d_nac_h
