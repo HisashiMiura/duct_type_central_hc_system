@@ -82,10 +82,20 @@ def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     Returns:
         maximum heating output, MJ/h (8760 times)
     """
-    # this coefficient is not implemented.
-    c_df_h = 1.0
 
-    return np.full(8760, q_rtd_h * c_df_h * 3600 * 10**(-6))
+    # outdoor temperature, degree C, (8760 times)
+    theta_ex = read_conditions.read_temperature(region)
+
+    # absolute humidity, kg/kgDA, (8760 times)
+    x_ex = read_conditions.read_absolute_humidity(region)
+
+    # relative humidity, %, (8760 times)
+    h_ex = read_conditions.get_relative_humidity(theta_ex, x_ex)
+
+    # coefficient for defrosting, (8760 times)
+    c_df_h = np.where((theta_ex < 5.0) & (h_ex >= 80.0), 0.77, 1.0)
+
+    return q_rtd_h * c_df_h * 3600 * 10**(-6)
 
 
 def get_maximum_cooling_output(
