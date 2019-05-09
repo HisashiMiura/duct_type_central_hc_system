@@ -174,3 +174,45 @@ def get_sat_temperature(region: int) -> np.ndarray:
     sat_temperature = temperature + 0.034 * horizontal_solar_radiation
 
     return sat_temperature
+
+
+def get_relative_humidity(theta_ex: np.ndarray, x_ex: np.ndarray) -> np.ndarray:
+    """
+    calculate relative humidity
+    Args:
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        x_ex: outdoor absolute humidity, kg/kgDA, (8760 times)
+    Returns:
+        relative humidity, %, (8760 times)
+    """
+
+    # convert unit from kg/kgDA to g/kgDA
+    x_ex = x_ex * 1000
+
+    # absolute temperature, K
+    t_ex = theta_ex + 273.16
+
+    a1 = -6096.9385
+    a2 = 21.2409642
+    a3 = -0.02711193
+    a4 = 0.00001673952
+    a5 = 2.433502
+    b1 = -6024.5282
+    b2 = 29.32707
+    b3 = 0.010613863
+    b4 = -0.000013198825
+    b5 = -0.49382577
+
+    # saturated vapour pressure, Pa
+    k = np.where(theta_ex > 0.0,
+                 a1 / t_ex + a2 + a3 * t_ex + a4 * t_ex ** 2 + a5 * np.log(t_ex),
+                 b1 / t_ex + b2 + b3 * t_ex + b4 * t_ex ** 2 + b5 * np.log(t_ex))
+    p_vs = np.e ** k
+
+    # vapour pressure, Pa
+    p_v = 101325 * x_ex / (622 + x_ex)
+
+    # relative humidity, %
+    h_ex = p_v / p_vs * 100
+
+    return h_ex

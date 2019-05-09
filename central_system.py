@@ -247,6 +247,31 @@ def get_outdoor_temperature(region: int) -> np.ndarray:
     return read_conditions.read_temperature(region)
 
 
+def get_absolute_humidity(region: int) -> np.ndarray:
+    """
+    get outdoor absolute humidity
+    Args:
+        region: region, 1-8
+    Returns:
+        outdoor absolute humidity, kg/kgDA, (8760 times)
+    """
+
+    return read_conditions.read_absolute_humidity(region)
+
+
+def get_relative_humidity(theta_ex: float, x_ex: float) -> np.ndarray:
+    """
+    get outdoor relative humidity
+    Args:
+        outdoor temperature, degree C, (8760 times)
+        outdoor absolute humidity, kg/kgDA, (8760 times)
+    Returns:
+        outdoor relative humidity, %, (8760 times)
+    """
+
+    return read_conditions.get_relative_humidity(theta_ex, x_ex)
+
+
 def get_horizontal_solar(region: int) -> np.ndarray:
     """
     get horizontal solar radiation
