@@ -750,7 +750,9 @@ def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt_h: 
         heating load of occupant room, (5 rooms * 8760 times)
     """
 
-    return l_h[0:5] + q_d_trs_prt_h
+    l_d_h = l_h[0:5] + q_d_trs_prt_h
+
+    return np.where(l_d_h > 0.0, l_d_h, 0.0)
 
 
 def get_occupant_room_load_for_cooling_balanced(
@@ -765,7 +767,10 @@ def get_occupant_room_load_for_cooling_balanced(
         sensible and latent cooling load of occupant room, MJ/h, ((5 rooms *  8760 times), (5 rooms *  8760 times))
     """
 
-    return l_cs[0:5] + q_d_trs_prt_c, l_cl[0:5]
+    l_d_cs = l_cs[0:5] + q_d_trs_prt_c
+    l_d_cl = l_cl[0:5]
+
+    return np.where(l_d_cs>0.0, l_d_cs, 0.0), np.where(l_d_cl>0.0, l_d_cl, 0.0)
 
 
 def get_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
