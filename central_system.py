@@ -770,7 +770,7 @@ def get_occupant_room_load_for_cooling_balanced(
     l_d_cs = l_cs[0:5] + q_d_trs_prt_c
     l_d_cl = l_cl[0:5]
 
-    return np.where(l_d_cs>0.0, l_d_cs, 0.0), np.where(l_d_cl>0.0, l_d_cl, 0.0)
+    return np.where(l_d_cs > 0.0, l_d_cs, 0.0), np.where(l_d_cl > 0.0, l_d_cl, 0.0)
 
 
 def get_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
