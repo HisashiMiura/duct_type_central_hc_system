@@ -747,7 +747,7 @@ def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt_h: 
         l_h: heating load, MJ/h, (12 rooms * 8760 times)
         q_d_trs_prt_h: heat loss from occupant room to non occupant room through partition, (5 rooms * 8760 times)
     Returns:
-        heating load of occupant room, (5 rooms * 8760 times)
+        heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     """
 
     l_d_h = l_h[0:5] + q_d_trs_prt_h
