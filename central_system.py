@@ -915,46 +915,34 @@ def get_maximum_cooling_supply(
     return np.clip(q_max_cs, 0.0, None), q_max_cl
 
 
-def get_treated_untreated_heat_load_for_heating(
-        l_h: np.ndarray,
-        q_trs_prt_h: np.ndarray,
-        q_max_h: np.ndarray) -> np.ndarray:
+def get_treated_untreated_heat_load_for_heating(q_max_h: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
     """
     Args:
-        l_h: heating load, MJ/h (12 rooms * 8760 times)
-        q_trs_prt_h: heat loss from the occupant room into the non occupant room through the partition, MJ/h (5 rooms * 8760 times)
         q_max_h: maximum output for heating, MJ/h
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     Returns:
         (a,b)
             a: treated heating load, MJ/h, (5 rooms * 8760 times)
             b: untreated heating load, MJ/h, (5 rooms * 8760 times)
     """
 
-    # heating load, MJ/h (5 rooms * 8760 times)
-    l_h = l_h[0:5]
-
     # treated load, MJ/h
-    q_t_h = np.clip(l_h + q_trs_prt_h, 0.0, q_max_h)
+    q_t_h = np.minimum(l_d_h, q_max_h)
 
     # untreated load, MJ/h
-    q_ut_h = np.maximum(l_h + q_trs_prt_h, 0.0) - q_t_h
+    q_ut_h = l_d_h - q_t_h
 
     return q_t_h, q_ut_h
 
 
 def get_treated_untreated_heat_load_for_cooling(
-        l_cs: np.ndarray,
-        l_cl: np.ndarray,
-        q_trs_prt_c: np.ndarray,
-        q_max_cs: np.ndarray,
-        q_max_cl: np.ndarray) -> np.ndarray:
+        q_max_cs: np.ndarray, q_max_cl: np.ndarray, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> np.ndarray:
     """
     Args:
-        l_cs: sensible cooling load, MJ/h (5 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h (5 rooms, 8760 times)
-        q_trs_prt_c: heat gain from the non occupant room into the occupant room through the partition, MJ/h (5 rooms * 8760 times)
         q_max_cs: maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times)
         q_max_cl: maximum output for latent cooling, MJ/h, (5 rooms * 8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        l_d_cl: latent cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
     Returns:
         (a,b,c,d)
             a: treated sensible heating load, MJ/h, (5 rooms * 8760 times)
@@ -963,23 +951,17 @@ def get_treated_untreated_heat_load_for_cooling(
             d: untreated latent heating load, MJ/h, (5 rooms * 8760 times)
     """
 
-    # sensible cooling load, MJ/h (5 rooms * 8760 times)
-    l_cs = l_cs[0:5]
-
-    # latent cooling load, MJ/h (5 rooms, 8760 times)
-    l_cl = l_cl[0:5]
-
     # treated load, MJ/h
     #  sensible
-    q_t_cs = np.minimum(q_max_cs, np.maximum(l_cs + q_trs_prt_c, 0.0))
+    q_t_cs = np.minimum(q_max_cs, l_d_cs)
     #  latent
-    q_t_cl = np.minimum(q_max_cl, l_cl)
+    q_t_cl = np.minimum(q_max_cl, l_d_cl)
 
     # untreated load, MJ/h
     #  sensible
-    q_ut_cs = np.maximum(l_cs + q_trs_prt_c, 0.0) - q_t_cs
+    q_ut_cs = l_d_cs - q_t_cs
     #  latent
-    q_ut_cl = l_cl - q_t_cl
+    q_ut_cl = l_d_cl - q_t_cl
 
     return q_t_cs, q_t_cl, q_ut_cs, q_ut_cl
 
@@ -1487,9 +1469,8 @@ def get_main_value(
         theta_d_hs_in_c, l_cl, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi, l_duct, theta_sur_c)
 
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
-    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_d_trs_prt_h, q_max_h)
-    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(
-        l_cs, l_cl, q_d_trs_prt_c, q_max_cs, q_max_cl)
+    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
+    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(q_max_cs, q_max_cl, l_d_cs, l_d_cl)
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
