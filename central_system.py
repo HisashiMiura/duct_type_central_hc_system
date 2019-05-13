@@ -1473,14 +1473,14 @@ def get_main_value(
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(q_max_cs, q_max_cl, l_d_cs, l_d_cl)
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
-    theta_duct_up_h = get_requested_supply_air_temperature_for_heating(
+    theta_req_h = get_requested_supply_air_temperature_for_heating(
         theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct)
-    theta_duct_up_c = get_requested_supply_air_temperature_for_cooling(
+    theta_req_c = get_requested_supply_air_temperature_for_cooling(
         theta_sur_c, theta_ac_c, q_t_cs, v_supply_c, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_duct_up_h)
-    theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_duct_up_c)
+    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
+    theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_supply_h)
@@ -1628,16 +1628,16 @@ def get_main_value(
             'untreated_latent_cooling_load_room3': q_ut_cl[2],  # MJ/h
             'untreated_latent_cooling_load_room4': q_ut_cl[3],  # MJ/h
             'untreated_latent_cooling_load_room5': q_ut_cl[4],  # MJ/h
-            'duct_upside_supply_air_temperature_heating_room1': theta_duct_up_h[0],  # degree C
-            'duct_upside_supply_air_temperature_heating_room2': theta_duct_up_h[1],  # degree C
-            'duct_upside_supply_air_temperature_heating_room3': theta_duct_up_h[2],  # degree C
-            'duct_upside_supply_air_temperature_heating_room4': theta_duct_up_h[3],  # degree C
-            'duct_upside_supply_air_temperature_heating_room5': theta_duct_up_h[4],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room1': theta_duct_up_c[0],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room2': theta_duct_up_c[1],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room3': theta_duct_up_c[2],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room4': theta_duct_up_c[3],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room5': theta_duct_up_c[4],  # degree C
+            'duct_upside_supply_air_temperature_heating_room1': theta_req_h[0],  # degree C
+            'duct_upside_supply_air_temperature_heating_room2': theta_req_h[1],  # degree C
+            'duct_upside_supply_air_temperature_heating_room3': theta_req_h[2],  # degree C
+            'duct_upside_supply_air_temperature_heating_room4': theta_req_h[3],  # degree C
+            'duct_upside_supply_air_temperature_heating_room5': theta_req_h[4],  # degree C
+            'duct_upside_supply_air_temperature_cooling_room1': theta_req_c[0],  # degree C
+            'duct_upside_supply_air_temperature_cooling_room2': theta_req_c[1],  # degree C
+            'duct_upside_supply_air_temperature_cooling_room3': theta_req_c[2],  # degree C
+            'duct_upside_supply_air_temperature_cooling_room4': theta_req_c[3],  # degree C
+            'duct_upside_supply_air_temperature_cooling_room5': theta_req_c[4],  # degree C
             'outlet_temperature_of_heat_source_heating': theta_hs_out_h,  # degree C
             'outlet_temperature_of_heat_source_cooling': theta_hs_out_c,  # degree C
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
