@@ -857,8 +857,10 @@ def get_maximum_heating_supply(
 
     l_duct = np.array(l_duct).reshape(1,5).T
 
-    return get_load_from_upside_temperature(
+    q_max_h = get_load_from_upside_temperature(
         t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_supply_h, t_ac=theta_ac_h, psi=psi, length=l_duct)
+
+    return np.clip(q_max_h, 0.0, None)
 
 
 def get_maximum_cooling_supply(
@@ -910,7 +912,7 @@ def get_maximum_cooling_supply(
 
     q_max_cl = r * q_hs_max_cl
 
-    return q_max_cs, q_max_cl
+    return np.clip(q_max_cs, 0.0, None), q_max_cl
 
 
 def get_treated_untreated_heat_load_for_heating(
