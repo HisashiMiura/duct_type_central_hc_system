@@ -1484,6 +1484,7 @@ def get_main_value(
     q_max_cs, q_max_cl = get_maximum_cooling_supply(
         theta_d_hs_in_c, l_cl, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi, l_duct, theta_sur_c)
 
+    # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(l_h, q_d_trs_prt_h, q_max_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(
         l_cs, l_cl, q_d_trs_prt_c, q_max_cs, q_max_cl)
