@@ -1347,11 +1347,6 @@ def get_main_value(
     if default_heat_source_spec:
         q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
 
-    # make appendix.SystemSpec class
-    system_spec = SystemSpec(q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system)
-
-    # calculation start
-
     # floor area of non occupant room, m2
     a_nr = get_non_occupant_room_floor_area(a_mr, a_or, a_a, r_env)
 
