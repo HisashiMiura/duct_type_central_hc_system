@@ -1432,15 +1432,15 @@ def get_main_value(
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
 
-    # supply air volume, m3/h (5 rooms * 8760 times)
-    v_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
-    v_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
+    # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
+    v_d_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
+    v_d_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
-        q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_part, theta_ac_h)
+        q, theta_ex, mu_h, j, a_nr, c, rho, v_d_supply_h, u_prt, a_part, theta_ac_h)
     theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_balanced(
-        q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_part, theta_ac_c)
+        q, theta_ex, mu_c, j, a_nr, c, rho, v_d_supply_c, u_prt, a_part, theta_ac_c)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
     q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_part, theta_ac_h, theta_d_nac_h)
@@ -1463,10 +1463,10 @@ def get_main_value(
     # maximum heating and cooling output for each rooms
     # heating, MJ/h, (5 rooms * 8760 times)
     q_max_h = get_maximum_heating_supply(
-        theta_d_hs_in_h, q_hs_max_h, c, rho, v_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
+        theta_d_hs_in_h, q_hs_max_h, c, rho, v_d_supply_h, theta_ac_h, psi, l_duct, theta_sur_h)
     # sensible and latent cooling, MJ/h, (5 rooms * 8760 times), (5 rooms * 8760 times)
     q_max_cs, q_max_cl = get_maximum_cooling_supply(
-        theta_d_hs_in_c, l_cl, q_hs_max_cs, q_hs_max_cl, c, rho, v_supply_c, theta_ac_c, psi, l_duct, theta_sur_c)
+        theta_d_hs_in_c, l_cl, q_hs_max_cs, q_hs_max_cl, c, rho, v_d_supply_c, theta_ac_c, psi, l_duct, theta_sur_c)
 
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
@@ -1474,25 +1474,25 @@ def get_main_value(
 
     # requested supply air temperature, degree C, (5 rooms * 8760 times)
     theta_req_h = get_requested_supply_air_temperature_for_heating(
-        theta_sur_h, theta_ac_h, q_t_h, v_supply_h, c, rho, psi, l_duct)
+        theta_sur_h, theta_ac_h, q_t_h, v_d_supply_h, c, rho, psi, l_duct)
     theta_req_c = get_requested_supply_air_temperature_for_cooling(
-        theta_sur_c, theta_ac_c, q_t_cs, v_supply_c, c, rho, psi, l_duct)
+        theta_sur_c, theta_ac_c, q_t_cs, v_d_supply_c, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_supply_h)
-    q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_supply_c, l_cl)
+    q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
+    q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_d_supply_c, l_cl)
 
     # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
-    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
+    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_d_supply_h, theta_ac_h, psi, l_duct)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
+    q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_d_supply_h, theta_ac_h, psi, l_duct)
 
-    l_nor = get_non_occupant_room_load(theta_d_nac_h, theta_ac_h, v_supply_h, c, rho)
+    l_nor = get_non_occupant_room_load(theta_d_nac_h, theta_ac_h, v_d_supply_h, c, rho)
 
     return {
         'constant_value': {
@@ -1561,16 +1561,16 @@ def get_main_value(
             'output_of_heat_source_for_supply_air_volume_estimation_cooling': q_d_hs_c,  # MJ/h
             'supply_air_volume_of_heat_source_heating': v_hs_supply_h,  # MJ/h
             'supply_air_volume_of_heat_source_cooling': v_hs_supply_c,  # MJ/h
-            'supply_air_volume_heating_room1': v_supply_h[0],  # MJ/h
-            'supply_air_volume_heating_room2': v_supply_h[1],  # MJ/h
-            'supply_air_volume_heating_room3': v_supply_h[2],  # MJ/h
-            'supply_air_volume_heating_room4': v_supply_h[3],  # MJ/h
-            'supply_air_volume_heating_room5': v_supply_h[4],  # MJ/h
-            'supply_air_volume_cooling_room1': v_supply_c[0],  # MJ/h
-            'supply_air_volume_cooling_room2': v_supply_c[1],  # MJ/h
-            'supply_air_volume_cooling_room3': v_supply_c[2],  # MJ/h
-            'supply_air_volume_cooling_room4': v_supply_c[3],  # MJ/h
-            'supply_air_volume_cooling_room5': v_supply_c[4],  # MJ/h
+            'supply_air_volume_heating_room1': v_d_supply_h[0],  # MJ/h
+            'supply_air_volume_heating_room2': v_d_supply_h[1],  # MJ/h
+            'supply_air_volume_heating_room3': v_d_supply_h[2],  # MJ/h
+            'supply_air_volume_heating_room4': v_d_supply_h[3],  # MJ/h
+            'supply_air_volume_heating_room5': v_d_supply_h[4],  # MJ/h
+            'supply_air_volume_cooling_room1': v_d_supply_c[0],  # MJ/h
+            'supply_air_volume_cooling_room2': v_d_supply_c[1],  # MJ/h
+            'supply_air_volume_cooling_room3': v_d_supply_c[2],  # MJ/h
+            'supply_air_volume_cooling_room4': v_d_supply_c[3],  # MJ/h
+            'supply_air_volume_cooling_room5': v_d_supply_c[4],  # MJ/h
             'non_occupant_room_temperature_heating': theta_d_nac_h,  # degree C
             'non_occupant_room_temperature_cooling': theta_d_nac_c,  # degree C
             'heat_loss_through_partition_heating_room1': q_d_trs_prt_h[0],  # MJ/h
