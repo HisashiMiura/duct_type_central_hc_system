@@ -1426,15 +1426,15 @@ def get_main_value(
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
     # supply air volume of heat source for heating and cooling, m3/h
-    v_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
-    v_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
+    v_d_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
+    v_d_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
 
     # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
-    v_d_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_hs_supply_h, v_vent)
-    v_d_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_hs_supply_c, v_vent)
+    v_d_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_d_hs_supply_h, v_vent)
+    v_d_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_d_hs_supply_c, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
@@ -1559,8 +1559,8 @@ def get_main_value(
             'duct_ambient_temperature_cooling_room5': theta_sur_c[4],  # degree C
             'output_of_heat_source_for_supply_air_volume_estimation_heating': q_d_hs_h,  # MJ/h
             'output_of_heat_source_for_supply_air_volume_estimation_cooling': q_d_hs_c,  # MJ/h
-            'supply_air_volume_of_heat_source_heating': v_hs_supply_h,  # MJ/h
-            'supply_air_volume_of_heat_source_cooling': v_hs_supply_c,  # MJ/h
+            'supply_air_volume_of_heat_source_heating': v_d_hs_supply_h,  # MJ/h
+            'supply_air_volume_of_heat_source_cooling': v_d_hs_supply_c,  # MJ/h
             'supply_air_volume_heating_room1': v_d_supply_h[0],  # MJ/h
             'supply_air_volume_heating_room2': v_d_supply_h[1],  # MJ/h
             'supply_air_volume_heating_room3': v_d_supply_h[2],  # MJ/h
