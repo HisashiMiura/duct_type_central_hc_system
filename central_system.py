@@ -992,8 +992,10 @@ def get_requested_supply_air_temperature_for_heating(
 
     l_duct = np.array(l_duct).reshape(1, 5).T
 
-    return theta_sur_h + (theta_ac_h + q_t_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
+    theta_req_h = theta_sur_h + (theta_ac_h + q_t_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
         * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
+
+    return np.maximum(theta_req_h, theta_ac_h)
 
 
 def get_requested_supply_air_temperature_for_cooling(
@@ -1022,8 +1024,10 @@ def get_requested_supply_air_temperature_for_cooling(
 
     l_duct = np.array(l_duct).reshape(1,5).T
 
-    return theta_sur_c - (theta_sur_c - theta_ac_c + q_t_cs * 10 ** 6 / (v_supply_c * c * rho)) \
+    theta_req_c = theta_sur_c - (theta_sur_c - theta_ac_c + q_t_cs * 10 ** 6 / (v_supply_c * c * rho)) \
         * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
+
+    return np.minimum(theta_req_c, theta_ac_c)
 
 
 def calc_decided_outlet_supply_air_temperature_for_heating(
