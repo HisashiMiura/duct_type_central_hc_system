@@ -592,7 +592,7 @@ def get_heat_source_supply_air_volume_for_cooling(
     return np.vectorize(f)(q_dash_hs_c)
 
 
-def get_each_supply_air_volume_for_heating(
+def get_each_supply_air_volume_not_vav_adjust_for_heating(
         r_supply_des: np.ndarray,
         v_hs_supply_h: np.ndarray,
         v_vent: np.ndarray) -> np.ndarray:
@@ -614,7 +614,7 @@ def get_each_supply_air_volume_for_heating(
     return np.maximum(v_hs_supply_h * r_supply_des, v_vent)
 
 
-def get_each_supply_air_volume_for_cooling(
+def get_each_supply_air_volume_not_vav_adjust_for_cooling(
         r_supply_des, v_hs_supply_c, v_vent) -> np.ndarray:
     """
     Args:
@@ -1428,8 +1428,8 @@ def get_main_value(
     r_supply_des = get_supply_air_volume_valance(a_hcz)
 
     # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
-    v_d_supply_h = get_each_supply_air_volume_for_heating(r_supply_des, v_d_hs_supply_h, v_vent)
-    v_d_supply_c = get_each_supply_air_volume_for_cooling(r_supply_des, v_d_hs_supply_c, v_vent)
+    v_d_supply_h = get_each_supply_air_volume_not_vav_adjust_for_heating(r_supply_des, v_d_hs_supply_h, v_vent)
+    v_d_supply_c = get_each_supply_air_volume_not_vav_adjust_for_cooling(r_supply_des, v_d_hs_supply_c, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
