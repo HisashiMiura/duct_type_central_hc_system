@@ -990,7 +990,7 @@ def get_requested_supply_air_temperature_for_heating(
         requested temperature, degree C, (5 rooms * 8760 times)
     """
 
-    l_duct = np.array(l_duct).reshape(1,5).T
+    l_duct = np.array(l_duct).reshape(1, 5).T
 
     return theta_sur_h + (theta_ac_h + q_t_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
         * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
