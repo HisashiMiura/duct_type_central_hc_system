@@ -1200,7 +1200,7 @@ def get_duct_heat_loss_for_heating(
         l_duct: duct length, m, (5 rooms)
     """
 
-    l_duct = np.array(l_duct).reshape(1,5).T
+    l_duct = np.array(l_duct).reshape(1, 5).T
 
     return get_duct_heat_loss_from_upside_temperature(
         theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
