@@ -1056,6 +1056,88 @@ def calc_decided_outlet_supply_air_temperature_for_cooling(
     return np.min(theta_duct_up_c, axis=0)
 
 
+def get_each_supply_air_volume_for_heating(
+        vav_system: bool, q_t_h: np.ndarray, theta_hs_out_h: np.ndarray, theta_sur_h: np.ndarray, psi: float,
+        l_duct: np.ndarray, c: float, rho: float, theta_ac_h: np.ndarray,
+        v_vent: np.ndarray, v_d_supply_h: np.ndarray) -> np.ndarray:
+    """
+    calculate each supply air volume for heating
+    Args:
+        vav_system: is vav system equipped or not
+        q_t_h: treated heating load, MJ/h, (5 rooms * 8760 times)
+        theta_hs_out_h: supply air temperature of heat source, degree C, (5 rooms * 8760 times)
+        theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        psi: liner heat loss coefficient, W/mK
+        l_duct: duct length, m, (5 rooms)
+        c: specific heat of air, J/kgK
+        rho: air density, kg/m3
+        theta_ac_h: air conditioned temperature for heating, degree C, (8760 times)
+        v_vent: supply air volume of mechanical ventilation, m3/h, (5 rooms)
+        v_d_supply_h: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
+    Returns:
+        supply air volume adjusted, m3/h, (5 rooms * 8760 times)
+    """
+
+    l_duct = np.array(l_duct).reshape(1, 5).T
+
+    if vav_system:
+        v_vent = v_vent.reshape(1, 5).T
+
+        # np.where の条件式はどちらも評価するためゼロ割の警告が発生する。
+        # それを避けるため、ゼロ割が発生する場合はゼロ割が発生しないようにダミーの値を設定しておく。
+        theta_hs_out_h = np.where(theta_hs_out_h > theta_ac_h, theta_hs_out_h, theta_hs_out_h + 1)
+
+        return np.where(theta_hs_out_h > theta_ac_h,
+                        np.maximum(
+                            (q_t_h * 10 ** 6 + (theta_hs_out_h - theta_sur_h) * psi * l_duct * 3600)
+                            / (c * rho * (theta_hs_out_h - theta_ac_h)),
+                            v_vent),
+                        v_vent)
+    else:
+        return v_d_supply_h
+
+
+def get_each_supply_air_volume_for_cooling(
+        vav_system: bool, q_t_cs: np.ndarray, theta_hs_out_c: np.ndarray, theta_sur_c: np.ndarray, psi: float,
+        l_duct: np.ndarray, c: float, rho: float, theta_ac_c: np.ndarray,
+        v_vent: np.ndarray, v_d_supply_c: np.ndarray) -> np.ndarray:
+    """
+    calculate each supply air volume for cooling
+    Args:
+        vav_system: is vav system equipped or not
+        q_t_cs: treated sensible cooling load, MJ/h, (5 rooms * 8760 times)
+        theta_hs_out_c: supply air temperature of heat source, degree C, (5 rooms * 8760 times)
+        theta_sur_c: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        psi: liner heat loss coefficient, W/mK
+        l_duct: duct length, m, (5 rooms)
+        c: specific heat of air, J/kgK
+        rho: air density, kg/m3
+        theta_ac_c: air conditioned temperature for cooling, degree C, (8760 times)
+        v_vent: supply air volume of mechanical ventilation, m3/h, (5 rooms)
+        v_d_supply_c: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
+    Returns:
+        supply air volume adjusted, m3/h, (5 rooms * 8760 times)
+    """
+
+    l_duct = np.array(l_duct).reshape(1, 5).T
+
+    if vav_system:
+        v_vent = v_vent.reshape(1, 5).T
+
+        # np.where の条件式はどちらも評価するためゼロ割の警告が発生する。
+        # それを避けるため、ゼロ割が発生する場合はゼロ割が発生しないようにダミーの値を設定しておく。
+        theta_hs_out_c = np.where(theta_ac_c > theta_hs_out_c, theta_hs_out_c, theta_hs_out_c - 1)
+
+        return np.where(theta_ac_c > theta_hs_out_c,
+                        np.maximum(
+                            (q_t_cs * 10 ** 6 + (theta_sur_c - theta_hs_out_c) * psi * l_duct * 3600)
+                            / (c * rho * (theta_ac_c - theta_hs_out_c)),
+                            v_vent),
+                        v_vent)
+    else:
+        return v_d_supply_c
+
+
 def calc_heat_source_heating_output(
         theta_hs_out_h: np.ndarray,
         theta_hs_in_h: np.ndarray,
@@ -1480,6 +1562,12 @@ def get_main_value(
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
     theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
+
+    # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
+    v_supply_h = get_each_supply_air_volume_for_heating(
+        vav_system, q_t_h, theta_hs_out_h, theta_sur_h, psi, l_duct, c, rho, theta_ac_h, v_vent, v_d_supply_h)
+    v_supply_c = get_each_supply_air_volume_for_cooling(
+        vav_system, q_t_cs, theta_hs_out_c, theta_sur_c, psi, l_duct, c, rho, theta_ac_c, v_vent, v_d_supply_c)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
