@@ -1030,7 +1030,7 @@ def get_requested_supply_air_temperature_for_cooling(
     return np.minimum(theta_req_c, theta_ac_c)
 
 
-def calc_decided_outlet_supply_air_temperature_for_heating(
+def get_decided_outlet_supply_air_temperature_for_heating(
         theta_duct_up_h: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for heating
@@ -1043,7 +1043,7 @@ def calc_decided_outlet_supply_air_temperature_for_heating(
     return np.max(theta_duct_up_h, axis=0)
 
 
-def calc_decided_outlet_supply_air_temperature_for_cooling(
+def get_decided_outlet_supply_air_temperature_for_cooling(
         theta_duct_up_c: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for cooling
@@ -1560,8 +1560,8 @@ def get_main_value(
         theta_sur_c, theta_ac_c, q_t_cs, v_d_supply_c, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = calc_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
-    theta_hs_out_c = calc_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
+    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
+    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(
