@@ -1369,14 +1369,13 @@ def get_duct_heat_loss_from_upside_temperature(
 
 
 def get_downside_temperature_from_upside_temperature(
-        t_sur: float, t_up: float, v: float, t_ac: float, psi: float, length: float) -> float:
+        t_sur: float, t_up: float, v: float, psi: float, length: float) -> float:
     """
     Calculate the upside air temperature of the duct from the heating load in the room and air supply volume
     Args:
         t_sur: the ambient temperature around the duct, degree C
         t_up: upside air temperature, degree C
         v: supply air volume, m3/h
-        t_ac: air conditioned room temperature, degree C
         psi: linear heat loss coefficient, W/mK
         length: duct length, m
     Returns:
