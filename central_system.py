@@ -1586,7 +1586,7 @@ def get_main_value(
     v_supply_c = get_each_supply_air_volume_for_cooling(
         vav_system, q_t_cs, theta_hs_out_c, theta_sur_c, psi, l_duct, c, rho, theta_ac_c, v_vent, v_d_supply_c)
 
-    # heat loss from ducts, MJ/h, (5 rooms * 8760 times)
+    # heat loss from ducts, heat gain to ducts, MJ/h, (5 rooms * 8760 times)
     q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
     q_gain_duct_c = get_duct_heat_gain_for_cooling(theta_sur_c, theta_hs_out_c, v_supply_c, theta_ac_c, psi, l_duct)
 
