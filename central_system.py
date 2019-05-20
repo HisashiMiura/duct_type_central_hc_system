@@ -1545,7 +1545,7 @@ def get_main_value(
     a_hcz = get_floor_area(a_mr, a_or, a_a, r_env)
 
     # the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
-    a_part = get_partition_area(a_hcz, a_mr, a_or, a_nr, r_env)
+    a_prt = get_partition_area(a_hcz, a_mr, a_or, a_nr, r_env)
 
     # heat loss coefficient of the partition wall, W/m2K
     u_prt = get_heat_loss_coefficient_of_partition()
@@ -1621,13 +1621,13 @@ def get_main_value(
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
-        q, theta_ex, mu_h, j, a_nr, c, rho, v_d_supply_h, u_prt, a_part, theta_ac_h)
+        q, theta_ex, mu_h, j, a_nr, c, rho, v_d_supply_h, u_prt, a_prt, theta_ac_h)
     theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_balanced(
-        q, theta_ex, mu_c, j, a_nr, c, rho, v_d_supply_c, u_prt, a_part, theta_ac_c)
+        q, theta_ex, mu_c, j, a_nr, c, rho, v_d_supply_c, u_prt, a_prt, theta_ac_c)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
-    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_part, theta_ac_h, theta_d_nac_h)
-    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_part, theta_ac_c, theta_d_nac_c)
+    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_prt, theta_ac_h, theta_d_nac_h)
+    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_prt, theta_ac_c, theta_d_nac_c)
 
     # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt_h)
@@ -1681,9 +1681,9 @@ def get_main_value(
 
     # actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
     theta_ac_act_h = get_actual_air_conditioned_temperature_for_heating(
-        theta_ac_h, c, rho, v_supply_h, theta_supply_h, q_t_h, u_prt, a_part, a_hcz, q)
+        theta_ac_h, c, rho, v_supply_h, theta_supply_h, q_t_h, u_prt, a_prt, a_hcz, q)
     theta_ac_act_c = get_actual_air_conditioned_temperature_for_cooling(
-        theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_part, a_hcz, q)
+        theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
@@ -1715,11 +1715,11 @@ def get_main_value(
             'mechanical_ventilation_volume_room5': v_vent[4],  # m3/h
             'minimum_supply_air_volume_of_heat_source_heating': v_hs_min_h,  # m3/h
             'minimum_supply_air_volume_of_heat_source_cooling': v_hs_min_c,  # m3/h
-            'partition_area_room1': a_part[0],  # m2
-            'partition_area_room2': a_part[1],  # m2
-            'partition_area_room3': a_part[2],  # m2
-            'partition_area_room4': a_part[3],  # m2
-            'partition_area_room5': a_part[4],  # m2
+            'partition_area_room1': a_prt[0],  # m2
+            'partition_area_room2': a_prt[1],  # m2
+            'partition_area_room3': a_prt[2],  # m2
+            'partition_area_room4': a_prt[3],  # m2
+            'partition_area_room5': a_prt[4],  # m2
             'rated_capacity_heating': q_hs_rtd_h,  # MJ/h
             'rated_capacity_cooling': q_hs_rtd_c,  # MJ/h
         },
