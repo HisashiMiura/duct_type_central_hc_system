@@ -1088,10 +1088,10 @@ def get_each_supply_air_volume_for_heating(
         theta_hs_out_h = np.where(theta_hs_out_h > theta_ac_h, theta_hs_out_h, theta_hs_out_h + 1)
 
         return np.where(theta_hs_out_h > theta_ac_h,
-                        np.maximum(
+                        np.clip(
                             (q_t_h * 10 ** 6 + (theta_hs_out_h - theta_sur_h) * psi * l_duct * 3600)
                             / (c * rho * (theta_hs_out_h - theta_ac_h)),
-                            v_vent),
+                            v_vent, v_d_supply_h),
                         v_vent)
     else:
         return v_d_supply_h
@@ -1129,10 +1129,10 @@ def get_each_supply_air_volume_for_cooling(
         theta_hs_out_c = np.where(theta_ac_c > theta_hs_out_c, theta_hs_out_c, theta_hs_out_c - 1)
 
         return np.where(theta_ac_c > theta_hs_out_c,
-                        np.maximum(
+                        np.clip(
                             (q_t_cs * 10 ** 6 + (theta_sur_c - theta_hs_out_c) * psi * l_duct * 3600)
                             / (c * rho * (theta_ac_c - theta_hs_out_c)),
-                            v_vent),
+                            v_vent, v_d_supply_c),
                         v_vent)
     else:
         return v_d_supply_c
