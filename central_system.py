@@ -1264,6 +1264,61 @@ def get_actual_air_conditioned_temperature_for_cooling(
         / (c * rho * v_supply_c + (u_prt * a_prt + q * a_hcz) * 3600)
 
 
+def get_actual_non_occupant_room_temperature_for_heating(
+        q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float, c: float, rho: float,
+        v_supply_h: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_act_h: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        q_value: Q value, W/m2K
+        theta_ex: outdoor temperature, degree C
+        mu_value: mu value, (W/m2K)/(W/m2K)
+        j: horizontal solar radiation, W/m2K
+        a_nr: floor area of non occupant room, m2
+        c: specific heat of air, J/kg K
+        rho: air density, kg/m3
+        v_supply_h: supply air volume, m3/h
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2
+        theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+    Returns:
+        non occupant room temperature, degree C (8760 times)
+    """
+
+    # area of the partition, m2
+    a_prt = a_prt.reshape(1, 5).T
+
+    return ((q_value * theta_ex + mu_value * j) * a_nr
+            + np.sum((c * rho * v_supply_h / 3600 + u_prt * a_prt)*theta_ac_act_h, axis=0)) \
+        / (q_value * a_nr + np.sum(c * rho * v_supply_h / 3600 + u_prt * a_prt, axis=0))
+
+
+def get_actual_non_occupant_room_temperature_for_cooling(
+        q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float, c: float, rho: float,
+        v_supply_c: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_act_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        q_value: Q value, W/m2K
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mu_value: mu value, (W/m2K)/(W/m2K)
+        j: horizontal solar radiation, W/m2, (8760 times)
+        a_nr: floor area of non occupant room, m2
+        c: specific heat of air, J/kg K
+        rho: air density, kg/m3
+        v_supply_c: supply air volume, m3/h, (5 rooms * 8760 times)
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        theta_ac_act_c: air conditioned temperature for heating, degree C, (8760 times)
+    Returns:
+        non occupant room temperature, degree C (8760 times)
+    """
+
+    a_prt = a_prt.reshape(1, 5).T
+
+    return ((q_value * theta_ex + mu_value * j) * a_nr
+            + np.sum((c * rho * v_supply_c / 3600 + u_prt * a_prt)*theta_ac_act_c, axis=0)) \
+        / (q_value * a_nr + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0))
+
+
 def calc_heat_source_heating_output(
         theta_hs_out_h: np.ndarray,
         theta_hs_in_h: np.ndarray,
@@ -1684,6 +1739,12 @@ def get_main_value(
         theta_ac_h, c, rho, v_supply_h, theta_supply_h, q_t_h, u_prt, a_prt, a_hcz, q)
     theta_ac_act_c = get_actual_air_conditioned_temperature_for_cooling(
         theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
+
+    # actual non occupant room temperature, degree C, (8760 times)
+    theta_nac_h = get_actual_non_occupant_room_temperature_for_heating(
+        q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_prt, theta_ac_act_h)
+    theta_nac_c = get_actual_non_occupant_room_temperature_for_cooling(
+        q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_act_c)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
