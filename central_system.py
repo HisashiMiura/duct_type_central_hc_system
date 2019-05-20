@@ -1808,6 +1808,16 @@ def get_main_value(
             'duct_heat_gain_cooling_room3': q_gain_duct_c[2],  # MJ/h
             'duct_heat_gain_cooling_room4': q_gain_duct_c[3],  # MJ/h
             'duct_heat_gain_cooling_room5': q_gain_duct_c[4],  # MJ/h
+            'supply_air_temperature_heating_room1': theta_supply_h[0],  # degree C
+            'supply_air_temperature_heating_room2': theta_supply_h[1],  # degree C
+            'supply_air_temperature_heating_room3': theta_supply_h[2],  # degree C
+            'supply_air_temperature_heating_room4': theta_supply_h[3],  # degree C
+            'supply_air_temperature_heating_room5': theta_supply_h[4],  # degree C
+            'supply_air_temperature_cooling_room1': theta_supply_c[0],  # degree C
+            'supply_air_temperature_cooling_room2': theta_supply_c[1],  # degree C
+            'supply_air_temperature_cooling_room3': theta_supply_c[2],  # degree C
+            'supply_air_temperature_cooling_room4': theta_supply_c[3],  # degree C
+            'supply_air_temperature_cooling_room5': theta_supply_c[4],  # degree C
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
