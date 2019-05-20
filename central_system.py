@@ -635,17 +635,8 @@ def get_each_supply_air_volume_not_vav_adjust_for_cooling(
 
 
 def get_non_occupant_room_temperature_for_heating_balanced(
-        q_value: float,
-        theta_ex: np.ndarray,
-        mu_value: float,
-        j: np.ndarray,
-        a_nr: float,
-        c: float,
-        rho: float,
-        v_supply_h: np.ndarray,
-        u_prt: float,
-        a_prt: np.ndarray,
-        theta_ac_h: np.ndarray) -> np.ndarray:
+        q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float, c: float, rho: float,
+        v_supply_h: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_h: np.ndarray) -> np.ndarray:
     """
     Args:
         q_value: Q value, W/m2K
@@ -672,7 +663,8 @@ def get_non_occupant_room_temperature_for_heating_balanced(
 
 
 def get_non_occupant_room_temperature_for_cooling_balanced(
-        q_value, theta_ex, mu_value, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_c) -> np.ndarray:
+        q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float, c: float, rho: float,
+        v_supply_c: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_c: np.ndarray) -> np.ndarray:
     """
     Args:
         q_value: Q value, W/m2K
