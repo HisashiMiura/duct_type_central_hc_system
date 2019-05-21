@@ -1941,6 +1941,8 @@ def get_main_value(
             'actual_air_conditioned_temperature_cooling_room3': theta_ac_act_c[2],  # degree C
             'actual_air_conditioned_temperature_cooling_room4': theta_ac_act_c[3],  # degree C
             'actual_air_conditioned_temperature_cooling_room5': theta_ac_act_c[4],  # degree C
+            'actual_non_occupant_room_temperature_heating': theta_nac_h,  # degree C
+            'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
