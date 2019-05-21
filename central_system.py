@@ -1353,6 +1353,42 @@ def get_actual_non_occupant_room_temperature_for_cooling(
         / (q_value * a_nr + np.sum(c * rho * v_supply_c / 3600 + u_prt * a_prt, axis=0))
 
 
+def get_actual_non_occupant_room_load_for_heating(
+        theta_ac_act_h: np.ndarray, theta_nac_h: np.ndarray, v_supply_h: np.ndarray) -> np.ndarray:
+    """
+    calculate actual non occupant room heating load
+    Args:
+        theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+        theta_nac_h: non occupant room temperature, degree C (8760 times)
+        v_supply_h: supply air volume, m3/h
+    Returns:
+        actual non occupant room heating load, MJ/h, (8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    return np.sum((theta_ac_act_h - theta_nac_h) * c * rho * v_supply_h * 10 **(-6), axis=0)
+
+
+def get_actual_non_occupant_room_load_for_cooling(
+        theta_ac_act_c: np.ndarray, theta_nac_c: np.ndarray, v_supply_c: np.ndarray) -> np.ndarray:
+    """
+    calculate actual non occupant room sensible cooling load
+    Args:
+        theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
+        theta_nac_c: non occupant room temperature, degree C (8760 times)
+        v_supply_c: supply air volume, m3/h
+    Returns:
+        actual non occupant room sensible cooling load, MJ/h, (8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    return np.sum((theta_nac_c - theta_ac_act_c) * c * rho * v_supply_c * 10 **(-6), axis=0)
+
+
 def calc_heat_source_heating_output(
         theta_hs_out_h: np.ndarray,
         theta_hs_in_h: np.ndarray,
@@ -1757,6 +1793,10 @@ def get_main_value(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_prt, theta_ac_act_h)
     theta_nac_c = get_actual_non_occupant_room_temperature_for_cooling(
         q, theta_ex, mu_c, j, a_nr, c, rho, v_supply_c, u_prt, a_prt, theta_ac_act_c)
+
+    # actual non occupant room load, MJ/h, (8760 times)
+    l_d_act_nac_h = get_actual_non_occupant_room_load_for_heating(theta_ac_act_h, theta_nac_h, v_supply_h)
+    l_d_act_nac_cs = get_actual_non_occupant_room_load_for_cooling(theta_ac_act_c, theta_nac_c, v_supply_c)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
