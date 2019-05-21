@@ -1264,6 +1264,40 @@ def get_actual_air_conditioned_temperature_for_cooling(
         / (c * rho * v_supply_c + (u_prt * a_prt + q * a_hcz) * 3600)
 
 
+def get_actual_treated_load_for_heating(
+        theta_supply_h: np.ndarray, theta_ac_act_h: np.ndarray, v_supply_h: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
+        theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
+    Returns:
+        actual treated load for heating, MJ/h, (5 rooms * 8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    return (theta_supply_h - theta_ac_act_h) * c * rho * v_supply_h * 10 ** (-6)
+
+
+def get_actual_treated_load_for_cooling(
+        theta_supply_c: np.ndarray, theta_ac_act_c: np.ndarray, v_supply_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
+        theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
+        v_supply_c: supply air volume for cooling, m3/h (5 rooms * 8760 times)
+    Returns:
+        actual treated sensible load for cooling, MJ/h, (5 rooms * 8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    return (theta_ac_act_c - theta_supply_c) * c * rho * v_supply_c * 10 ** (-6)
+
+
 def get_actual_non_occupant_room_temperature_for_heating(
         q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float, c: float, rho: float,
         v_supply_h: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_act_h: np.ndarray) -> np.ndarray:
@@ -1362,32 +1396,6 @@ def calc_heat_source_cooling_output(
     q_hs_cl = np.sum(l_cl[0:5], axis=0)
 
     return q_hs_cs, q_hs_cl
-
-
-def get_actual_treated_load_for_heating(
-        theta_sur_h: np.array,
-        theta_hs_out_h: np.array,
-        v_supply_h: np.array,
-        theta_ac_h: float,
-        psi: float,
-        l_duct: np.array) -> np.ndarray:
-    """
-    Args:
-        theta_sur_h: duct ambient temperature, degree C, (5 rooms * 8760 times)
-        theta_hs_out_h: supply air temperature, degree C, (5 rooms * 8760 times)
-        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        theta_ac_h: air conditioned temperature, degree C
-        psi: liner heat loss coefficient, W/mK
-        l_duct: duct length, m (5 rooms)
-    Returns:
-        actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    """
-
-    # duct length, m
-    l_duct = np.array(l_duct).reshape(1, 5).T
-
-    return get_load_from_upside_temperature(
-        theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
 
 # region duct heat balance
@@ -1740,6 +1748,10 @@ def get_main_value(
     theta_ac_act_c = get_actual_air_conditioned_temperature_for_cooling(
         theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
 
+    # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
+    q_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply_h)
+    q_act_c = get_actual_treated_load_for_cooling(theta_supply_c, theta_ac_act_c, v_supply_c)
+
     # actual non occupant room temperature, degree C, (8760 times)
     theta_nac_h = get_actual_non_occupant_room_temperature_for_heating(
         q, theta_ex, mu_h, j, a_nr, c, rho, v_supply_h, u_prt, a_prt, theta_ac_act_h)
@@ -1749,9 +1761,6 @@ def get_main_value(
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_d_supply_c, l_cl)
-
-    # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    q_act_h = get_actual_treated_load_for_heating(theta_sur_h, theta_hs_out_h, v_d_supply_h, theta_ac_h, psi, l_duct)
 
     l_nor = get_non_occupant_room_load(theta_d_nac_h, theta_ac_h, v_d_supply_h, c, rho)
 
