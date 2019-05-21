@@ -1749,8 +1749,8 @@ def get_main_value(
         theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    q_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply_h)
-    q_act_c = get_actual_treated_load_for_cooling(theta_supply_c, theta_ac_act_c, v_supply_c)
+    l_d_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply_h)
+    l_d_act_c = get_actual_treated_load_for_cooling(theta_supply_c, theta_ac_act_c, v_supply_c)
 
     # actual non occupant room temperature, degree C, (8760 times)
     theta_nac_h = get_actual_non_occupant_room_temperature_for_heating(
@@ -1950,16 +1950,16 @@ def get_main_value(
             'actual_air_conditioned_temperature_cooling_room3': theta_ac_act_c[2],  # degree C
             'actual_air_conditioned_temperature_cooling_room4': theta_ac_act_c[3],  # degree C
             'actual_air_conditioned_temperature_cooling_room5': theta_ac_act_c[4],  # degree C
+            'actual_treated_load_heating_room1': l_d_act_h[0],  # MJ/h
+            'actual_treated_load_heating_room2': l_d_act_h[1],  # MJ/h
+            'actual_treated_load_heating_room3': l_d_act_h[2],  # MJ/h
+            'actual_treated_load_heating_room4': l_d_act_h[3],  # MJ/h
+            'actual_treated_load_heating_room5': l_d_act_h[4],  # MJ/h
             'actual_non_occupant_room_temperature_heating': theta_nac_h,  # degree C
             'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
-            'actual_treated_load_heating_room1': q_act_h[0],  # MJ/h
-            'actual_treated_load_heating_room2': q_act_h[1],  # MJ/h
-            'actual_treated_load_heating_room3': q_act_h[2],  # MJ/h
-            'actual_treated_load_heating_room4': q_act_h[3],  # MJ/h
-            'actual_treated_load_heating_room5': q_act_h[4],  # MJ/h
             'non_occupant_room_load': l_nor,  # MJ/h
         },
     }
