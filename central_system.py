@@ -1802,7 +1802,6 @@ def get_main_value(
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_d_supply_c, l_cl)
 
-
     return {
         'constant_value': {
             'air_density': rho,  # kg/m3
@@ -2001,6 +2000,8 @@ def get_main_value(
             'actual_treated_load_cooling_room5': l_d_act_c[4],  # MJ/h
             'actual_non_occupant_room_temperature_heating': theta_nac_h,  # degree C
             'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
+            'actual_non_occupant_room_load_heating': l_d_act_nac_h,  # MJ/h
+            'actual_non_occupant_room_load_cooling': l_d_act_nac_cs,  # MJ/h
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
