@@ -1260,7 +1260,7 @@ def get_actual_air_conditioned_temperature_for_cooling(
     a_prt = a_prt.reshape(1, 5).T
     a_hcz = a_hcz[0:5].reshape(1, 5).T
 
-    return theta_ac_c + (c * rho * v_supply_c * (theta_supply_c - theta_ac_c) - q_t_cs * 10 ** 6) \
+    return theta_ac_c - (c * rho * v_supply_c * (theta_ac_c - theta_supply_c) - q_t_cs * 10 ** 6) \
         / (c * rho * v_supply_c + (u_prt * a_prt + q * a_hcz) * 3600)
 
 
