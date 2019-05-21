@@ -1802,7 +1802,6 @@ def get_main_value(
     q_hs_h = calc_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, c, rho, v_d_supply_h)
     q_hs_cs, q_hs_cl = calc_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, c, rho, v_d_supply_c, l_cl)
 
-    l_nor = get_non_occupant_room_load(theta_d_nac_h, theta_ac_h, v_d_supply_h, c, rho)
 
     return {
         'constant_value': {
@@ -2005,6 +2004,5 @@ def get_main_value(
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
-            'non_occupant_room_load': l_nor,  # MJ/h
         },
     }
