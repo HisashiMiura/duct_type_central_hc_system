@@ -1955,6 +1955,11 @@ def get_main_value(
             'actual_treated_load_heating_room3': l_d_act_h[2],  # MJ/h
             'actual_treated_load_heating_room4': l_d_act_h[3],  # MJ/h
             'actual_treated_load_heating_room5': l_d_act_h[4],  # MJ/h
+            'actual_treated_load_cooling_room1': l_d_act_c[0],  # MJ/h
+            'actual_treated_load_cooling_room2': l_d_act_c[1],  # MJ/h
+            'actual_treated_load_cooling_room3': l_d_act_c[2],  # MJ/h
+            'actual_treated_load_cooling_room4': l_d_act_c[3],  # MJ/h
+            'actual_treated_load_cooling_room5': l_d_act_c[4],  # MJ/h
             'actual_non_occupant_room_temperature_heating': theta_nac_h,  # degree C
             'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
