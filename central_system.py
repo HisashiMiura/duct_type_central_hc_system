@@ -1820,8 +1820,8 @@ def get_main_value(
     theta_hs_in_c = get_heat_source_inlet_air_temperature_for_cooling(theta_nac_c)
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_d_hs_in_h, v_d_supply_h)
-    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_d_hs_in_c, theta_hs_out_c, v_d_supply_c, l_cl)
+    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in_h, v_supply_h)
+    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_hs_in_c, theta_hs_out_c, v_supply_c, l_cl)
 
     return {
         'constant_value': {
