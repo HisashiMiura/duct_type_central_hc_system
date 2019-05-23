@@ -1389,6 +1389,43 @@ def get_actual_non_occupant_room_load_for_cooling(
     return np.sum((theta_nac_c - theta_ac_act_c) * c * rho * v_supply_c * 10 **(-6), axis=0)
 
 
+def get_actual_heat_loss_through_partition_for_heating(
+        u_prt: float, a_prt: np.ndarray, theta_ac_act_h: np.ndarray, theta_nac_h: np.ndarray) -> np.ndarray:
+    """
+    calculate actual heat loss through the partition
+    Args:
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+        theta_nac_h: non occupant room temperature, degree C (8760 times)
+    Returns:
+        heat loss through the partition, MJ/h (5 rooms * 8760 times)
+    """
+
+    # area of the partition, m2
+    a_prt = a_prt.reshape(1, 5).T
+
+    return u_prt * a_prt * (theta_ac_act_h - theta_nac_h) * 3600 * 10 ** (-6)
+
+
+def get_actual_heat_gain_through_partition_for_cooling(
+        u_prt: float, a_prt: np.ndarray, theta_ac_act_c: np.ndarray, theta_nac_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2
+        theta_ac_act_c: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+        theta_nac_c: non occupant room temperature, degree C (8760 times)
+    Returns:
+        heat gain through the partition, MJ/h (5 rooms * 8760 times)
+    """
+
+    # area of the partition, m2
+    a_prt = a_prt.reshape(1, 5).T
+
+    return u_prt * a_prt * (theta_nac_c - theta_ac_act_c) * 3600 * 10 ** (-6)
+
+
 def get_heat_source_inlet_air_temperature_for_heating(theta_nac_h: np.ndarray) -> np.ndarray:
     """
     get heat source inlet air temperature for heating
@@ -1799,6 +1836,10 @@ def get_main_value(
     l_d_act_nac_h = get_actual_non_occupant_room_load_for_heating(theta_ac_act_h, theta_nac_h, v_supply_h)
     l_d_act_nac_cs = get_actual_non_occupant_room_load_for_cooling(theta_ac_act_c, theta_nac_c, v_supply_c)
 
+    # actual heat loss or gain through partitions, MJ/h, (5 rooms * 8760 times)
+    q_trs_prt_h = get_actual_heat_loss_through_partition_for_heating(u_prt, a_prt, theta_ac_act_h, theta_nac_h)
+    q_trs_prt_c = get_actual_heat_gain_through_partition_for_cooling(u_prt, a_prt, theta_ac_act_c, theta_nac_h)
+
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in_h = get_heat_source_inlet_air_temperature_for_heating(theta_nac_h)
     theta_hs_in_c = get_heat_source_inlet_air_temperature_for_cooling(theta_nac_c)
@@ -2007,6 +2048,16 @@ def get_main_value(
             'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
             'actual_non_occupant_room_load_heating': l_d_act_nac_h,  # MJ/h
             'actual_non_occupant_room_load_cooling': l_d_act_nac_cs,  # MJ/h
+            'actual_heat_loss_through_partitions_heating_room1': q_trs_prt_h[0],  # MJ/h
+            'actual_heat_loss_through_partitions_heating_room2': q_trs_prt_h[1],  # MJ/h
+            'actual_heat_loss_through_partitions_heating_room3': q_trs_prt_h[2],  # MJ/h
+            'actual_heat_loss_through_partitions_heating_room4': q_trs_prt_h[3],  # MJ/h
+            'actual_heat_loss_through_partitions_heating_room5': q_trs_prt_h[4],  # MJ/h
+            'actual_heat_gain_through_partitions_heating_room1': q_trs_prt_c[0],  # MJ/h
+            'actual_heat_gain_through_partitions_heating_room2': q_trs_prt_c[1],  # MJ/h
+            'actual_heat_gain_through_partitions_heating_room3': q_trs_prt_c[2],  # MJ/h
+            'actual_heat_gain_through_partitions_heating_room4': q_trs_prt_c[3],  # MJ/h
+            'actual_heat_gain_through_partitions_heating_room5': q_trs_prt_c[4],  # MJ/h
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h
