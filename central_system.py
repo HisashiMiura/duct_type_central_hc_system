@@ -1595,22 +1595,6 @@ def get_downside_temperature_from_upside_temperature(
 # endregion
 
 
-def get_non_occupant_room_load(
-        theta_nac_h: np.array, theta_ac_h: np.array, v_supply_h: np.array, c: float, rho: float):
-    """
-    calculate non occupant room load
-    Args:
-        theta_nac_h: non occupant room temperature, degree C (8760 times)
-        theta_ac_h: air conditioned temperature, degree C, (8760 times)
-        v_supply_h: supply air volume, m3/h (5 rooms * 8760 times)
-        c: air specific heat, J/kg K
-        rho: air density, kg/m3
-    Returns:
-        non occupant room load, MJ/h, (8760 times)
-    """
-
-    return (theta_ac_h - theta_nac_h) * np.sum(v_supply_h, axis=0) * c * rho * 10 ** (-6)
-
 # endregion
 
 
