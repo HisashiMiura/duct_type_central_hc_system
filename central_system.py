@@ -1273,12 +1273,14 @@ def get_actual_air_conditioned_temperature_for_cooling(
 
 
 def get_actual_treated_load_for_heating(
-        theta_supply_h: np.ndarray, theta_ac_act_h: np.ndarray, v_supply_h: np.ndarray) -> np.ndarray:
+        theta_supply_h: np.ndarray, theta_ac_act_h: np.ndarray, v_supply_h: np.ndarray,
+        l_d_h: np.ndarray) -> np.ndarray:
     """
     Args:
         theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     Returns:
         actual treated load for heating, MJ/h, (5 rooms * 8760 times)
     """
@@ -1286,16 +1288,20 @@ def get_actual_treated_load_for_heating(
     c = get_specific_heat()
     rho = get_air_density()
 
-    return (theta_supply_h - theta_ac_act_h) * c * rho * v_supply_h * 10 ** (-6)
+    l_d_act_h = (theta_supply_h - theta_ac_act_h) * c * rho * v_supply_h * 10 ** (-6)
+
+    return np.where(l_d_h > 0.0, l_d_act_h, 0.0)
 
 
 def get_actual_treated_load_for_cooling(
-        theta_supply_c: np.ndarray, theta_ac_act_c: np.ndarray, v_supply_c: np.ndarray) -> np.ndarray:
+        theta_supply_c: np.ndarray, theta_ac_act_c: np.ndarray, v_supply_c: np.ndarray,
+        l_d_cs: np.ndarray) -> np.ndarray:
     """
     Args:
         theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
         v_supply_c: supply air volume for cooling, m3/h (5 rooms * 8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
     Returns:
         actual treated sensible load for cooling, MJ/h, (5 rooms * 8760 times)
     """
@@ -1303,7 +1309,9 @@ def get_actual_treated_load_for_cooling(
     c = get_specific_heat()
     rho = get_air_density()
 
-    return (theta_ac_act_c - theta_supply_c) * c * rho * v_supply_c * 10 ** (-6)
+    l_d_act_cs = (theta_ac_act_c - theta_supply_c) * c * rho * v_supply_c * 10 ** (-6)
+
+    return np.where(l_d_cs > 0.0, l_d_act_cs, 0.0)
 
 
 def get_actual_non_occupant_room_temperature_for_heating(
@@ -1833,8 +1841,8 @@ def get_main_value(
         theta_ac_c, c, rho, v_supply_c, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    l_d_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply_h)
-    l_d_act_c = get_actual_treated_load_for_cooling(theta_supply_c, theta_ac_act_c, v_supply_c)
+    l_d_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply_h, l_d_h)
+    l_d_act_c = get_actual_treated_load_for_cooling(theta_supply_c, theta_ac_act_c, v_supply_c, l_d_cs)
 
     # actual non occupant room temperature, degree C, (8760 times)
     theta_nac_h = get_actual_non_occupant_room_temperature_for_heating(
