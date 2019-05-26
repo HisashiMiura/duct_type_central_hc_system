@@ -1152,7 +1152,7 @@ def get_duct_heat_loss_for_heating(
     q_duct_h = get_duct_heat_loss_from_upside_temperature(
         theta_sur_h, theta_hs_out_h, v_supply_h, theta_ac_h, psi, l_duct)
 
-    return np.where(l_d_h > 0.0, q_duct_h, 0.0)
+    return np.where(np.sum(l_d_h, axis=0) > 0.0, q_duct_h, 0.0)
 
 
 def get_duct_heat_gain_for_cooling(
@@ -1175,7 +1175,7 @@ def get_duct_heat_gain_for_cooling(
     q_duct_c = - get_duct_heat_loss_from_upside_temperature(
         theta_sur_c, theta_hs_out_c, v_supply_c, theta_ac_c, psi, l_duct)
 
-    return np.where(l_d_cs > 0.0, q_duct_c, 0.0)
+    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_duct_c, 0.0)
 
 
 def get_supply_air_temperature_for_heating(
@@ -1290,7 +1290,7 @@ def get_actual_treated_load_for_heating(
 
     l_d_act_h = (theta_supply_h - theta_ac_act_h) * c * rho * v_supply_h * 10 ** (-6)
 
-    return np.where(l_d_h > 0.0, l_d_act_h, 0.0)
+    return np.where(np.sum(l_d_h, axis=0) > 0.0, l_d_act_h, 0.0)
 
 
 def get_actual_treated_load_for_cooling(
@@ -1311,7 +1311,7 @@ def get_actual_treated_load_for_cooling(
 
     l_d_act_cs = (theta_ac_act_c - theta_supply_c) * c * rho * v_supply_c * 10 ** (-6)
 
-    return np.where(l_d_cs > 0.0, l_d_act_cs, 0.0)
+    return np.where(np.sum(l_d_cs, axis=0) > 0.0, l_d_act_cs, 0.0)
 
 
 def get_actual_non_occupant_room_temperature_for_heating(
