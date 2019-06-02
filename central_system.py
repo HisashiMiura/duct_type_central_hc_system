@@ -307,12 +307,61 @@ def get_heat_loss_coefficient_of_partition() -> float:
     return 1 / 0.46
 
 
-def get_attic_temperature_for_heating(theta_sat: np.ndarray, theta_ac_h: np.ndarray) -> np.ndarray:
+def get_air_conditioned_room_temperature(theta_ex: np.ndarray, mode: np.ndarray) -> np.ndarray:
+    """
+    calculate air conditioned room temperature
+    Args:
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mode: operation mode, (8760 times)
+    Returns:
+        air conditioned room temperature, degree C, (8760 times)
+    """
+
+    theta_ac_h = 20.0
+
+    theta_ac_c = 27.0
+
+    theta_ac_m = np.clip(theta_ex, theta_ac_h, theta_ac_c)
+
+    return np.where(mode == 'h', theta_ac_h, np.where(mode == 'c', theta_ac_c, theta_ac_m))
+
+
+def get_attic_temperature(
+        theta_sat: np.ndarray, theta_ac_h: np.ndarray, theta_ac_c: np.ndarray, theta_ex: np.ndarray,
+        mode: np.ndarray) -> np.ndarray:
     """
     calculate attic temperature for heating
     Args:
         theta_sat: SAT temperature, degree C, (8760 times)
         theta_ac_h: air conditioned temperature for heating, degree C, (8760 times)
+        theta_ac_c: air conditioned temperature for cooling, degree C, (8760 times)
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mode: operation mode, (8760 times)
+    Returns:
+        attic temperature for heating, degree C, (8760 times)
+    """
+
+    theta_ac_m = np.clip(theta_ex, theta_ac_h, theta_ac_c)
+
+    theta_ac = np.where(mode == 'h', theta_ac_h,
+                        np.where(mode == 'c', theta_ac_c,
+                                 theta_ac_m))
+
+    # temperature difference coefficient
+    h = 1.0
+
+    return theta_sat * h + theta_ac * (1 - h)
+
+
+def get_attic_temperature_for_heating(
+        theta_sat: np.ndarray, theta_ac_h: np.ndarray, theta_ex: np.ndarray, mode: np.ndarray) -> np.ndarray:
+    """
+    calculate attic temperature for heating
+    Args:
+        theta_sat: SAT temperature, degree C, (8760 times)
+        theta_ac_h: air conditioned temperature for heating, degree C, (8760 times)
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mode: operation mode, (8760 times)
     Returns:
         attic temperature for heating, degree C, (8760 times)
     """
@@ -320,15 +369,18 @@ def get_attic_temperature_for_heating(theta_sat: np.ndarray, theta_ac_h: np.ndar
     # temperature difference coefficient
     h = 1.0
 
-    return theta_sat * h + theta_ac_h * (1 - h)
+    return np.where(mode == 'h', theta_sat * h + theta_ac_h * (1 - h), theta_sat * h + theta_ex * (1 - h))
 
 
-def get_attic_temperature_for_cooling(theta_sat: np.ndarray, theta_ac_c: np.ndarray) -> np.ndarray:
+def get_attic_temperature_for_cooling(
+        theta_sat: np.ndarray, theta_ac_c: np.ndarray, theta_ex: np.ndarray, mode: np.ndarray) -> np.ndarray:
     """
     calculate attic temperature for cooling
     Args:
         theta_sat: SAT temperature, degree C, (8760 times)
         theta_ac_c: air conditioned temperature for cooling, degree C, (8760 times)
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        mode: operation mode, (8760 times)
     Returns:
         attic temperature for cooling, degree C, (8760 times)
     """
@@ -1774,6 +1826,8 @@ def get_main_value(
     theta_ac_h = get_air_conditioned_temperature_for_heating()
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
+    theta_ac = get_air_conditioned_room_temperature(theta_ex, mode)
+
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
 
@@ -1784,8 +1838,9 @@ def get_main_value(
     l_duct = get_duct_length(l_duct_r=l_duct_r, a_a=a_a)
 
     # attic temperature, degree C, (8760 times)
-    theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h)
-    theta_attic_c = get_attic_temperature_for_cooling(theta_sat, theta_ac_c)
+    theta_attic = get_attic_temperature(theta_sat, theta_ac_h, theta_ac_c, theta_ex, mode)
+    theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h, theta_ex, mode)
+    theta_attic_c = get_attic_temperature_for_cooling(theta_sat, theta_ac_c, theta_ex, mode)
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur_h = get_duct_ambient_air_temperature_for_heating(
