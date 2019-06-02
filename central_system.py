@@ -1828,14 +1828,12 @@ def get_main_value(
 
     # attic temperature, degree C, (8760 times)
     theta_attic = get_attic_temperature(theta_sat, theta_ac)
-    theta_attic_h = get_attic_temperature_for_heating(theta_sat, theta_ac_h, theta_ex, mode)
-    theta_attic_c = get_attic_temperature_for_cooling(theta_sat, theta_ac_c, theta_ex, mode)
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur_h = get_duct_ambient_air_temperature_for_heating(
-        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_h, theta_attic_h)
+        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_h, theta_attic)
     theta_sur_c = get_duct_ambient_air_temperature_for_cooling(
-        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic_c)
+        is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac_c, theta_attic)
 
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
@@ -2006,10 +2004,9 @@ def get_main_value(
             'operation_mode': mode,  # string ('h', 'c', 'm')
             'air_conditioned_temperature_heating': theta_ac_h,  # degree C
             'air_conditioned_temperature_cooling': theta_ac_c,  # degree C
-            'air_conditioned_temperature': theta_ac, # degree C
+            'air_conditioned_temperature': theta_ac,  # degree C
             'sat_temperature': theta_sat,  # degree C
-            'attic_temperature_heating': theta_attic_h,  # degree C
-            'attic_temperature_cooling': theta_attic_c,  # degree C
+            'attic_temperature': theta_attic,  # degree C
             'duct_ambient_temperature_heating_room1': theta_sur_h[0],  # degree C
             'duct_ambient_temperature_heating_room2': theta_sur_h[1],  # degree C
             'duct_ambient_temperature_heating_room3': theta_sur_h[2],  # degree C
