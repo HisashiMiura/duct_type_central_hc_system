@@ -841,7 +841,9 @@ def get_maximum_heating_supply(
     # maximum outlet air temperature of heat source, degree C, (8760 times)
     theta_hs_out_max_h = theta_d_hs_in_h + q_hs_max_h / (c * rho * np.sum(v_d_supply_h, axis=0)) * 10 ** 6
 
-    l_duct = np.array(l_duct).reshape(1,5).T
+    theta_hs_out_max_h = np.minimum(theta_hs_out_max_h, 45.0)
+
+    l_duct = np.array(l_duct).reshape(1, 5).T
 
     q_max_h = get_load_from_upside_temperature(
         t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_ac_h, psi=psi, length=l_duct)
@@ -877,6 +879,8 @@ def get_maximum_cooling_supply(
 
     # minimum outlet air temperature of heat source, degree C, (8760 times)
     theta_hs_out_min_c = theta_d_hs_in_c - q_hs_max_cs / (c * rho * np.sum(v_d_supply_c, axis=0)) * 10 ** 6
+
+    theta_hs_out_min_c = np.maximum(theta_hs_out_min_c, 15.0)
 
     # duct length, m
     l_duct = np.array(l_duct).reshape(1, 5).T
@@ -1959,6 +1963,9 @@ def get_main_value(
             'heat_gain_through_partition_cooling_room3': q_d_trs_prt_c[2],  # MJ/h
             'heat_gain_through_partition_cooling_room4': q_d_trs_prt_c[3],  # MJ/h
             'heat_gain_through_partition_cooling_room5': q_d_trs_prt_c[4],  # MJ/h
+            'maximum_output_heating': q_hs_max_h,  # MJ/h
+            'maximum_output_sensible_cooling': q_hs_max_cs,  # MJ/h
+            'maximum_output_latent_cooling': q_hs_max_cl,  # MJ/h
             'maximum_output_heating_room1': q_max_h[0],  # MJ/h
             'maximum_output_heating_room2': q_max_h[1],  # MJ/h
             'maximum_output_heating_room3': q_max_h[2],  # MJ/h
