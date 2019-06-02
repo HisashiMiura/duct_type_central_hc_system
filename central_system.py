@@ -2017,6 +2017,7 @@ def get_main_value(
             'operation_mode': mode,  # string ('h', 'c', 'm')
             'air_conditioned_temperature_heating': theta_ac_h,  # degree C
             'air_conditioned_temperature_cooling': theta_ac_c,  # degree C
+            'air_conditioned_temperature': theta_ac, # degree C
             'sat_temperature': theta_sat,  # degree C
             'attic_temperature_heating': theta_attic_h,  # degree C
             'attic_temperature_cooling': theta_attic_c,  # degree C
