@@ -637,8 +637,7 @@ def get_non_occupant_room_temperature_for_cooling_balanced(
 
 
 def get_heat_loss_through_partition_for_heating_balanced(
-        u_prt: float, a_prt: np.ndarray, theta_ac_h: np.ndarray, theta_nac_h: np.ndarray,
-        l_h: np.ndarray) -> np.ndarray:
+        u_prt: float, a_prt: np.ndarray, theta_ac_h: np.ndarray, theta_nac_h: np.ndarray) -> np.ndarray:
     """
     calculate heat loss through the partition
     Args:
@@ -646,7 +645,6 @@ def get_heat_loss_through_partition_for_heating_balanced(
         a_prt: area of the partition, m2, (5 rooms)
         theta_ac_h: air conditioned temperature for heating, degree C
         theta_nac_h: non occupant room temperature, degree C (8760 times)
-        l_h: heating load, MJ/h, (12 rooms * 8760 times)
     Returns:
         heat loss through the partition, MJ/h (5 rooms * 8760 times)
     """
@@ -654,21 +652,17 @@ def get_heat_loss_through_partition_for_heating_balanced(
     # area of the partition, m2
     a_prt = a_prt.reshape(1, 5).T
 
-    l_h = l_h[0:5]
-
-    return np.where(l_h > 0.0, u_prt * a_prt * (theta_ac_h - theta_nac_h) * 3600 * 10 ** (-6), 0.0)
+    return u_prt * a_prt * (theta_ac_h - theta_nac_h) * 3600 * 10 ** (-6)
 
 
 def get_heat_gain_through_partition_for_cooling_balanced(
-        u_prt: float, a_prt: np.ndarray, theta_ac_c: np.ndarray, theta_nac_c: np.ndarray,
-        l_cs: np.ndarray) -> np.ndarray:
+        u_prt: float, a_prt: np.ndarray, theta_ac_c: np.ndarray, theta_nac_c: np.ndarray) -> np.ndarray:
     """
     Args:
         u_prt: heat loss coefficient of the partition wall, W/m2K
         a_prt: area of the partition, m2
         theta_ac_c: air conditioned temperature for heating, degree C
         theta_nac_c: non occupant room temperature, degree C (8760 times)
-        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
     Returns:
         heat gain through the partition, MJ/h (5 rooms * 8760 times)
     """
@@ -676,9 +670,7 @@ def get_heat_gain_through_partition_for_cooling_balanced(
     # area of the partition, m2
     a_prt = a_prt.reshape(1, 5).T
 
-    l_cs = l_cs[0:5]
-
-    return np.where(l_cs > 0.0, u_prt * a_prt * (theta_nac_c - theta_ac_c) * 3600 * 10 ** (-6), 0.0)
+    return u_prt * a_prt * (theta_nac_c - theta_ac_c) * 3600 * 10 ** (-6)
 
 
 def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt_h: np.ndarray) -> np.ndarray:
@@ -691,9 +683,9 @@ def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt_h: 
         heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     """
 
-    l_d_h = l_h[0:5] + q_d_trs_prt_h
+    l_d_h = np.where(l_h[0:5] > 0.0, l_h[0:5] + q_d_trs_prt_h, 0.0)
 
-    return np.where(l_d_h > 0.0, l_d_h, 0.0)
+    return np.clip(l_d_h, 0.0, None)
 
 
 def get_occupant_room_load_for_cooling_balanced(
@@ -708,10 +700,10 @@ def get_occupant_room_load_for_cooling_balanced(
         sensible and latent cooling load of occupant room, MJ/h, ((5 rooms *  8760 times), (5 rooms *  8760 times))
     """
 
-    l_d_cs = l_cs[0:5] + q_d_trs_prt_c
+    l_d_cs = np.where(l_cs[0:5] > 0.0, l_cs[0:5] + q_d_trs_prt_c, 0.0)
     l_d_cl = l_cl[0:5]
 
-    return np.where(l_d_cs > 0.0, l_d_cs, 0.0), np.where(l_d_cl > 0.0, l_d_cl, 0.0)
+    return np.clip(l_d_cs, 0.0, None), np.clip(l_d_cl, 0.0, None)
 
 
 def get_heat_source_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
@@ -1737,8 +1729,8 @@ def get_main_value(
         mode, q, theta_ex, mu_h, mu_c, j, a_nr, v_d_supply, u_prt, a_prt, theta_ac)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
-    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_prt, theta_ac_h, theta_d_nac, l_h)
-    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_prt, theta_ac_c, theta_d_nac, l_cs)
+    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_prt, theta_ac_h, theta_d_nac)
+    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_prt, theta_ac_c, theta_d_nac)
 
     # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt_h)
