@@ -717,28 +717,16 @@ def get_heat_source_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l
     return appendix.get_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
 
-def get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac_h: np.ndarray) -> np.ndarray:
+def get_heat_source_inlet_air_temperature_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
     """
     calculate the inlet air temperature of heat source
     Args:
-        theta_d_nac_h: non occupant room temperature when balanced, degree C, (8760 times)
+        theta_d_nac: non occupant room temperature when balanced, degree C, (8760 times)
     Returns:
         the inlet air temperature of heat source when balanced, degree C, (8760 times)
     """
 
-    return theta_d_nac_h
-
-
-def get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac_h: np.ndarray) -> np.ndarray:
-    """
-    calculate the inlet air temperature of heat source
-    Args:
-        theta_d_nac_h: non occupant room temperature when balanced, degree C, (8760 times)
-    Returns:
-        the inlet air temperature of heat source when balanced, degree C, (8760 times)
-    """
-
-    return theta_d_nac_h
+    return theta_d_nac
 
 
 def get_maximum_heating_supply(
@@ -1718,8 +1706,7 @@ def get_main_value(
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_d_hs_in_h = get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac)
-    theta_d_hs_in_c = get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac)
+    theta_d_hs_in = get_heat_source_inlet_air_temperature_balanced(theta_d_nac)
 
     # maximum heating output, MJ/h (8760 times)
     # heating
@@ -1730,10 +1717,10 @@ def get_main_value(
     # maximum heating and cooling output for each rooms
     # heating, MJ/h, (5 rooms * 8760 times)
     q_max_h = get_maximum_heating_supply(
-        theta_d_hs_in_h, q_hs_max_h, v_d_supply, theta_ac_h, psi, l_duct, theta_sur)
+        theta_d_hs_in, q_hs_max_h, v_d_supply, theta_ac_h, psi, l_duct, theta_sur)
     # sensible and latent cooling, MJ/h, (5 rooms * 8760 times), (5 rooms * 8760 times)
     q_max_cs, q_max_cl = get_maximum_cooling_supply(
-        theta_d_hs_in_c, l_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_ac_c, psi, l_duct, theta_sur)
+        theta_d_hs_in, l_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_ac_c, psi, l_duct, theta_sur)
 
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
