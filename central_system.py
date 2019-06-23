@@ -408,18 +408,16 @@ def get_mechanical_ventilation(a_hcz_r: np.ndarray, a_hcz: np.ndarray) -> np.nda
     return v_vent_r * a_hcz / a_hcz_r
 
 
-def get_minimum_air_volume(v_vent: np.ndarray) -> (float, float):
+def get_minimum_air_volume(v_vent: np.ndarray) -> float:
     """
+    calculate minimum air volume
     Args:
         v_vent: supply air volume of mechanical ventilation, m3/h, (5 rooms)
     Returns:
-        minimum supply air volume of the system for heating and cooling
+        minimum supply air volume of the system, m3/h, which is constant value through year.
     """
 
-    htg = np.sum(v_vent)
-    clg = np.sum(v_vent)
-
-    return htg, clg
+    return np.sum(v_vent)
 
 
 def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray:
@@ -1765,7 +1763,7 @@ def get_main_value(
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
     # minimum supply air volume of the system for heating and cooling, (m3/h, m3/h)
-    v_hs_min_h, v_hs_min_c = get_minimum_air_volume(v_vent)
+    v_hs_min = get_minimum_air_volume(v_vent)
 
     # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
     q_hs_rtd_h, q_hs_rtd_c = get_rated_output(q_rtd_h, q_rtd_c)
@@ -1775,8 +1773,8 @@ def get_main_value(
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
     # supply air volume of heat source for heating and cooling, m3/h
-    v_d_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min_h, v_hs_rtd_h)
-    v_d_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min_c, v_hs_rtd_c)
+    v_d_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min, v_hs_rtd_h)
+    v_d_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
@@ -1898,8 +1896,7 @@ def get_main_value(
             'mechanical_ventilation_volume_room3': v_vent[2],  # m3/h
             'mechanical_ventilation_volume_room4': v_vent[3],  # m3/h
             'mechanical_ventilation_volume_room5': v_vent[4],  # m3/h
-            'minimum_supply_air_volume_of_heat_source_heating': v_hs_min_h,  # m3/h
-            'minimum_supply_air_volume_of_heat_source_cooling': v_hs_min_c,  # m3/h
+            'minimum_supply_air_volume_of_heat_source': v_hs_min,  # m3/h
             'partition_area_room1': a_prt[0],  # m2
             'partition_area_room2': a_prt[1],  # m2
             'partition_area_room3': a_prt[2],  # m2
