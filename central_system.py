@@ -573,20 +573,22 @@ def get_each_supply_air_volume_not_vav_adjust(
     return np.maximum(v_hs_supply * r_supply_des, v_vent)
 
 
-def get_non_occupant_room_temperature_for_heating_balanced(
-        q_value: float, theta_ex: np.ndarray, mu_value: float, j: np.ndarray, a_nr: float,
-        v_supply_h: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac_h: np.ndarray) -> np.ndarray:
+def get_non_occupant_room_temperature_balanced(
+        mode: np.ndarray, q_value: float, theta_ex: np.ndarray, mu_h: float, mu_c: float, j: np.ndarray, a_nr: float,
+        v_d_supply: np.ndarray, u_prt: float, a_prt: np.ndarray, theta_ac: np.ndarray) -> np.ndarray:
     """
     Args:
+        mode: operation mode, (8760 times)
         q_value: Q value, W/m2K
         theta_ex: outdoor temperature, degree C
-        mu_value: mu value, (W/m2K)/(W/m2K)
+        mu_h: mu value for heating season, (W/m2K)/(W/m2K)
+        mu_c: mu value for cooling season, (W/m2K)/(W/m2K)
         j: horizontal solar radiation, W/m2K
         a_nr: floor area of non occupant room, m2
-        v_supply_h: supply air volume, m3/h
+        v_d_supply: supply air volume, m3/h (5 rooms * 8760 times)
         u_prt: heat loss coefficient of the partition wall, W/m2K
-        a_prt: area of the partition, m2
-        theta_ac_h: air conditioned temperature for heating, degree C
+        a_prt: area of the partition, m2 (5 rooms)
+        theta_ac: air conditioned temperature, degree C (5 rooms * 8760 times)
     Returns:
         non occupant room temperature, degree C (8760 times)
     """
@@ -597,9 +599,12 @@ def get_non_occupant_room_temperature_for_heating_balanced(
     # area of the partition, m2
     a_prt = a_prt.reshape(1, 5).T
 
-    return ((q_value * theta_ex + mu_value * j) * a_nr
-            + np.sum(c * rho * v_supply_h / 3600 + u_prt * a_prt, axis=0) * theta_ac_h) \
-        / (q_value * a_nr + np.sum(c * rho * v_supply_h / 3600 + u_prt * a_prt, axis=0))
+    # mu value
+    mu = np.where(mode == 'h', mu_h, np.where(mode == 'c', mu_c, (mu_h + mu_c)/2))
+
+    return ((q_value * theta_ex + mu * j) * a_nr
+            + np.sum(c * rho * v_d_supply / 3600 + u_prt * a_prt, axis=0) * theta_ac) \
+        / (q_value * a_nr + np.sum(c * rho * v_d_supply / 3600 + u_prt * a_prt, axis=0))
 
 
 def get_non_occupant_room_temperature_for_cooling_balanced(
@@ -1728,22 +1733,20 @@ def get_main_value(
     v_d_supply = get_each_supply_air_volume_not_vav_adjust(r_supply_des, v_d_hs_supply, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
-    theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
-        q, theta_ex, mu_h, j, a_nr, v_d_supply, u_prt, a_prt, theta_ac_h)
-    theta_d_nac_c = get_non_occupant_room_temperature_for_cooling_balanced(
-        q, theta_ex, mu_c, j, a_nr, v_d_supply, u_prt, a_prt, theta_ac_c)
+    theta_d_nac = get_non_occupant_room_temperature_balanced(
+        mode, q, theta_ex, mu_h, mu_c, j, a_nr, v_d_supply, u_prt, a_prt, theta_ac)
 
     # heat loss through partition balanced, MJ/h, (5 rooms * 8760 times)
-    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_prt, theta_ac_h, theta_d_nac_h, l_h)
-    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_prt, theta_ac_c, theta_d_nac_c, l_cs)
+    q_d_trs_prt_h = get_heat_loss_through_partition_for_heating_balanced(u_prt, a_prt, theta_ac_h, theta_d_nac, l_h)
+    q_d_trs_prt_c = get_heat_gain_through_partition_for_cooling_balanced(u_prt, a_prt, theta_ac_c, theta_d_nac, l_cs)
 
     # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt_h)
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt_c)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_d_hs_in_h = get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac_h)
-    theta_d_hs_in_c = get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac_c)
+    theta_d_hs_in_h = get_heat_source_inlet_air_temperature_balanced_for_heating(theta_d_nac)
+    theta_d_hs_in_c = get_heat_source_inlet_air_temperature_balanced_for_cooling(theta_d_nac)
 
     # maximum heating output, MJ/h (8760 times)
     # heating
@@ -1869,8 +1872,7 @@ def get_main_value(
             'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
             'old_latent_cooling_load_sum_of_12_rooms': np.sum(l_cl, axis=0),  # MJ/h
             'operation_mode': mode,  # string ('h', 'c', 'm')
-            'air_conditioned_temperature_heating': theta_ac_h,  # degree C
-            'air_conditioned_temperature_cooling': theta_ac_c,  # degree C
+            'air_conditioned_temperature': theta_ac_h,  # degree C
             'air_conditioned_temperature': theta_ac,  # degree C
             'sat_temperature': theta_sat,  # degree C
             'attic_temperature': theta_attic,  # degree C
@@ -1887,8 +1889,7 @@ def get_main_value(
             'supply_air_volume_room3': v_d_supply[2],  # MJ/h
             'supply_air_volume_room4': v_d_supply[3],  # MJ/h
             'supply_air_volume_room5': v_d_supply[4],  # MJ/h
-            'non_occupant_room_temperature_heating': theta_d_nac_h,  # degree C
-            'non_occupant_room_temperature_cooling': theta_d_nac_c,  # degree C
+            'non_occupant_room_temperature': theta_d_nac,  # degree C
             'heat_loss_through_partition_heating_room1': q_d_trs_prt_h[0],  # MJ/h
             'heat_loss_through_partition_heating_room2': q_d_trs_prt_h[1],  # MJ/h
             'heat_loss_through_partition_heating_room3': q_d_trs_prt_h[2],  # MJ/h
