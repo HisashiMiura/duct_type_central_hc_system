@@ -461,12 +461,7 @@ def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
 
 
 def get_heating_output_for_supply_air_estimation(
-        l_h: np.ndarray,
-        q: float,
-        theta_ac_h: np.ndarray,
-        theta_ex: np.ndarray,
-        mu_h: float,
-        j: np.ndarray,
+        l_h: np.ndarray, q: float, theta_ac_h: np.ndarray, theta_ex: np.ndarray, mu_h: float, j: np.ndarray,
         a_nr: float) -> np.ndarray:
     """
     calculate heating output for supply air estimation
@@ -493,14 +488,8 @@ def get_heating_output_for_supply_air_estimation(
 
 
 def get_cooling_output_for_supply_air_estimation(
-        l_cs: np.ndarray,
-        l_cl: np.ndarray,
-        q: float,
-        theta_ac_c: np.ndarray,
-        theta_ex: np.ndarray,
-        mu_c: float,
-        j: np.ndarray,
-        a_nr: float) -> np.ndarray:
+        l_cs: np.ndarray, l_cl: np.ndarray, q: float, theta_ac_c: np.ndarray, theta_ex: np.ndarray, mu_c: float,
+        j: np.ndarray, a_nr: float) -> np.ndarray:
     """
     calculate the cooling output for supply air estimation
     Args:
