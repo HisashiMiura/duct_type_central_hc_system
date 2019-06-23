@@ -519,60 +519,37 @@ def get_cooling_output_for_supply_air_estimation(
     return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_c)
 
 
-def get_heat_source_supply_air_volume_for_heating(
-        q_dash_hs_h: np.ndarray,
-        q_hs_rtd_h: float,
-        v_hs_min_h: float,
-        v_hs_rtd_h: float) -> np.ndarray:
+def get_heat_source_supply_air_volume(
+        mode: np.ndarray, q_d_hs_h: np.ndarray, q_d_hs_c: np.ndarray, q_hs_rtd_h: float, q_hs_rtd_c: float,
+        v_hs_min: float, v_hs_rtd_h: float, v_hs_rtd_c: float) -> np.ndarray:
     """
-    calculate the supply air volume for heating
+    calculate the supply air volume
     Args:
-        q_dash_hs_h: heating output of the system for estimation of the supply air volume, MJ/h
+        mode: operation mode, (8760 times)
+        q_d_hs_h: heating output of the system for estimation of the supply air volume, MJ/h
+        q_d_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
         q_hs_rtd_h: rated heating output, MJ/h
-        v_hs_min_h: minimum supply air volume, m3/h
-        v_hs_rtd_h: rated (maximum) supply air volume, m3/h
-    Returns:
-        supply air volume, m3/h (8760 times)
-    """
-
-    # get the supply air volume depending on the heating output
-    def f(q):
-        if q < 0.0:
-            return v_hs_min_h
-        elif q < q_hs_rtd_h:
-            return (v_hs_rtd_h - v_hs_min_h) / q_hs_rtd_h * q + v_hs_min_h
-        else:
-            return v_hs_rtd_h
-
-    return np.vectorize(f)(q_dash_hs_h)
-
-
-def get_heat_source_supply_air_volume_for_cooling(
-        q_dash_hs_c: np.ndarray,
-        q_hs_rtd_c: float,
-        v_hs_min_c: float,
-        v_hs_rtd_c: float) -> np.ndarray:
-    """
-    calculate the supply air volume for cooling
-    Args:
-        q_dash_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
         q_hs_rtd_c: rated cooling output, MJ/h
-        v_hs_min_c: minimum supply air volume, m3/h
+        v_hs_min: minimum supply air volume, m3/h
+        v_hs_rtd_h: rated (maximum) supply air volume, m3/h
         v_hs_rtd_c: rated (maximum) supply air volume, m3/h
     Returns:
         supply air volume, m3/h (8760 times)
     """
 
-    # get the supply air volume depending on the cooling output
-    def f(q):
+    def get_v(q, q_hs_rtd, v_hs_rtd):
         if q < 0.0:
-            return v_hs_min_c
-        elif q < q_hs_rtd_c:
-            return (v_hs_rtd_c - v_hs_min_c) / q_hs_rtd_c * q + v_hs_min_c
+            return v_hs_min
+        elif q < q_hs_rtd:
+            return (v_hs_rtd - v_hs_min) / q_hs_rtd * q + v_hs_min
         else:
-            return v_hs_rtd_c
+            return v_hs_rtd
 
-    return np.vectorize(f)(q_dash_hs_c)
+    # supply air volume of heat source for heating and cooling, m3/h
+    v_d_hs_supply_h = np.vectorize(get_v)(q_d_hs_h, q_hs_rtd_h, v_hs_rtd_h)
+    v_d_hs_supply_c = np.vectorize(get_v)(q_d_hs_c, q_hs_rtd_c, v_hs_rtd_c)
+
+    return np.where(mode == 'h', v_d_hs_supply_h, np.where(mode == 'c', v_d_hs_supply_c, v_hs_min))
 
 
 def get_each_supply_air_volume_not_vav_adjust_for_heating(
@@ -1761,16 +1738,16 @@ def get_main_value(
     q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
-    # supply air volume of heat source for heating and cooling, m3/h
-    v_d_hs_supply_h = get_heat_source_supply_air_volume_for_heating(q_d_hs_h, q_hs_rtd_h, v_hs_min, v_hs_rtd_h)
-    v_d_hs_supply_c = get_heat_source_supply_air_volume_for_cooling(q_d_hs_c, q_hs_rtd_c, v_hs_min, v_hs_rtd_c)
+    # supply air volume of heat source, m3/h
+    v_d_hs_supply = get_heat_source_supply_air_volume(
+        mode, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
 
     # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
-    v_d_supply_h = get_each_supply_air_volume_not_vav_adjust_for_heating(r_supply_des, v_d_hs_supply_h, v_vent)
-    v_d_supply_c = get_each_supply_air_volume_not_vav_adjust_for_cooling(r_supply_des, v_d_hs_supply_c, v_vent)
+    v_d_supply_h = get_each_supply_air_volume_not_vav_adjust_for_heating(r_supply_des, v_d_hs_supply, v_vent)
+    v_d_supply_c = get_each_supply_air_volume_not_vav_adjust_for_cooling(r_supply_des, v_d_hs_supply, v_vent)
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac_h = get_non_occupant_room_temperature_for_heating_balanced(
@@ -1926,8 +1903,7 @@ def get_main_value(
             'duct_ambient_temperature_room5': theta_sur[4],  # degree C
             'output_of_heat_source_for_supply_air_volume_estimation_heating': q_d_hs_h,  # MJ/h
             'output_of_heat_source_for_supply_air_volume_estimation_cooling': q_d_hs_c,  # MJ/h
-            'supply_air_volume_of_heat_source_heating': v_d_hs_supply_h,  # MJ/h
-            'supply_air_volume_of_heat_source_cooling': v_d_hs_supply_c,  # MJ/h
+            'supply_air_volume_of_heat_source': v_d_hs_supply,  # MJ/h
             'supply_air_volume_heating_room1': v_d_supply_h[0],  # MJ/h
             'supply_air_volume_heating_room2': v_d_supply_h[1],  # MJ/h
             'supply_air_volume_heating_room3': v_d_supply_h[2],  # MJ/h
