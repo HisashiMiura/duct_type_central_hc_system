@@ -385,7 +385,8 @@ def get_supply_air_volume_valance(a_hcz: np.ndarray) -> np.ndarray:
 
 
 def get_mechanical_ventilation(a_hcz_r: np.ndarray, a_hcz: np.ndarray) -> np.ndarray:
-    """calculate mechanical ventilation of each 5 rooms
+    """
+    calculate mechanical ventilation of each 5 rooms
     Args:
         a_hcz_r: the referenced heating and cooling zone floor area, m2, (12 rooms)
         a_hcz: the referenced heating and cooling zone floor area, m2, (12 rooms)
