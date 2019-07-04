@@ -925,29 +925,41 @@ def get_requested_supply_air_temperature_for_cooling(
 
 
 def get_decided_outlet_supply_air_temperature_for_heating(
-        theta_duct_up_h: np.ndarray) -> np.ndarray:
+        vav_system: bool, theta_duct_up_h: np.ndarray, r_supply_des: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for heating
     Args:
+        vav_system: is vav system equipped or not
         theta_duct_up_h: requested temperature, degree C, (5 rooms * 8760 times)
+        r_supply_des: the ratio of the supply air volume valance for each 5 rooms (0.0-1.0) (5 rooms)
     Returns:
         decided outlet supply air temperature, degree C, (8760 times)
     """
 
-    return np.max(theta_duct_up_h, axis=0)
+    if vav_system:
+        return np.max(theta_duct_up_h, axis=0)
+    else:
+        r_supply_des = np.array(r_supply_des).reshape(1, 5).T
+        return np.sum(theta_duct_up_h * r_supply_des, axis=0)
 
 
 def get_decided_outlet_supply_air_temperature_for_cooling(
-        theta_duct_up_c: np.ndarray) -> np.ndarray:
+        vav_system: bool, theta_duct_up_c: np.ndarray, r_supply_des: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for cooling
     Args:
+        vav_system: is vav system equipped or not
         theta_duct_up_c: requested temperature, degree C, (5 rooms * 8760 times)
+        r_supply_des: the ratio of the supply air volume valance for each 5 rooms (0.0-1.0) (5 rooms)
     Returns:
         decided outlet supply air temperature, degree C, (8760 times)
     """
 
-    return np.min(theta_duct_up_c, axis=0)
+    if vav_system:
+        return np.min(theta_duct_up_c, axis=0)
+    else:
+        r_supply_des = np.array(r_supply_des).reshape(1, 5).T
+        return np.sum(theta_duct_up_c * r_supply_des, axis=0)
 
 
 def get_each_supply_air_volume_for_heating(
@@ -1715,8 +1727,8 @@ def get_main_value(
         theta_sur, theta_ac_c, q_t_cs, v_d_supply, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(theta_req_h)
-    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(theta_req_c)
+    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, r_supply_des)
+    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(vav_system, theta_req_c, r_supply_des)
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(
