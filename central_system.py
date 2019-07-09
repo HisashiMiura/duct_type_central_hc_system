@@ -166,6 +166,10 @@ def get_evaporation_latent_heat() -> float:
     theta = 28.0
     return 2500.8 - 2.3668 * theta
 
+# endregion
+
+
+# region occupant usage
 
 def get_heating_and_cooling_schedule(region: float) -> (np.ndarray, np.ndarray):
     """
@@ -1701,9 +1705,6 @@ def get_main_value(
     # latent heat of evaporation, kJ/kg
     l_wtr = get_evaporation_latent_heat()
 
-    # heating schedule (8760 times), cooling schedule (8760 times)
-    heating_period, cooling_period = get_heating_and_cooling_schedule(region)
-
     # --- external conditions ---
 
     # outdoor temperature, degree C, (8760 times)
@@ -1717,6 +1718,11 @@ def get_main_value(
 
     # SAT temperature, degree C, (8760 times)
     theta_sat = get_sat_temperature(region)
+
+    # --- occupant usage
+
+    # heating schedule (8760 times), cooling schedule (8760 times)
+    heating_period, cooling_period = get_heating_and_cooling_schedule(region)
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
