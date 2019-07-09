@@ -11,6 +11,8 @@ from appendix import SystemSpec
 # region functions
 
 
+# region system spec
+
 def get_rated_capacity(region: float, a_a: float) -> (float, float):
     """
     calculate rated heating and cooling capacity of heat source
@@ -23,6 +25,10 @@ def get_rated_capacity(region: float, a_a: float) -> (float, float):
     """
     return appendix.get_rated_capacity(region, a_a)
 
+# endregion
+
+
+# region house spec
 
 def get_non_occupant_room_floor_area(a_mr: float, a_or: float, a_a: float, r_env: float) -> float:
     """
@@ -152,12 +158,15 @@ def get_specific_heat() -> float:
 
 def get_evaporation_latent_heat() -> float:
     """
-    latent heat of evaporation
+    get latent heat of evaporation at 28 degree C
+    because this value is used for the calculation of the latent cooling load
     Returns:
         latent heat of evaporation, kJ/kg
     """
     theta = 28.0
     return 2500.8 - 2.3668 * theta
+
+# endregion
 
 
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
@@ -1614,9 +1623,13 @@ def get_main_value(
         q_rtd_c: rated cooling capacity, W
     """
 
+    # --- system spec ---
+
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
         q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
+
+    # --- house spec ---
 
     # floor area of non occupant room, m2
     a_nr = get_non_occupant_room_floor_area(a_mr, a_or, a_a, r_env)
