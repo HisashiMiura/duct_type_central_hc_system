@@ -104,6 +104,34 @@ def get_envelope_spec(region: int, insulation: str, solar_gain: str) -> (float, 
     return q, mu_h, mu_c
 
 
+def get_mechanical_ventilation(a_hcz_r: np.ndarray, a_hcz: np.ndarray) -> np.ndarray:
+    """
+    calculate mechanical ventilation of each 5 rooms
+    Args:
+        a_hcz_r: the referenced heating and cooling zone floor area, m2, (12 rooms)
+        a_hcz: the referenced heating and cooling zone floor area, m2, (12 rooms)
+    Returns:
+        supply air volume of mechanical ventilation, m3/h, (5 rooms)
+    """
+
+    # referenced mechanical ventilation volume, m3/h
+    v_vent_r = np.array([60.0, 20.0, 40.0, 20.0, 20.0])
+
+    # referenced floor area of the occupant room(sliced 0 to 5)
+#    a_hcz_r = envelope.get_referenced_floor_area()[0:5]
+    a_hcz_r = a_hcz_r[0:5]
+
+    # floor area of the occupant room(sliced 0 to 5)
+#    a_hcz = envelope.get_hc_floor_areas(zone_floor_area)[0:5]
+    a_hcz = a_hcz[0:5]
+
+    return v_vent_r * a_hcz / a_hcz_r
+
+# endregion
+
+
+# region general property
+
 def get_air_density() -> float:
     """
     air density
@@ -392,30 +420,6 @@ def get_supply_air_volume_valance(a_hcz: np.ndarray) -> np.ndarray:
 
     # calculate the ratio
     return occupant_rooms_floor_area / np.sum(occupant_rooms_floor_area)
-
-
-def get_mechanical_ventilation(a_hcz_r: np.ndarray, a_hcz: np.ndarray) -> np.ndarray:
-    """
-    calculate mechanical ventilation of each 5 rooms
-    Args:
-        a_hcz_r: the referenced heating and cooling zone floor area, m2, (12 rooms)
-        a_hcz: the referenced heating and cooling zone floor area, m2, (12 rooms)
-    Returns:
-        supply air volume of mechanical ventilation, m3/h, (5 rooms)
-    """
-
-    # referenced mechanical ventilation volume, m3/h
-    v_vent_r = np.array([60.0, 20.0, 40.0, 20.0, 20.0])
-
-    # referenced floor area of the occupant room(sliced 0 to 5)
-#    a_hcz_r = envelope.get_referenced_floor_area()[0:5]
-    a_hcz_r = a_hcz_r[0:5]
-
-    # floor area of the occupant room(sliced 0 to 5)
-#    a_hcz = envelope.get_hc_floor_areas(zone_floor_area)[0:5]
-    a_hcz = a_hcz[0:5]
-
-    return v_vent_r * a_hcz / a_hcz_r
 
 
 def get_minimum_air_volume(v_vent: np.ndarray) -> float:
@@ -1633,6 +1637,9 @@ def get_main_value(
     # mu_h value, mu_c value (W/m2)/(W/m2)
     q, mu_h, mu_c = get_envelope_spec(region, insulation, solar_gain)
 
+    # mechanical ventilation, m3/h, (5 rooms)
+    v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
+
     # air density, kg/m3
     rho = get_air_density()
 
@@ -1677,9 +1684,6 @@ def get_main_value(
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur = get_duct_ambient_air_temperature(is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac, theta_attic)
-
-    # mechanical ventilation, m3/h, (5 rooms)
-    v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
     # minimum supply air volume of the system for heating and cooling, (m3/h, m3/h)
     v_hs_min = get_minimum_air_volume(v_vent)
