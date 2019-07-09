@@ -1653,11 +1653,15 @@ def get_main_value(
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
+    # --- general property ---
+
     # air density, kg/m3
     rho = get_air_density()
 
     # air specific heat, J/kg K
     c = get_specific_heat()
+
+    # --- external conditions ---
 
     # outdoor temperature, degree C, (8760 times)
     theta_ex = get_outdoor_temperature(region=region)
