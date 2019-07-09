@@ -1642,6 +1642,9 @@ def get_main_value(
     # outdoor temperature, degree C, (8760 times)
     theta_ex = get_outdoor_temperature(region=region)
 
+    # outdoor absolute humidity, kg/kg(DA)
+    x_ex = get_absolute_humidity(region)
+
     # horizontal solar radiation, W/m2K
     j = get_horizontal_solar(region)
 
