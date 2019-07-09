@@ -122,6 +122,16 @@ def get_specific_heat() -> float:
     return 1006.0
 
 
+def get_evaporation_latent_heat() -> float:
+    """
+    latent heat of evaporation
+    Returns:
+        latent heat of evaporation, kJ/kg
+    """
+    theta = 28.0
+    return 2500.8 - 2.3668 * theta
+
+
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
