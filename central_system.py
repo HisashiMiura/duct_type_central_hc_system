@@ -166,6 +166,43 @@ def get_evaporation_latent_heat() -> float:
     theta = 28.0
     return 2500.8 - 2.3668 * theta
 
+
+def get_heating_and_cooling_schedule(region: float) -> (np.ndarray, np.ndarray):
+    """
+    get the heating and cooling schedule
+    operation represents True as boolean type
+    Args:
+        region: region, 1-8
+    Returns:
+        (heating schedule, cooling schedule)
+        heating schedule, operation day represents True, (8760 times)
+        cooling schedule, operation day represents True, (8760 times)
+    """
+
+    heating_period = np.array([
+                                  [True] * 157 + [False] * 110 + [True] * 98,
+                                  [True] * 154 + [False] * 115 + [True] * 96,
+                                  [True] * 150 + [False] * 123 + [True] * 92,
+                                  [True] * 149 + [False] * 125 + [True] * 91,
+                                  [True] * 134 + [False] * 149 + [True] * 82,
+                                  [True] * 110 + [False] * 198 + [True] * 57,
+                                  [True] * 85 + [False] * 245 + [True] * 35,
+                                  [True] * 0 + [False] * 365 + [True] * 0,
+                              ][region - 1])
+
+    cooling_period = np.array([
+                                  [False] * 190 + [True] * 53 + [False] * 122,
+                                  [False] * 195 + [True] * 48 + [False] * 122,
+                                  [False] * 190 + [True] * 53 + [False] * 122,
+                                  [False] * 190 + [True] * 53 + [False] * 122,
+                                  [False] * 186 + [True] * 57 + [False] * 122,
+                                  [False] * 149 + [True] * 117 + [False] * 99,
+                                  [False] * 134 + [True] * 152 + [False] * 79,
+                                  [False] * 83 + [True] * 265 + [False] * 17,
+                              ][region - 1])
+
+    return np.repeat(heating_period, 24), np.repeat(cooling_period,24)
+
 # endregion
 
 
@@ -1660,6 +1697,12 @@ def get_main_value(
 
     # air specific heat, J/kg K
     c = get_specific_heat()
+
+    # latent heat of evaporation, kJ/kg
+    l_wtr = get_evaporation_latent_heat()
+
+    # heating schedule (8760 times), cooling schedule (8760 times)
+    heating_period, cooling_period = get_heating_and_cooling_schedule(region)
 
     # --- external conditions ---
 
