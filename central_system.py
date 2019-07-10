@@ -485,7 +485,6 @@ def get_sat_temperature(region: int) -> np.ndarray:
 # endregion
 
 
-
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -1967,6 +1966,10 @@ def get_main_value(
     theta_ac_h = get_air_conditioned_temperature_for_heating()
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
+    # heating and cooling output for supply air estimation, MJ/h
+    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
+
     theta_ac = get_air_conditioned_room_temperature(theta_ex, mode)
 
     # duct liner heat loss coefficient, W/mK
@@ -1989,10 +1992,6 @@ def get_main_value(
 
     # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
     q_hs_rtd_h, q_hs_rtd_c = get_rated_output(q_rtd_h, q_rtd_c)
-
-    # heating and cooling output for supply air estimation, MJ/h
-    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
-    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
 
     # supply air volume of heat source, m3/h
     v_d_hs_supply = get_heat_source_supply_air_volume(
