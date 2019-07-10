@@ -485,6 +485,65 @@ def get_sat_temperature(region: int) -> np.ndarray:
 # endregion
 
 
+def get_heating_output_for_supply_air_estimation2(
+        l_h: np.ndarray, q: float, theta_ac_h: np.ndarray, theta_ex: np.ndarray, mu_h: float, j: np.ndarray,
+        a_nr: float) -> np.ndarray:
+    """
+    calculate heating output for supply air estimation
+    Args:
+        l_h: heating load, MJ/h, (12 rooms * 8760 times)
+        q: q value, W/m2K
+        theta_ac_h: air conditioned temperature for heating, degree C
+        theta_ex: outdoor temperature, degree C
+        mu_h: mu value, (W/m2)/(W/m2)
+        j: horizontal solar radiation, W/m2
+        a_nr: floor area of non occupant room, m2
+    Returns:
+        heating output for supply air estimation, MJ/h
+    """
+
+    # heating load in the main occupant room and the other occupant rooms, MJ/h, (5 rooms * 8760 times)
+    l_h = l_h[0:5]
+
+    q_dash_hs_h = np.sum(l_h, axis=0) + ((theta_ac_h - theta_ex) * q - j * mu_h) * a_nr * 3600 * 10 ** (-6)
+
+    # This operation is not described in the specification document
+    # The supply air has lower limitation. This operation does not eventually effect the result.
+    return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_h)
+
+
+def get_cooling_output_for_supply_air_estimation2(
+        l_cs: np.ndarray, l_cl: np.ndarray, q: float, theta_ac_c: np.ndarray, theta_ex: np.ndarray, mu_c: float,
+        j: np.ndarray, a_nr: float) -> np.ndarray:
+    """
+    calculate the cooling output for supply air estimation
+    Args:
+        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
+        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
+        q: q value, W/m2K
+        theta_ac_c: air conditioned temperature for cooling, degree C
+        theta_ex: outdoor temperature, degree C
+        mu_c: mu value, (W/m2)/(W/m2)
+        j: horizontal solar radiation, W/m2
+        a_nr: floor area of non occupant room, m2
+    Returns:
+        sensible and latent cooling output for supply air estimation, MJ/h
+    """
+
+    # sensible cooling load in the main occupant room and the other occupant rooms, MJ/h
+    l_cs = l_cs[0:5]
+
+    # latent cooling load in the main occupant room and the other occupant rooms, MJ/h
+    l_cl = l_cl[0:5]
+
+    q_dash_hs_c = np.sum(l_cs, axis=0) + np.sum(l_cl, axis=0) \
+        + ((theta_ex - theta_ac_c) * q + j * mu_c) * a_nr * 3600 * 10 ** (-6)
+
+    # This operation is not described in the specification document
+    # The supply air has lower limitation. This operation does not eventually effect the result.
+    return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_c)
+
+
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -736,65 +795,6 @@ def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
     q_hs_rtd_c = cap_rtd_c * 3600 * 10 ** (-6)
 
     return q_hs_rtd_h, q_hs_rtd_c
-
-
-def get_heating_output_for_supply_air_estimation(
-        l_h: np.ndarray, q: float, theta_ac_h: np.ndarray, theta_ex: np.ndarray, mu_h: float, j: np.ndarray,
-        a_nr: float) -> np.ndarray:
-    """
-    calculate heating output for supply air estimation
-    Args:
-        l_h: heating load, MJ/h, (12 rooms * 8760 times)
-        q: q value, W/m2K
-        theta_ac_h: air conditioned temperature for heating, degree C
-        theta_ex: outdoor temperature, degree C
-        mu_h: mu value, (W/m2)/(W/m2)
-        j: horizontal solar radiation, W/m2
-        a_nr: floor area of non occupant room, m2
-    Returns:
-        heating output for supply air estimation, MJ/h
-    """
-
-    # heating load in the main occupant room and the other occupant rooms, MJ/h, (5 rooms * 8760 times)
-    l_h = l_h[0:5]
-
-    q_dash_hs_h = np.sum(l_h, axis=0) + ((theta_ac_h - theta_ex) * q - j * mu_h) * a_nr * 3600 * 10 ** (-6)
-
-    # This operation is not described in the specification document
-    # The supply air has lower limitation. This operation does not eventually effect the result.
-    return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_h)
-
-
-def get_cooling_output_for_supply_air_estimation(
-        l_cs: np.ndarray, l_cl: np.ndarray, q: float, theta_ac_c: np.ndarray, theta_ex: np.ndarray, mu_c: float,
-        j: np.ndarray, a_nr: float) -> np.ndarray:
-    """
-    calculate the cooling output for supply air estimation
-    Args:
-        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
-        q: q value, W/m2K
-        theta_ac_c: air conditioned temperature for cooling, degree C
-        theta_ex: outdoor temperature, degree C
-        mu_c: mu value, (W/m2)/(W/m2)
-        j: horizontal solar radiation, W/m2
-        a_nr: floor area of non occupant room, m2
-    Returns:
-        sensible and latent cooling output for supply air estimation, MJ/h
-    """
-
-    # sensible cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cs = l_cs[0:5]
-
-    # latent cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cl = l_cl[0:5]
-
-    q_dash_hs_c = np.sum(l_cs, axis=0) + np.sum(l_cl, axis=0) \
-        + ((theta_ex - theta_ac_c) * q + j * mu_c) * a_nr * 3600 * 10 ** (-6)
-
-    # This operation is not described in the specification document
-    # The supply air has lower limitation. This operation does not eventually effect the result.
-    return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_c)
 
 
 def get_heat_source_supply_air_volume(
@@ -1967,8 +1967,8 @@ def get_main_value(
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # heating and cooling output for supply air estimation, MJ/h
-    q_d_hs_h = get_heating_output_for_supply_air_estimation(l_h, q, theta_ac_h, theta_ex, mu_h, j, a_nr)
-    q_d_hs_c = get_cooling_output_for_supply_air_estimation(l_cs, l_cl, q, theta_ac_c, theta_ex, mu_c, j, a_nr)
+    q_d_hs_h = get_heating_output_for_supply_air_estimation2(l_h, q, theta_set_h, theta_ex, mu_h, j, a_nr)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation2(l_cs, l_cl, q, theta_set_c, theta_ex, mu_c, j, a_nr)
 
     theta_ac = get_air_conditioned_room_temperature(theta_ex, mode)
 
