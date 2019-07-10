@@ -78,6 +78,29 @@ def get_floor_area(a_mr: float, a_or: float, a_a: float, r_env: float) -> np.nda
     return envelope.get_hc_floor_areas(floor_area)
 
 
+def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray:
+    """
+    calculate the areas of the partition
+    Args:
+        a_hcz: the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_nr: non occupant room floor area, m2
+        r_env: ratio of the envelope total area to the total floor area, -
+    Returns:
+        the areas of the partitions, m2
+    """
+
+    # calculate the partition area between main occupant room and non occupant room, m2
+    a_part_mr = a_hcz[0:1] * r_env * a_nr / (a_or + a_nr)
+
+    # calculate the partition areas between 4 other occupant rooms and non occupant room, m2
+    a_part_or = a_hcz[1:5] * r_env * a_nr / (a_mr + a_nr)
+
+    # concatenate
+    return np.concatenate((a_part_mr, a_part_or))
+
+
 def get_envelope_spec(region: int, insulation: str, solar_gain: str) -> (float, float, float):
     """
     get Q value, mu_h value, mu_c value
@@ -870,29 +893,6 @@ def get_supply_air_volume_valance(a_hcz: np.ndarray) -> np.ndarray:
 
     # calculate the ratio
     return occupant_rooms_floor_area / np.sum(occupant_rooms_floor_area)
-
-
-def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray:
-    """
-    calculate the areas of the partition
-    Args:
-        a_hcz: the partition area looking from each occupant rooms to the non occupant room, m2, (5 rooms)
-        a_mr: main occupant room floor area, m2
-        a_or: other occupant room floor area, m2
-        a_nr: non occupant room floor area, m2
-        r_env: ratio of the envelope total area to the total floor area, -
-    Returns:
-        the areas of the partitions, m2
-    """
-
-    # calculate the partition area between main occupant room and non occupant room, m2
-    a_part_mr = a_hcz[0:1] * r_env * a_nr / (a_or + a_nr)
-
-    # calculate the partition areas between 4 other occupant rooms and non occupant room, m2
-    a_part_or = a_hcz[1:5] * r_env * a_nr / (a_mr + a_nr)
-
-    # concatenate
-    return np.concatenate((a_part_mr, a_part_or))
 
 
 def get_heat_source_supply_air_volume(
