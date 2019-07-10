@@ -14,7 +14,7 @@ from appendix import SystemSpec
 
 # region system spec
 
-def get_rated_capacity(region: float, a_a: float) -> (float, float):
+def get_rated_capacity(region: int, a_a: float) -> (float, float):
     """
     calculate rated heating and cooling capacity of heat source
     Args:
