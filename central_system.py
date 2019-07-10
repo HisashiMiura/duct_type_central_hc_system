@@ -405,6 +405,71 @@ def get_v_local(calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
 # endregion
 
 
+# region external conditions
+
+def get_outdoor_temperature(region: int) -> np.ndarray:
+    """
+    get outdoor temperature
+    Args:
+        region: region, 1-8
+    Returns:
+        outdoor temperature, degree C, (8760 times)
+    """
+
+    return read_conditions.read_temperature(region)
+
+
+def get_absolute_humidity(region: int) -> np.ndarray:
+    """
+    get outdoor absolute humidity
+    Args:
+        region: region, 1-8
+    Returns:
+        outdoor absolute humidity, kg/kgDA, (8760 times)
+    """
+
+    return read_conditions.read_absolute_humidity(region)
+
+
+def get_relative_humidity(theta_ex: float, x_ex: float) -> np.ndarray:
+    """
+    get outdoor relative humidity
+    Args:
+        outdoor temperature, degree C, (8760 times)
+        outdoor absolute humidity, kg/kgDA, (8760 times)
+    Returns:
+        outdoor relative humidity, %, (8760 times)
+    """
+
+    return read_conditions.get_relative_humidity(theta_ex, x_ex)
+
+
+def get_horizontal_solar(region: int) -> np.ndarray:
+    """
+    get horizontal solar radiation
+    Args:
+        region: region, 1-8
+    Returns:
+        horizontal solar radiation, W/m2, (8760 times)
+    """
+
+    return read_conditions.get_horizontal_solar(region)
+
+
+def get_sat_temperature(region: int) -> np.ndarray:
+    """
+    get SAT temperature
+    Args:
+        region: region, 1-8
+    Returns:
+        SAT temperature, degree C, (8760 times)
+    """
+
+    return read_conditions.get_sat_temperature(region)
+
+# endregion
+
+
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -518,67 +583,6 @@ def get_duct_length(l_duct_r: np.ndarray, a_a: float) -> np.ndarray:
     a_a_r = 120.08
 
     return l_duct_r * np.sqrt(a_a / a_a_r)
-
-
-def get_sat_temperature(region: int) -> np.ndarray:
-    """
-    get SAT temperature
-    Args:
-        region: region, 1-8
-    Returns:
-        SAT temperature, degree C, (8760 times)
-    """
-
-    return read_conditions.get_sat_temperature(region)
-
-
-def get_outdoor_temperature(region: int) -> np.ndarray:
-    """
-    get outdoor temperature
-    Args:
-        region: region, 1-8
-    Returns:
-        outdoor temperature, degree C, (8760 times)
-    """
-
-    return read_conditions.read_temperature(region)
-
-
-def get_absolute_humidity(region: int) -> np.ndarray:
-    """
-    get outdoor absolute humidity
-    Args:
-        region: region, 1-8
-    Returns:
-        outdoor absolute humidity, kg/kgDA, (8760 times)
-    """
-
-    return read_conditions.read_absolute_humidity(region)
-
-
-def get_relative_humidity(theta_ex: float, x_ex: float) -> np.ndarray:
-    """
-    get outdoor relative humidity
-    Args:
-        outdoor temperature, degree C, (8760 times)
-        outdoor absolute humidity, kg/kgDA, (8760 times)
-    Returns:
-        outdoor relative humidity, %, (8760 times)
-    """
-
-    return read_conditions.get_relative_humidity(theta_ex, x_ex)
-
-
-def get_horizontal_solar(region: int) -> np.ndarray:
-    """
-    get horizontal solar radiation
-    Args:
-        region: region, 1-8
-    Returns:
-        horizontal solar radiation, W/m2, (8760 times)
-    """
-
-    return read_conditions.get_horizontal_solar(region)
 
 
 def get_heat_loss_coefficient_of_partition() -> float:
