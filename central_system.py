@@ -693,12 +693,14 @@ def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
 
 
 def get_heat_source_supply_air_volume(
-        mode: np.ndarray, q_d_hs_h: np.ndarray, q_d_hs_c: np.ndarray, q_hs_rtd_h: float, q_hs_rtd_c: float,
+        heating_period: np.ndarray, cooling_period: np.ndarray,
+        q_d_hs_h: np.ndarray, q_d_hs_c: np.ndarray, q_hs_rtd_h: float, q_hs_rtd_c: float,
         v_hs_min: float, v_hs_rtd_h: float, v_hs_rtd_c: float) -> np.ndarray:
     """
     calculate the supply air volume
     Args:
-        mode: operation mode, (8760 times)
+        heating_period: heating schedule (8760 times)
+        cooling_period: cooling schedule (8760 times)
         q_d_hs_h: heating output of the system for estimation of the supply air volume, MJ/h
         q_d_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
         q_hs_rtd_h: rated heating output, MJ/h
@@ -722,7 +724,7 @@ def get_heat_source_supply_air_volume(
     v_d_hs_supply_h = np.vectorize(get_v)(q_d_hs_h, q_hs_rtd_h, v_hs_rtd_h)
     v_d_hs_supply_c = np.vectorize(get_v)(q_d_hs_c, q_hs_rtd_c, v_hs_rtd_c)
 
-    return np.where(mode == 'h', v_d_hs_supply_h, np.where(mode == 'c', v_d_hs_supply_c, v_hs_min))
+    return v_d_hs_supply_h * heating_period + v_d_hs_supply_c * cooling_period
 
 # endregion
 
@@ -2068,6 +2070,10 @@ def get_main_value(
     # rated heating and cooling output of the heat source, (MJ/h, MJ/h)
     q_hs_rtd_h, q_hs_rtd_c = get_rated_output(q_rtd_h, q_rtd_c)
 
+    # supply air volume of heat source, m3/h
+    v_d_hs_supply = get_heat_source_supply_air_volume(
+        heating_period, cooling_period, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
+
     # ----------------------------
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
@@ -2096,10 +2102,6 @@ def get_main_value(
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur = get_duct_ambient_air_temperature(is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac, theta_attic)
-
-    # supply air volume of heat source, m3/h
-    v_d_hs_supply = get_heat_source_supply_air_volume(
-        mode, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
