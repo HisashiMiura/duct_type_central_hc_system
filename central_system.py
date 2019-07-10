@@ -207,6 +207,38 @@ def get_heating_and_cooling_schedule(region: float) -> (np.ndarray, np.ndarray):
 
     return np.repeat(heating_period, 24), np.repeat(cooling_period,24)
 
+
+def get_n_p(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    calculate number of peopele
+    Args:
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_nr: non occupant room floor area, m2
+        calender: calender with 'weekday' and 'holiday'
+    Returns:
+        (n_p, n_p_mr, n_p_or, n_p_nr)
+        n_p: total number of people (8760 times)
+        n_p_mr: number of people in main occupant room (8760 times)
+        n_p_or: number of people in other occupant room (8760 times)
+        n_p_nr: number of people in non occupant room (8760 times)
+    """
+
+    n_p_mr_wd = np.array([0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 0, 0, 1, 1, 0, 0, 1, 2, 2, 3, 3, 2, 1, 1]) * a_mr / 29.81
+    n_p_or_wd = np.array([4, 4, 4, 4, 4, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 2, 3]) * a_or / 51.34
+    n_p_nr_wd = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) * a_nr / 38.93
+    n_p_mr_hd = np.array([0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 2, 2, 2, 1, 0, 0, 2, 3, 3, 4, 2, 2, 1, 0]) * a_mr / 29.81
+    n_p_or_hd = np.array([4, 4, 4, 4, 4, 4, 4, 3, 1, 2, 2, 2, 1, 0, 0, 0, 1, 1, 1, 0, 2, 2, 2, 3]) * a_or / 51.34
+    n_p_nr_hd = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) * a_nr / 38.93
+
+    n_p_mr = np.tile(n_p_mr_wd, 365) * (calender == '平日') + np.tile(n_p_mr_hd, 365) * (calender == '休日')
+    n_p_or = np.tile(n_p_or_wd, 365) * (calender == '平日') + np.tile(n_p_or_hd, 365) * (calender == '休日')
+    n_p_nr = np.tile(n_p_nr_wd, 365) * (calender == '平日') + np.tile(n_p_nr_hd, 365) * (calender == '休日')
+
+    n_p = n_p_mr + n_p_or + n_p_nr
+
+    return n_p, n_p_mr, n_p_or, n_p_nr
+
 # endregion
 
 
