@@ -183,7 +183,7 @@ def get_calender() -> np.ndarray:
 
 # region occupant usage
 
-def get_heating_and_cooling_schedule(region: float) -> (np.ndarray, np.ndarray):
+def get_heating_and_cooling_schedule(region: int) -> (np.ndarray, np.ndarray):
     """
     get the heating and cooling schedule
     operation represents True as boolean type
@@ -446,7 +446,7 @@ def get_absolute_humidity(region: int) -> np.ndarray:
     return read_conditions.read_absolute_humidity(region)
 
 
-def get_relative_humidity(theta_ex: float, x_ex: float) -> np.ndarray:
+def get_relative_humidity(theta_ex: np.ndarray, x_ex: np.ndarray) -> np.ndarray:
     """
     get outdoor relative humidity
     Args:
@@ -485,27 +485,119 @@ def get_sat_temperature(region: int) -> np.ndarray:
 # endregion
 
 
+# region circulating air flow
+
+def get_heating_output_for_supply_air_estimation(
+        a_a: float, q: float, mu_h: float, v_vent: np.ndarray,
+        theta_ex: np.ndarray, j: np.ndarray,
+        heating_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, v_local: np.ndarray,
+        theta_set_h: float):
+    """
+    get heating output for supply air estimation
+    Args:
+        a_a: total floor area, m2
+        q: Q value, W/m2K
+        mu_h: mu_h value, (W/m2)/(W/m2)
+        v_vent: mechanical ventilation, m3/h, (5 rooms)
+        theta_ex: outdoor temperature, degree C (8760 times)
+        j: horizontal solar radiation, W/m2K (8760 times)
+        heating_period: heating schedule (8760 times)
+        n_p: number of people (8760 times)
+        q_gen: heat generation, W (8760 times)
+        v_local: local ventilation amount, m3/h (8760 times)
+        theta_set_h: set temperature for heating, degree C
+    Returns:
+        heating output for supply air estimation, MJ/h (8760 times)
+    """
+
+    # specific heat of air, J/kgK
+    c = get_specific_heat()
+
+    # air density, kg/m3
+    rho = get_air_density()
+
+    q_d_hs_h = np.maximum(
+        (((q - 0.35 * 0.5 * 2.4) * a_a + c * rho * (v_local + sum(v_vent)) / 3600) * (theta_set_h - theta_ex)
+         - mu_h * a_a * j - q_gen - n_p * 79.0) * 3600 * 10 ** (-6),
+        0.0) * heating_period
+
+    return q_d_hs_h
+
+
+def get_cooling_output_for_supply_air_estimation(
+        a_a: float, q: float, mu_c: float, v_vent: np.ndarray,
+        theta_ex: np.ndarray, x_ex: np.ndarray, j: np.ndarray,
+        cooling_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, w_gen: np.ndarray, v_local: np.ndarray,
+        theta_set_c: float):
+    """
+    get heating output for supply air estimation
+    Args:
+        a_a: total floor area, m2
+        q: Q value, W/m2K
+        mu_c: mu_c value, (W/m2)/(W/m2)
+        v_vent: mechanical ventilation, m3/h, (5 rooms)
+        theta_ex: outdoor temperature, degree C (8760 times)
+        x_ex: outdoor absolute humidity, kg/kg(DA) (8760 times)
+        j: horizontal solar radiation, W/m2K (8760 times)
+        cooling_period: cooling schedule (8760 times)
+        n_p: number of people (8760 times)
+        q_gen: heat generation, W (8760 times)
+        w_gen: moisture generation, g/h (8760 times)
+        v_local: local ventilation amount, m3/h (8760 times)
+        theta_set_c: set temperature for cooling, degree C
+    Returns:
+        heating output for supply air estimation, MJ/h (8760 times)
+    """
+
+    # specific heat of air, J/kgK
+    c = get_specific_heat()
+
+    # air density, kg/m3
+    rho = get_air_density()
+
+    # latent heat of evaporation, kJ/kg
+    l_wtr = get_evaporation_latent_heat()
+
+    q_d_hs_cs = np.maximum(
+        (((q - 0.35 * 0.5 * 2.4) * a_a + c * rho * (v_local + sum(v_vent)) / 3600) * (
+                    theta_ex - theta_set_c)
+         + mu_c * a_a * j + q_gen + n_p * 51.0) * 3600 * 10 ** (-6),
+        0.0) * cooling_period
+
+    q_d_hs_cl = np.maximum(
+        (((v_local + sum(v_vent)) * rho * (x_ex - 0.013425743) * 10 ** 3 + w_gen) * l_wtr
+         + n_p * 40.0 * 3600) * 10 ** (-6), 0.0) * cooling_period
+
+    return q_d_hs_cs + q_d_hs_cl
+
+
 def get_heating_output_for_supply_air_estimation2(
-        l_h: np.ndarray, q: float, theta_ac_h: np.ndarray, theta_ex: np.ndarray, mu_h: float, j: np.ndarray,
-        a_nr: float) -> np.ndarray:
+        region: int, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float
+) -> np.ndarray:
     """
     calculate heating output for supply air estimation
     Args:
-        l_h: heating load, MJ/h, (12 rooms * 8760 times)
-        q: q value, W/m2K
-        theta_ac_h: air conditioned temperature for heating, degree C
-        theta_ex: outdoor temperature, degree C
-        mu_h: mu value, (W/m2)/(W/m2)
-        j: horizontal solar radiation, W/m2
-        a_nr: floor area of non occupant room, m2
+        region: region
+        insulation: insulation level
+        solar_gain: solar gain level
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_a: total floor area, m2
+        r_env: ratio of total envelope area to total floor area
     Returns:
         heating output for supply air estimation, MJ/h
     """
 
-    # heating load in the main occupant room and the other occupant rooms, MJ/h, (5 rooms * 8760 times)
-    l_h = l_h[0:5]
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
 
-    q_dash_hs_h = np.sum(l_h, axis=0) + ((theta_ac_h - theta_ex) * q - j * mu_h) * a_nr * 3600 * 10 ** (-6)
+    # make envelope.Spec class
+    envelope_spec = envelope.Spec(insulation, solar_gain)
+
+    # heating load, MJ/h
+    l_h = read_load.get_heating_load(region, envelope_spec, floor_area)
+
+    q_dash_hs_h = np.sum(l_h, axis=0)
 
     # This operation is not described in the specification document
     # The supply air has lower limitation. This operation does not eventually effect the result.
@@ -513,35 +605,41 @@ def get_heating_output_for_supply_air_estimation2(
 
 
 def get_cooling_output_for_supply_air_estimation2(
-        l_cs: np.ndarray, l_cl: np.ndarray, q: float, theta_ac_c: np.ndarray, theta_ex: np.ndarray, mu_c: float,
-        j: np.ndarray, a_nr: float) -> np.ndarray:
+        region: int, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float
+) -> np.ndarray:
     """
     calculate the cooling output for supply air estimation
     Args:
-        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
-        q: q value, W/m2K
-        theta_ac_c: air conditioned temperature for cooling, degree C
-        theta_ex: outdoor temperature, degree C
-        mu_c: mu value, (W/m2)/(W/m2)
-        j: horizontal solar radiation, W/m2
-        a_nr: floor area of non occupant room, m2
+        region: region
+        insulation: insulation level
+        solar_gain: solar gain level
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_a: total floor area, m2
+        r_env: ratio of total envelope area to total floor area
     Returns:
         sensible and latent cooling output for supply air estimation, MJ/h
     """
 
-    # sensible cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cs = l_cs[0:5]
+    # make envelope.FloorArea class
+    floor_area = envelope.FloorArea(a_mr, a_or, a_a, r_env)
 
-    # latent cooling load in the main occupant room and the other occupant rooms, MJ/h
-    l_cl = l_cl[0:5]
+    # make envelope.Spec class
+    envelope_spec = envelope.Spec(insulation, solar_gain)
 
-    q_dash_hs_c = np.sum(l_cs, axis=0) + np.sum(l_cl, axis=0) \
-        + ((theta_ex - theta_ac_c) * q + j * mu_c) * a_nr * 3600 * 10 ** (-6)
+    # sensible cooling load, MJ/h
+    l_cs = read_load.get_sensible_cooling_load(region, envelope_spec, floor_area)
+
+    # latent cooling load, MJ/h
+    l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
+
+    q_dash_hs_c = np.sum(l_cs, axis=0) + np.sum(l_cl, axis=0)
 
     # This operation is not described in the specification document
     # The supply air has lower limitation. This operation does not eventually effect the result.
     return np.vectorize(lambda x: x if x > 0.0 else 0.0)(q_dash_hs_c)
+
+# endregion
 
 
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
@@ -1924,24 +2022,24 @@ def get_main_value(
 
     # --- external conditions ---
 
-    # outdoor temperature, degree C, (8760 times)
+    # outdoor temperature, degree C (8760 times)
     theta_ex = get_outdoor_temperature(region=region)
 
-    # outdoor absolute humidity, kg/kg(DA)
+    # outdoor absolute humidity, kg/kg(DA) (8760 times)
     x_ex = get_absolute_humidity(region)
 
-    # horizontal solar radiation, W/m2K
+    # horizontal solar radiation, W/m2K (8760 times)
     j = get_horizontal_solar(region)
 
     # SAT temperature, degree C, (8760 times)
     theta_sat = get_sat_temperature(region)
 
-    # --- occupant usage
+    # --- occupant usage ---
 
     # heating schedule (8760 times), cooling schedule (8760 times)
     heating_period, cooling_period = get_heating_and_cooling_schedule(region)
 
-    # numpber of pepole (8760 times)
+    # number of people (8760 times)
     n_p, _, _, _ = get_n_p(a_mr, a_or, a_nr, calender)
 
     # heat generation, W (8760 times)
@@ -1956,6 +2054,16 @@ def get_main_value(
     # set temperature for heating, degree C, set temperature for cooling, degree C
     theta_set_h, theta_set_c = get_theta_set()
 
+    # --- circulating air flow ---
+
+    # heating and cooling output for supply air estimation, MJ/h
+    q_d_hs_h = get_heating_output_for_supply_air_estimation(
+        a_a, q, mu_h, v_vent, theta_ex, j, heating_period, n_p, q_gen, v_local, theta_set_h)
+    q_d_hs_c = get_cooling_output_for_supply_air_estimation(
+        a_a, q, mu_c, v_vent, theta_ex, x_ex, j, cooling_period, n_p, q_gen, w_gen, v_local, theta_set_c)
+
+    # ----------------------------
+
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
 
@@ -1965,10 +2073,6 @@ def get_main_value(
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    # heating and cooling output for supply air estimation, MJ/h
-    q_d_hs_h = get_heating_output_for_supply_air_estimation2(l_h, q, theta_set_h, theta_ex, mu_h, j, a_nr)
-    q_d_hs_c = get_cooling_output_for_supply_air_estimation2(l_cs, l_cl, q, theta_set_c, theta_ex, mu_c, j, a_nr)
 
     theta_ac = get_air_conditioned_room_temperature(theta_ex, mode)
 
