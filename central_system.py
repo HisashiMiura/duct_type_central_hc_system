@@ -361,6 +361,47 @@ def get_w_gen(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (n
 
     return w_gen, w_gen_mr, w_gen_or, w_gen_nr
 
+
+def get_v_local(calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    calculate local ventilation amount, m3/h
+    Args:
+        calender: calender with 'weekday' and 'holiday'
+    Returns:
+        (v_local, v_local_mr, v_local_or, v_local_nr)
+        v_local: total local ventilation amount, m3/h (8760 times)
+        v_local_mr: local ventilation amount in main occupant room, m3/h (8760 times)
+        v_local_or: local ventilation amount in other occupant room, m3/h (8760 times)
+        v_local_nr: local ventilation amount in non occupant room, m3/h (8760 times)
+    """
+
+    v_local_mr_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 75.0, 0.0, 0.0, 0.0, 0.0, 0.0, 75.0, 0.0, 0.0, 0.0, 0.0, 0.0, 150.0, 150.0, 0.0,
+        0.0, 0.0, 0.0])
+    v_local_or_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0])
+    v_local_nr_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.0, 2.0, 0.0, 0.8, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.8, 0.8, 0.8, 0.8, 0.8, 52.0,
+        25.0, 102.8])
+    v_local_mr_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 75.0, 0.0, 0.0, 0.0, 75.0, 0.0, 0.0, 0.0, 0.0, 150.0, 150.0, 0.0, 0.0,
+        0.0, 0.0, 0.0])
+    v_local_or_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0])
+    v_local_nr_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 0.0, 1.2, 1.2, 0.0, 0.0, 0.0, 0.0, 2.0, 75.8, 25.0, 2.0, 0.8, 25.0,
+        27.0, 100.8])
+
+    v_local_mr = np.tile(v_local_mr_wd, 365) * (calender == '平日') + np.tile(v_local_mr_hd, 365) * (calender == '休日')
+    v_local_or = np.tile(v_local_or_wd, 365) * (calender == '平日') + np.tile(v_local_or_hd, 365) * (calender == '休日')
+    v_local_nr = np.tile(v_local_nr_wd, 365) * (calender == '平日') + np.tile(v_local_nr_hd, 365) * (calender == '休日')
+
+    v_local = v_local_mr + v_local_or + v_local_nr
+
+    return v_local, v_local_mr, v_local_or, v_local_nr
+
 # endregion
 
 
@@ -1889,6 +1930,9 @@ def get_main_value(
 
     # moisture generation, g/h (8760 times)
     w_gen, _, _, _ = get_w_gen(a_mr, a_or, a_nr, calender)
+
+    # local ventilation amount, m3/h (8760 times)
+    v_local, _, _, _ = get_v_local(calender)
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
