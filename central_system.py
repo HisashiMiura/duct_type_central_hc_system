@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import numpy as np
+import pandas as pd
 
 import read_conditions
 import envelope
@@ -165,6 +166,17 @@ def get_evaporation_latent_heat() -> float:
     """
     theta = 28.0
     return 2500.8 - 2.3668 * theta
+
+
+def get_calender() -> np.ndarray:
+    """
+    get calender
+    Returns:
+        calender with 'weekday' and 'holiday' (8760 times)
+    """
+
+    df = pd.read_csv('schedule_data/schedule.csv')
+    return np.repeat(df['暖冷房'].values, 24)
 
 # endregion
 
