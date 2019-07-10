@@ -402,6 +402,21 @@ def get_v_local(calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
 
     return v_local, v_local_mr, v_local_or, v_local_nr
 
+
+def get_theta_set() -> (float, float):
+    """
+    get set temperature
+    Returns:
+        set temperature for heating, degree C
+        set temperature for cooling, degree C
+    """
+
+    theta_set_h = 20.0
+    theta_set_c = 27.0
+
+    return theta_set_h, theta_set_c
+
+
 # endregion
 
 
@@ -468,6 +483,7 @@ def get_sat_temperature(region: int) -> np.ndarray:
     return read_conditions.get_sat_temperature(region)
 
 # endregion
+
 
 
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
@@ -1937,6 +1953,9 @@ def get_main_value(
 
     # local ventilation amount, m3/h (8760 times)
     v_local, _, _, _ = get_v_local(calender)
+
+    # set temperature for heating, degree C, set temperature for cooling, degree C
+    theta_set_h, theta_set_c = get_theta_set()
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
