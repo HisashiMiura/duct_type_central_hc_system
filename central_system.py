@@ -306,6 +306,61 @@ def get_q_gen(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (n
 
     return q_gen, q_gen_mr, q_gen_or, q_gen_nr
 
+
+def get_w_gen(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    calculate moisture generation, g/h
+    Args:
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_nr: non occupant room floor area, m2
+        calender: calender with 'weekday' and 'holiday'
+    Returns:
+        (w_gen, w_gen_mr, w_gen_or, w_gen_nr)
+        w_gen: total moisture generation, g/h (8760 times)
+        w_gen_mr: moisture generation in main occupant room, g/h (8760 times)
+        w_gen_or: moisture generation in other occupant room, g/h (8760 times)
+        w_gen_nr: moisture generation in non occupant room, g/h (8760 times)
+    """
+
+    w_gen_mr_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 50.0, 0.0, 0.0, 0.0,
+        0.0, 0.0
+    ]) * a_mr / 29.81
+
+    w_gen_or_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0,
+    ]) * a_or / 51.34
+
+    w_gen_nr_wd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0,
+    ]) * a_nr / 38.93
+
+    w_gen_mr_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 50.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0
+    ]) * a_mr / 29.81
+
+    w_gen_or_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0,
+    ]) * a_or / 51.34
+
+    w_gen_nr_hd = np.array([
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0,
+    ]) * a_nr / 38.93
+
+    w_gen_mr = np.tile(w_gen_mr_wd, 365) * (calender == '平日') + np.tile(w_gen_mr_hd, 365) * (calender == '休日')
+    w_gen_or = np.tile(w_gen_or_wd, 365) * (calender == '平日') + np.tile(w_gen_or_hd, 365) * (calender == '休日')
+    w_gen_nr = np.tile(w_gen_nr_wd, 365) * (calender == '平日') + np.tile(w_gen_nr_hd, 365) * (calender == '休日')
+
+    w_gen = w_gen_mr + w_gen_or + w_gen_nr
+
+    return w_gen, w_gen_mr, w_gen_or, w_gen_nr
+
 # endregion
 
 
@@ -1831,6 +1886,9 @@ def get_main_value(
 
     # heat generation, W (8760 times)
     q_gen, _, _, _ = get_q_gen(a_mr, a_or, a_nr, calender)
+
+    # moisture generation, g/h (8760 times)
+    w_gen, _, _, _ = get_w_gen(a_mr, a_or, a_nr, calender)
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
