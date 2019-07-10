@@ -251,6 +251,61 @@ def get_n_p(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (np.
 
     return n_p, n_p_mr, n_p_or, n_p_nr
 
+
+def get_q_gen(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    calculate heat generation, W
+    Args:
+        a_mr: main occupant room floor area, m2
+        a_or: other occupant room floor area, m2
+        a_nr: non occupant room floor area, m2
+        calender: calender with 'weekday' and 'holiday'
+    Returns:
+        (q_gen, q_gen_mr, q_gen_or, q_gen_nr)
+        q_gen: total heat generation, W (8760 times)
+        q_gen_mr: heat generation in main occupant room, W (8760 times)
+        q_gen_or: heat generation in other occupant room, W (8760 times)
+        q_gen_nr: heat generation in non occupant room, W (8760 times)
+    """
+
+    q_gen_mr_wd = np.array([
+        66.9, 66.9, 66.9, 66.9, 66.9, 66.9, 123.9, 383.6, 323.2, 307.3, 134.8, 66.9,
+        286.7, 271.2, 66.9, 66.9, 236.9, 288.6, 407.8, 383.1, 423.1, 339.1, 312.9, 278.0
+    ]) * a_mr / 29.81
+
+    q_gen_or_wd = np.array([
+        18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 398.2, 18.0, 18.0,
+        18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 53.0, 53.0, 115.5, 103.0, 258.3, 137.3
+    ]) * a_or / 51.34
+
+    q_gen_nr_wd = np.array([
+        41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 126.1, 249.9, 158.3, 191.3, 117.5, 41.5,
+        42.5, 89.0, 41.5, 41.5, 105.8, 105.8, 112.1, 118.5, 155.7, 416.1, 314.8, 174.9
+    ]) * a_nr / 38.93
+
+    q_gen_mr_hd = np.array([
+        66.9, 66.9, 66.9, 66.9, 66.9, 66.9, 66.9, 66.9, 440.5, 443.3, 515.1, 488.9,
+        422.9, 174.4, 66.9, 66.9, 237.8, 407.8, 383.1, 326.8, 339.1, 339.1, 312.9, 66.9
+    ]) * a_mr / 29.81
+
+    q_gen_or_hd = np.array([
+        18, 18, 18, 18, 18, 18, 18, 18, 35.5, 654.3, 223, 223,
+        53, 18, 18, 18, 93, 93, 55.5, 18, 270, 168.8, 270, 18
+    ]) * a_or / 51.34
+
+    q_gen_nr_hd = np.array([
+        41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 281.3, 311, 269.5, 100.4, 106.7,
+        98.5, 55.8, 41.5, 41.5, 158.4, 171.3, 82.7, 101.4, 99.5, 255.1, 232.1, 157.8
+    ]) * a_nr / 38.93
+
+    q_gen_mr = np.tile(q_gen_mr_wd, 365) * (calender == '平日') + np.tile(q_gen_mr_hd, 365) * (calender == '休日')
+    q_gen_or = np.tile(q_gen_or_wd, 365) * (calender == '平日') + np.tile(q_gen_or_hd, 365) * (calender == '休日')
+    q_gen_nr = np.tile(q_gen_nr_wd, 365) * (calender == '平日') + np.tile(q_gen_nr_hd, 365) * (calender == '休日')
+
+    q_gen = q_gen_mr + q_gen_or + q_gen_nr
+
+    return q_gen, q_gen_mr, q_gen_or, q_gen_nr
+
 # endregion
 
 
@@ -1773,6 +1828,9 @@ def get_main_value(
 
     # numpber of pepole (8760 times)
     n_p, _, _, _ = get_n_p(a_mr, a_or, a_nr, calender)
+
+    # heat generation, W (8760 times)
+    q_gen, _, _, _ = get_q_gen(a_mr, a_or, a_nr, calender)
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
