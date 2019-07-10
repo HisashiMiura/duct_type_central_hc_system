@@ -1749,6 +1749,9 @@ def get_main_value(
     # latent heat of evaporation, kJ/kg
     l_wtr = get_evaporation_latent_heat()
 
+    # calender
+    calender = get_calender()
+
     # --- external conditions ---
 
     # outdoor temperature, degree C, (8760 times)
@@ -1767,6 +1770,9 @@ def get_main_value(
 
     # heating schedule (8760 times), cooling schedule (8760 times)
     heating_period, cooling_period = get_heating_and_cooling_schedule(region)
+
+    # numpber of pepole (8760 times)
+    n_p, _, _, _ = get_n_p(a_mr, a_or, a_nr, calender)
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
