@@ -729,6 +729,8 @@ def get_heat_source_supply_air_volume(
 # endregion
 
 
+# region load
+
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -763,6 +765,8 @@ def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or:
     l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
 
     return l_h, l_cs, l_cl
+
+# endregion
 
 
 def get_operation_mode(l_h: np.ndarray, l_cs: np.ndarray) -> np.ndarray:
