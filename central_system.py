@@ -1303,13 +1303,13 @@ def get_requested_supply_air_temperature_for_cooling(
 
 
 def get_decided_outlet_supply_air_temperature_for_heating(
-        vav_system: bool, theta_duct_up_h: np.ndarray, r_supply_des: np.ndarray) -> np.ndarray:
+        vav_system: bool, theta_duct_up_h: np.ndarray, v_d_supply: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for heating
     Args:
         vav_system: is vav system equipped or not
         theta_duct_up_h: requested temperature, degree C, (5 rooms * 8760 times)
-        r_supply_des: the ratio of the supply air volume valance for each 5 rooms (0.0-1.0) (5 rooms)
+        v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
     Returns:
         decided outlet supply air temperature, degree C, (8760 times)
     """
@@ -1317,18 +1317,17 @@ def get_decided_outlet_supply_air_temperature_for_heating(
     if vav_system:
         return np.max(theta_duct_up_h, axis=0)
     else:
-        r_supply_des = np.array(r_supply_des).reshape(1, 5).T
-        return np.sum(theta_duct_up_h * r_supply_des, axis=0)
+        return np.sum(theta_duct_up_h * v_d_supply / v_d_supply.sum(axis=0), axis=0)
 
 
 def get_decided_outlet_supply_air_temperature_for_cooling(
-        vav_system: bool, theta_duct_up_c: np.ndarray, r_supply_des: np.ndarray) -> np.ndarray:
+        vav_system: bool, theta_duct_up_c: np.ndarray, v_d_supply: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for cooling
     Args:
         vav_system: is vav system equipped or not
         theta_duct_up_c: requested temperature, degree C, (5 rooms * 8760 times)
-        r_supply_des: the ratio of the supply air volume valance for each 5 rooms (0.0-1.0) (5 rooms)
+        v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
     Returns:
         decided outlet supply air temperature, degree C, (8760 times)
     """
@@ -1336,8 +1335,7 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
     if vav_system:
         return np.min(theta_duct_up_c, axis=0)
     else:
-        r_supply_des = np.array(r_supply_des).reshape(1, 5).T
-        return np.sum(theta_duct_up_c * r_supply_des, axis=0)
+        return np.sum(theta_duct_up_c * v_d_supply / v_d_supply.sum(axis=0), axis=0)
 
 
 def get_each_supply_air_volume_for_heating(
@@ -2148,8 +2146,8 @@ def get_main_value(
         theta_sur, theta_ac_c, q_t_cs, v_d_supply, c, rho, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, r_supply_des)
-    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(vav_system, theta_req_c, r_supply_des)
+    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, v_d_supply)
+    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(vav_system, theta_req_c, v_d_supply)
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(
