@@ -672,7 +672,7 @@ def get_minimum_air_volume(v_vent: np.ndarray) -> float:
         minimum supply air volume of the system, m3/h, which is constant value through year.
     """
 
-    return np.sum(v_vent)
+    return v_vent.sum()
 
 
 def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
