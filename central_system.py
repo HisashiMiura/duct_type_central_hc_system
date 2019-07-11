@@ -731,28 +731,6 @@ def get_heat_source_supply_air_volume(
 
 # region load
 
-def get_air_conditioned_room_temperature(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
-        theta_ex: np.ndarray, theta_set_h: float, theta_set_c: float) -> np.ndarray:
-    """
-    calculate air conditioned room temperature
-    Args:
-        heating_period: heating schedule, operation day represents True, (8760 times)
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
-        theta_ex: outdoor temperature, degree C, (8760 times)
-        theta_set_h: set temperature for heating, degree C
-        theta_set_c: set temperature for cooling, degree C
-    Returns:
-        air conditioned room temperature, degree C, (8760 times)
-    """
-
-    theta_ac_m = np.clip(theta_ex, theta_set_h, theta_set_c)
-
-    middle_period = (heating_period == cooling_period)
-
-    return theta_set_h * heating_period + theta_set_c * cooling_period + theta_ac_m * middle_period
-
-
 def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
@@ -787,6 +765,28 @@ def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or:
     l_cl = read_load.get_latent_cooling_load(region, envelope_spec, floor_area)
 
     return l_h, l_cs, l_cl
+
+
+def get_air_conditioned_room_temperature(
+        heating_period: np.ndarray, cooling_period: np.ndarray,
+        theta_ex: np.ndarray, theta_set_h: float, theta_set_c: float) -> np.ndarray:
+    """
+    calculate air conditioned room temperature
+    Args:
+        heating_period: heating schedule, operation day represents True, (8760 times)
+        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        theta_ex: outdoor temperature, degree C, (8760 times)
+        theta_set_h: set temperature for heating, degree C
+        theta_set_c: set temperature for cooling, degree C
+    Returns:
+        air conditioned room temperature, degree C, (8760 times)
+    """
+
+    theta_ac_m = np.clip(theta_ex, theta_set_h, theta_set_c)
+
+    middle_period = (heating_period == cooling_period)
+
+    return theta_set_h * heating_period + theta_set_c * cooling_period + theta_ac_m * middle_period
 
 # endregion
 
@@ -2081,12 +2081,12 @@ def get_main_value(
 
     # ----------------------------
 
+    # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
+    l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
+
     # heating and cooling room temperature, degree C (8760 times)
     theta_ac = get_air_conditioned_room_temperature(
         heating_period, cooling_period, theta_ex, theta_set_h, theta_set_c)
-
-    # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
-    l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
 
     # ----------------------------
 
