@@ -867,6 +867,57 @@ def get_non_occupant_room_temperature_balanced(
     return theta_nac_h * heating_period + theta_nac_c * cooling_period + theta_ac * middle_period
 
 
+def get_heat_transfer_through_partition_balanced(
+        u_prt: float, a_prt: np.ndarray, theta_ac: np.ndarray, theta_d_nac: np.ndarray) -> np.ndarray:
+    """
+    calculate heat transfer through the partition from occupant room into non occupant room
+    Args:
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        theta_ac: air conditioned temperature, degree C (8760 times)
+        theta_d_nac: non occupant room temperature, degree C (8760 times)
+    Returns:
+        heat transfer through the partition, MJ/h (5 rooms * 8760 times)
+    """
+
+    # area of the partition, m2
+    a_prt = a_prt.reshape(1, 5).T
+
+    return u_prt * a_prt * (theta_ac - theta_d_nac) * 3600 * 10 ** (-6)
+
+
+def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt: np.ndarray) -> np.ndarray:
+    """
+    calculate the heating load of the occupant room
+    Args:
+        l_h: heating load, MJ/h, (12 rooms * 8760 times)
+        q_d_trs_prt: heat transfer from occupant room to non occupant room through partition, (5 rooms * 8760 times)
+    Returns:
+        heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+    """
+
+    l_d_h = np.where(l_h[0:5] > 0.0, l_h[0:5] + q_d_trs_prt, 0.0)
+
+    return np.clip(l_d_h, 0.0, None)
+
+
+def get_occupant_room_load_for_cooling_balanced(
+        l_cs: np.ndarray, l_cl: np.ndarray, q_d_trs_prt: np.ndarray) -> np.ndarray:
+    """
+    calculate the cooling load of the occupant room
+    Args:
+        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
+        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
+        q_d_trs_prt: heat transfer from occupant room to non occupant room through partition, (5 rooms * 8760 times)
+    Returns:
+        sensible and latent cooling load of occupant room, MJ/h, ((5 rooms *  8760 times), (5 rooms *  8760 times))
+    """
+
+    l_d_cs = np.where(l_cs[0:5] > 0.0, l_cs[0:5] - q_d_trs_prt, 0.0)
+    l_d_cl = l_cl[0:5]
+
+    return np.clip(l_d_cs, 0.0, None), np.clip(l_d_cl, 0.0, None)
+
 # endregion
 
 
@@ -998,58 +1049,6 @@ def get_duct_ambient_air_temperature(
         l_in = l_duct_in_r.reshape(1, 5).T
         l_ex = l_duct_ex_r.reshape(1, 5).T
         return (l_in * theta_ac + l_ex * theta_attic) / (l_in + l_ex)
-
-
-def get_heat_transfer_through_partition_balanced(
-        u_prt: float, a_prt: np.ndarray, theta_ac: np.ndarray, theta_d_nac: np.ndarray) -> np.ndarray:
-    """
-    calculate heat transfer through the partition from occupant room into non occupant room
-    Args:
-        u_prt: heat loss coefficient of the partition wall, W/m2K
-        a_prt: area of the partition, m2, (5 rooms)
-        theta_ac: air conditioned temperature, degree C (8760 times)
-        theta_d_nac: non occupant room temperature, degree C (8760 times)
-    Returns:
-        heat transfer through the partition, MJ/h (5 rooms * 8760 times)
-    """
-
-    # area of the partition, m2
-    a_prt = a_prt.reshape(1, 5).T
-
-    return u_prt * a_prt * (theta_ac - theta_d_nac) * 3600 * 10 ** (-6)
-
-
-def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt: np.ndarray) -> np.ndarray:
-    """
-    calculate the heating load of the occupant room
-    Args:
-        l_h: heating load, MJ/h, (12 rooms * 8760 times)
-        q_d_trs_prt: heat transfer from occupant room to non occupant room through partition, (5 rooms * 8760 times)
-    Returns:
-        heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-    """
-
-    l_d_h = np.where(l_h[0:5] > 0.0, l_h[0:5] + q_d_trs_prt, 0.0)
-
-    return np.clip(l_d_h, 0.0, None)
-
-
-def get_occupant_room_load_for_cooling_balanced(
-        l_cs: np.ndarray, l_cl: np.ndarray, q_d_trs_prt: np.ndarray) -> np.ndarray:
-    """
-    calculate the cooling load of the occupant room
-    Args:
-        l_cs: sensible cooling load, MJ/h, (12 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
-        q_d_trs_prt: heat transfer from occupant room to non occupant room through partition, (5 rooms * 8760 times)
-    Returns:
-        sensible and latent cooling load of occupant room, MJ/h, ((5 rooms *  8760 times), (5 rooms *  8760 times))
-    """
-
-    l_d_cs = np.where(l_cs[0:5] > 0.0, l_cs[0:5] - q_d_trs_prt, 0.0)
-    l_d_cl = l_cl[0:5]
-
-    return np.clip(l_d_cs, 0.0, None), np.clip(l_d_cl, 0.0, None)
 
 
 def get_heat_source_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
@@ -2064,7 +2063,7 @@ def get_main_value(
     # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
     v_d_supply = get_each_supply_air_volume_not_vav_adjust(r_supply_des, v_d_hs_supply, v_vent)
 
-    # ----------------------------
+    # --- load ---
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
@@ -2077,6 +2076,13 @@ def get_main_value(
     theta_d_nac = get_non_occupant_room_temperature_balanced(
         heating_period, cooling_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt,
         theta_ac, theta_set_h, theta_set_c)
+
+    # heat transfer through partition from occupant room to non occupant room balanced, MJ/h, (5 rooms * 8760 times)
+    q_d_trs_prt = get_heat_transfer_through_partition_balanced(u_prt, a_prt, theta_ac, theta_d_nac)
+
+    # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
+    l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt)
+    l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt)
 
     # ----------------------------
 
@@ -2101,13 +2107,6 @@ def get_main_value(
 
     # duct ambient temperature, degree C, (5 rooms * 8760 times)
     theta_sur = get_duct_ambient_air_temperature(is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac, theta_attic)
-
-    # heat transfer through partition from occupant room to non occupant room balanced, MJ/h, (5 rooms * 8760 times)
-    q_d_trs_prt = get_heat_transfer_through_partition_balanced(u_prt, a_prt, theta_ac, theta_d_nac)
-
-    # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
-    l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt)
-    l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_d_hs_in = get_heat_source_inlet_air_temperature_balanced(theta_d_nac)
