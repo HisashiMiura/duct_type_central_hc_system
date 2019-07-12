@@ -921,20 +921,6 @@ def get_occupant_room_load_for_cooling_balanced(
 # endregion
 
 
-def get_operation_mode(l_h: np.ndarray, l_cs: np.ndarray) -> np.ndarray:
-    """
-    judge the operation mode
-    Args:
-        l_h: heating load, MJ/h (12 rooms * 8760 times)
-        l_cs: sensible cooling load, MJ/h (12 rooms * 8760 times)
-    Returns:
-        operation mode (8760 times)
-            'h' = heating mode, 'c' = cooling mode, 'm' = ventilation mode without heating or cooling
-    """
-    return np.where(np.sum(l_h[0:5], axis=0) > 0.0, 'h',
-                    np.where(np.sum(l_cs[0:5], axis=0) > 0.0, 'c', 'm'))
-
-
 def get_air_conditioned_temperature_for_heating() -> np.ndarray:
     """
     get air conditioned temperature for heating
@@ -2086,9 +2072,6 @@ def get_main_value(
 
     # ----------------------------
 
-    # operation mode(h, c, m) (8760 times)
-    mode = get_operation_mode(l_h, l_cs)
-
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
@@ -2237,7 +2220,6 @@ def get_main_value(
             'old_heating_load_sum_of_12_rooms': np.sum(l_h, axis=0),  # MJ/h
             'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
             'old_latent_cooling_load_sum_of_12_rooms': np.sum(l_cl, axis=0),  # MJ/h
-            'operation_mode': mode,  # string ('h', 'c', 'm')
             'air_conditioned_temperature': theta_ac_h,  # degree C
             'air_conditioned_temperature': theta_ac,  # degree C
             'sat_temperature': theta_sat,  # degree C
