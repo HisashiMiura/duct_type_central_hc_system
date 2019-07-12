@@ -768,7 +768,7 @@ def get_each_supply_air_volume_not_vav_adjust(
 
 # region load
 
-def get_load(region: float, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
+def get_load(region: int, insulation: str, solar_gain: str, a_mr: float, a_or: float, a_a: float, r_env: float) \
         -> (np.ndarray, np.ndarray, np.ndarray):
     """
     get heating load, and sensible and latent cooling load
