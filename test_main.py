@@ -18,8 +18,8 @@ class TestMain(unittest.TestCase):
         df_t = pd.DataFrame(t)
 
         self.assertAlmostEqual(5.7031, df_t.heating_load_room1[0])
-        self.assertAlmostEqual(18.804881956564557, df_t.output_of_heat_source_heating[0])
-        self.assertAlmostEqual(0.4079672554760353, df_t.output_of_heat_source_sensible_cooling[4798])
+        self.assertAlmostEqual(18.275874334068924, df_t.output_of_heat_source_heating[0])
+        self.assertAlmostEqual(0.8306705052555298, df_t.output_of_heat_source_sensible_cooling[4798])
         self.assertAlmostEqual(1.87939, df_t.output_of_heat_source_latent_cooling[4798])
 
 
