@@ -101,6 +101,15 @@ def get_partition_area(a_hcz: np.ndarray, a_mr, a_or, a_nr, r_env) -> np.ndarray
     return np.concatenate((a_part_mr, a_part_or))
 
 
+def get_heat_loss_coefficient_of_partition() -> float:
+    """
+    return the heat loss coefficient of the partition
+    Returns:
+        heat loss coefficient of the partition, W/m2K
+    """
+    return 1 / 0.46
+
+
 def get_envelope_spec(region: int, insulation: str, solar_gain: str) -> (float, float, float):
     """
     get Q value, mu_h value, mu_c value
@@ -921,25 +930,7 @@ def get_occupant_room_load_for_cooling_balanced(
 # endregion
 
 
-def get_air_conditioned_temperature_for_heating() -> np.ndarray:
-    """
-    get air conditioned temperature for heating
-    Returns:
-        air conditioned temperature for heating, degree C, (8760 times)
-    """
-
-    return np.full(8760, 20.0)
-
-
-def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
-    """
-    get air conditioned temperature for cooling
-    Returns:
-        get air conditioned temperature for cooling, degree C, (8760 times)
-    """
-
-    return np.full(8760, 27.0)
-
+# region treated and untreated load
 
 def get_duct_linear_heat_loss_coefficient() -> float:
     """
@@ -986,15 +977,6 @@ def get_duct_length(l_duct_r: np.ndarray, a_a: float) -> np.ndarray:
     return l_duct_r * np.sqrt(a_a / a_a_r)
 
 
-def get_heat_loss_coefficient_of_partition() -> float:
-    """
-    return the heat loss coefficient of the partition
-    Returns:
-        heat loss coefficient of the partition, W/m2K
-    """
-    return 1 / 0.46
-
-
 def get_attic_temperature(theta_sat: np.ndarray, theta_ac: np.ndarray) -> np.ndarray:
     """
     calculate attic temperature for heating
@@ -1037,6 +1019,18 @@ def get_duct_ambient_air_temperature(
         return (l_in * theta_ac + l_ex * theta_attic) / (l_in + l_ex)
 
 
+def get_heat_source_inlet_air_temperature_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
+    """
+    calculate the inlet air temperature of heat source
+    Args:
+        theta_d_nac: non occupant room temperature when balanced, degree C, (8760 times)
+    Returns:
+        the inlet air temperature of heat source when balanced, degree C, (8760 times)
+    """
+
+    return theta_d_nac
+
+
 def get_heat_source_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
     """
     calculate maximum heating output
@@ -1065,17 +1059,27 @@ def get_heat_source_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l
 
     return appendix.get_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
+# endregion
 
-def get_heat_source_inlet_air_temperature_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
+
+def get_air_conditioned_temperature_for_heating() -> np.ndarray:
     """
-    calculate the inlet air temperature of heat source
-    Args:
-        theta_d_nac: non occupant room temperature when balanced, degree C, (8760 times)
+    get air conditioned temperature for heating
     Returns:
-        the inlet air temperature of heat source when balanced, degree C, (8760 times)
+        air conditioned temperature for heating, degree C, (8760 times)
     """
 
-    return theta_d_nac
+    return np.full(8760, 20.0)
+
+
+def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
+    """
+    get air conditioned temperature for cooling
+    Returns:
+        get air conditioned temperature for cooling, degree C, (8760 times)
+    """
+
+    return np.full(8760, 27.0)
 
 
 def get_maximum_heating_supply(
@@ -2070,14 +2074,16 @@ def get_main_value(
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt)
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt)
 
+    # treated and untreated load
+
+    # duct liner heat loss coefficient, W/mK
+    psi = get_duct_linear_heat_loss_coefficient()
+
     # ----------------------------
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
     theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
-    # duct liner heat loss coefficient, W/mK
-    psi = get_duct_linear_heat_loss_coefficient()
 
     # duct length in the standard house, m, ((5 rooms), (5 rooms), (5 rooms))
     l_duct_in_r, l_duct_ex_r, l_duct_r = get_standard_house_duct_length()
