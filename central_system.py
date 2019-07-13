@@ -1117,14 +1117,14 @@ def get_maximum_heating_supply(
 
 
 def get_maximum_cooling_supply(
-        theta_d_hs_in_c: np.ndarray, l_cl: np.ndarray, q_hs_max_cs: np.ndarray, q_hs_max_cl: np.ndarray,
+        theta_d_hs_in_c: np.ndarray, l_d_cl: np.ndarray, q_hs_max_cs: np.ndarray, q_hs_max_cl: np.ndarray,
         v_d_supply: np.ndarray, theta_set_c: np.ndarray, psi: float, l_duct: np.ndarray,
         theta_sur: np.ndarray) -> np.ndarray:
     """
     calculate maximum output for cooling
     Args:
         theta_d_hs_in_c: inlet air temperature of the heat source for cooling, degree C (8760 times)
-        l_cl: latent cooling load, MJ/h (12 rooms * 8760 times)
+        l_d_cl: latent cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
         q_hs_max_cs: maximum sensible cooling output, MJ/h (8760 times)
         q_hs_max_cl: maximum latent cooling output, MJ/h (8760 times)
         v_d_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
@@ -1139,9 +1139,6 @@ def get_maximum_cooling_supply(
     c = get_specific_heat()
     rho = get_air_density()
 
-    # latent cooling load, MJ/h (5 rooms * 8760 times)
-    l_cl = l_cl[0:5]
-
     # minimum outlet air temperature of heat source, degree C, (8760 times)
     theta_hs_out_min_c = theta_d_hs_in_c - q_hs_max_cs / (c * rho * np.sum(v_d_supply, axis=0)) * 10 ** 6
 
@@ -1153,9 +1150,9 @@ def get_maximum_cooling_supply(
     q_max_cs = - get_load_from_upside_temperature(
         t_sur=theta_sur, t_up=theta_hs_out_min_c, v=v_d_supply, t_ac=theta_set_c, psi=psi, length=l_duct)
 
-    l_cl_sum = np.sum(l_cl, axis=0)
+    l_cl_sum = np.sum(l_d_cl, axis=0)
 
-    r = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_cl, l_cl_sum)
+    r = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_d_cl, l_cl_sum)
 
     q_max_cl = r * q_hs_max_cl
 
@@ -2112,7 +2109,7 @@ def get_main_value(
         theta_d_hs_in, q_hs_max_h, v_d_supply, theta_set_h, psi, l_duct, theta_sur)
     # sensible and latent cooling, MJ/h, (5 rooms * 8760 times), (5 rooms * 8760 times)
     q_max_cs, q_max_cl = get_maximum_cooling_supply(
-        theta_d_hs_in, l_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_set_c, psi, l_duct, theta_sur)
+        theta_d_hs_in, l_d_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_set_c, psi, l_duct, theta_sur)
 
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
