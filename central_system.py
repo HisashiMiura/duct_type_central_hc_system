@@ -1150,11 +1150,8 @@ def get_maximum_cooling_supply(
     # duct length, m
     l_duct = np.array(l_duct).reshape(1, 5).T
 
-#    q_max_cs = get_load_from_upside_temperature(
-#        t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_set_h, psi=psi, length=l_duct)
-    q_max_cs = (theta_set_c - theta_sur
-                + (theta_sur - theta_hs_out_min_c) / np.exp(psi * l_duct * 3600 / (c * rho * v_d_supply_c))) \
-        * c * rho * v_d_supply_c * 10 ** (-6)
+    q_max_cs = - get_load_from_upside_temperature(
+        t_sur=theta_sur, t_up=theta_hs_out_min_c, v=v_d_supply_c, t_ac=theta_set_c, psi=psi, length=l_duct)
 
     l_cl_sum = np.sum(l_cl, axis=0)
 
