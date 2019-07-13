@@ -911,7 +911,7 @@ def get_occupant_room_load_for_heating_balanced(l_h: np.ndarray, q_d_trs_prt: np
 
 
 def get_occupant_room_load_for_cooling_balanced(
-        l_cs: np.ndarray, l_cl: np.ndarray, q_d_trs_prt: np.ndarray) -> np.ndarray:
+        l_cs: np.ndarray, l_cl: np.ndarray, q_d_trs_prt: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     calculate the cooling load of the occupant room
     Args:
@@ -1010,7 +1010,8 @@ def get_duct_ambient_air_temperature(
 
     if is_duct_insulated:
         # If the duct insulated, the duct ambient temperatures are equals to the air conditioned temperatures.
-        return np.full((5, 8760), theta_ac)
+#        return np.full((5, 8760), theta_ac)
+        return np.tile(theta_ac, (5, 1))
     else:
         # If the duct NOT insulated, the duct ambient temperatures are
         # between the attic temperatures and the air conditioned temperatures.
@@ -1031,7 +1032,7 @@ def get_heat_source_inlet_air_temperature_balanced(theta_d_nac: np.ndarray) -> n
     return theta_d_nac
 
 
-def get_heat_source_maximum_heating_output(region: float, q_rtd_h: float) -> np.ndarray:
+def get_heat_source_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     """
     calculate maximum heating output
     Args:
