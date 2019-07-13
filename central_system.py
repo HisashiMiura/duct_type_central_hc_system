@@ -449,6 +449,17 @@ def get_theta_set() -> (float, float):
     return theta_set_h, theta_set_c
 
 
+def get_x_set() -> float:
+    """
+    get set absolute humidity
+    Returns:
+        set absolute humidity for cooling, kg/kgDA
+    """
+
+    x_set_c = 0.013425743  # 27℃ 60% の時の絶対湿度
+
+    return x_set_c
+
 # endregion
 
 
@@ -560,7 +571,7 @@ def get_cooling_output_for_supply_air_estimation(
         a_a: float, q: float, mu_c: float, v_vent: np.ndarray,
         theta_ex: np.ndarray, x_ex: np.ndarray, j: np.ndarray,
         cooling_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, w_gen: np.ndarray, v_local: np.ndarray,
-        theta_set_c: float):
+        theta_set_c: float, x_set_c: float):
     """
     get heating output for supply air estimation
     Args:
@@ -577,6 +588,7 @@ def get_cooling_output_for_supply_air_estimation(
         w_gen: moisture generation, g/h (8760 times)
         v_local: local ventilation amount, m3/h (8760 times)
         theta_set_c: set temperature for cooling, degree C
+        x_set_c: set absolute humidigy for cooling, kg/kgDA
     Returns:
         heating output for supply air estimation, MJ/h (8760 times)
     """
@@ -597,7 +609,7 @@ def get_cooling_output_for_supply_air_estimation(
         0.0) * cooling_period
 
     q_d_hs_cl = np.maximum(
-        (((v_local + sum(v_vent)) * rho * (x_ex - 0.013425743) * 10 ** 3 + w_gen) * l_wtr
+        (((v_local + sum(v_vent)) * rho * (x_ex - x_set_c) * 10 ** 3 + w_gen) * l_wtr
          + n_p * 40.0 * 3600) * 10 ** (-6), 0.0) * cooling_period
 
     return q_d_hs_cs + q_d_hs_cl
@@ -2026,13 +2038,16 @@ def get_main_value(
     # set temperature for heating, degree C, set temperature for cooling, degree C
     theta_set_h, theta_set_c = get_theta_set()
 
+    # set absolute humidty for cooling, kg/kgDA (when 28 degree C and 60 % )
+    x_set_c = get_x_set()
+
     # --- circulating air flow ---
 
     # heating and cooling output for supply air estimation, MJ/h
     q_d_hs_h = get_heating_output_for_supply_air_estimation(
         a_a, q, mu_h, v_vent, theta_ex, j, heating_period, n_p, q_gen, v_local, theta_set_h)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(
-        a_a, q, mu_c, v_vent, theta_ex, x_ex, j, cooling_period, n_p, q_gen, w_gen, v_local, theta_set_c)
+        a_a, q, mu_c, v_vent, theta_ex, x_ex, j, cooling_period, n_p, q_gen, w_gen, v_local, theta_set_c, x_set_c)
 
     # minimum supply air volume of the system for heating and cooling, (m3/h, m3/h)
     v_hs_min = get_minimum_air_volume(v_vent)
