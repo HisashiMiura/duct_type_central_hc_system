@@ -1085,7 +1085,7 @@ def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
 
 def get_maximum_heating_supply(
         theta_d_hs_in_h: np.ndarray, q_hs_max_h: np.ndarray, v_d_supply_h: np.ndarray, theta_set_h: np.ndarray,
-        psi: float, l_duct: np.ndarray, theta_sur_h: np.ndarray) -> np.ndarray:
+        psi: float, l_duct: np.ndarray, theta_sur: np.ndarray) -> np.ndarray:
     """
     calculate maximum output for heating
     Args:
@@ -1095,7 +1095,7 @@ def get_maximum_heating_supply(
         theta_set_h: set temperature for heating, degree C
         psi: linear heat loss coefficient of the duct, W/mK
         l_duct: duct length, m, (5 rooms)
-        theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        theta_sur: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
     Returns:
         maximum output for heating, MJ/h, (5 rooms * 8760 times)
     """
@@ -1111,7 +1111,7 @@ def get_maximum_heating_supply(
     l_duct = np.array(l_duct).reshape(1, 5).T
 
     q_max_h = get_load_from_upside_temperature(
-        t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_set_h, psi=psi, length=l_duct)
+        t_sur=theta_sur, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_set_h, psi=psi, length=l_duct)
 
     return np.clip(q_max_h, 0.0, None)
 
@@ -1150,6 +1150,8 @@ def get_maximum_cooling_supply(
     # duct length, m
     l_duct = np.array(l_duct).reshape(1, 5).T
 
+#    q_max_cs = get_load_from_upside_temperature(
+#        t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_set_h, psi=psi, length=l_duct)
     q_max_cs = (theta_set_c - theta_sur
                 + (theta_sur - theta_hs_out_min_c) / np.exp(psi * l_duct * 3600 / (c * rho * v_d_supply_c))) \
         * c * rho * v_d_supply_c * 10 ** (-6)
