@@ -1084,7 +1084,7 @@ def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
 
 
 def get_maximum_heating_supply(
-        theta_d_hs_in_h: np.ndarray, q_hs_max_h: np.ndarray, v_d_supply_h: np.ndarray, theta_ac_h: np.ndarray,
+        theta_d_hs_in_h: np.ndarray, q_hs_max_h: np.ndarray, v_d_supply_h: np.ndarray, theta_set_h: np.ndarray,
         psi: float, l_duct: np.ndarray, theta_sur_h: np.ndarray) -> np.ndarray:
     """
     calculate maximum output for heating
@@ -1092,7 +1092,7 @@ def get_maximum_heating_supply(
         theta_d_hs_in_h: inlet air temperature of the heat source for heating, degree C (8760 times)
         q_hs_max_h: maximum heating output, MJ/h (8760 times)
         v_d_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        theta_ac_h: air conditioned temperature for heating, degree C
+        theta_set_h: set temperature for heating, degree C
         psi: linear heat loss coefficient of the duct, W/mK
         l_duct: duct length, m, (5 rooms)
         theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -1111,14 +1111,14 @@ def get_maximum_heating_supply(
     l_duct = np.array(l_duct).reshape(1, 5).T
 
     q_max_h = get_load_from_upside_temperature(
-        t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_ac_h, psi=psi, length=l_duct)
+        t_sur=theta_sur_h, t_up=theta_hs_out_max_h, v=v_d_supply_h, t_ac=theta_set_h, psi=psi, length=l_duct)
 
     return np.clip(q_max_h, 0.0, None)
 
 
 def get_maximum_cooling_supply(
         theta_d_hs_in_c: np.ndarray, l_cl: np.ndarray, q_hs_max_cs: np.ndarray, q_hs_max_cl: np.ndarray,
-        v_d_supply_c: np.ndarray, theta_ac_c: np.ndarray, psi: float, l_duct: np.ndarray,
+        v_d_supply_c: np.ndarray, theta_set_c: np.ndarray, psi: float, l_duct: np.ndarray,
         theta_sur: np.ndarray) -> np.ndarray:
     """
     calculate maximum output for cooling
@@ -1128,7 +1128,7 @@ def get_maximum_cooling_supply(
         q_hs_max_cs: maximum sensible cooling output, MJ/h (8760 times)
         q_hs_max_cl: maximum latent cooling output, MJ/h (8760 times)
         v_d_supply_c: supply air volume for cooling, m3/h (5 rooms * 8760 times)
-        theta_ac_c: air conditioned temperature for cooling, degree C
+        theta_set_c: set temperature for cooling, degree C
         psi: linear heat loss coefficient of the duct, W/mK
         l_duct: duct length, m, (5 rooms)
         theta_sur: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
@@ -1150,7 +1150,7 @@ def get_maximum_cooling_supply(
     # duct length, m
     l_duct = np.array(l_duct).reshape(1, 5).T
 
-    q_max_cs = (theta_ac_c - theta_sur
+    q_max_cs = (theta_set_c - theta_sur
                 + (theta_sur - theta_hs_out_min_c) / np.exp(psi * l_duct * 3600 / (c * rho * v_d_supply_c))) \
         * c * rho * v_d_supply_c * 10 ** (-6)
 
@@ -2110,10 +2110,10 @@ def get_main_value(
     # maximum heating and cooling output for each rooms
     # heating, MJ/h, (5 rooms * 8760 times)
     q_max_h = get_maximum_heating_supply(
-        theta_d_hs_in, q_hs_max_h, v_d_supply, theta_ac_h, psi, l_duct, theta_sur)
+        theta_d_hs_in, q_hs_max_h, v_d_supply, theta_set_h, psi, l_duct, theta_sur)
     # sensible and latent cooling, MJ/h, (5 rooms * 8760 times), (5 rooms * 8760 times)
     q_max_cs, q_max_cl = get_maximum_cooling_supply(
-        theta_d_hs_in, l_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_ac_c, psi, l_duct, theta_sur)
+        theta_d_hs_in, l_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_set_c, psi, l_duct, theta_sur)
 
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
