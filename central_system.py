@@ -1075,16 +1075,19 @@ def get_duct_ambient_air_temperature(
         return (l_in * theta_ac + l_ex * theta_attic) / (l_in + l_ex)
 
 
-def get_heat_source_inlet_air_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
+def get_heat_source_inlet_air_balanced(theta_d_nac: np.ndarray, x_d_nac: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     calculate the inlet air temperature of heat source
     Args:
-        theta_d_nac: non occupant room temperature when balanced, degree C, (8760 times)
+        theta_d_nac: non occupant room temperature when balanced, degree C (8760 times)
+        x_d_nac: non occupant room absolute humidity when balanced, kg/kgDA (8760 times)
     Returns:
-        the inlet air temperature of heat source when balanced, degree C, (8760 times)
+        the inlet air temperature of heat source when balanced, degree C (8760 times)
+        the inlet air absolute humidity of heat source when balanced, kg/kgDA (8760 times)
     """
 
-    return theta_d_nac
+    return theta_d_nac, x_d_nac
+
 
 
 def get_heat_source_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
@@ -2154,7 +2157,7 @@ def get_main_value(
     theta_sur = get_duct_ambient_air_temperature(is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac, theta_attic)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_d_hs_in = get_heat_source_inlet_air_balanced(theta_d_nac)
+    theta_d_hs_in, x_d_hs_in = get_heat_source_inlet_air_balanced(theta_d_nac, x_d_nac)
 
     # ----------------------------
 
