@@ -868,7 +868,7 @@ def get_non_occupant_room_temperature_balanced(
         l_h: np.ndarray, l_cs: np.ndarray,
         q: float, a_nr: float, v_local_nr: np.ndarray,
         v_d_supply: np.ndarray, u_prt: float, a_prt: np.ndarray,
-        theta_ac: np.ndarray, theta_set_h: float, theta_set_c: float) -> np.ndarray:
+        theta_ac: np.ndarray) -> np.ndarray:
     """
     Args:
         heating_period: heating schedule, operation day represents True, (8760 times)
@@ -882,9 +882,6 @@ def get_non_occupant_room_temperature_balanced(
         u_prt: heat loss coefficient of the partition wall, W/m2K
         a_prt: area of the partition, m2 (5 rooms)
         theta_ac: air conditioned temperature, degree C (8760 times)
-        theta_set_h: set temperature for heating, degree C
-        theta_set_c: set temperature for cooling, degree C
-
     Returns:
         non occupant room temperature, degree C (8760 times)
     """
@@ -895,9 +892,9 @@ def get_non_occupant_room_temperature_balanced(
     cf = (q - 0.35 * 0.5 * 2.4) * a_nr + c * rho * v_local_nr / 3600 \
         + np.sum(c * rho * v_d_supply / 3600, axis=0) + np.sum(u_prt * a_prt)
 
-    theta_nac_h = theta_set_h - np.sum(l_h[5:12], axis=0) / cf * 10 ** 6 / 3600
+    theta_nac_h = theta_ac - np.sum(l_h[5:12], axis=0) / cf * 10 ** 6 / 3600
 
-    theta_nac_c = theta_set_c + np.sum(l_cs[5:12], axis=0) / cf * 10 ** 6 / 3600
+    theta_nac_c = theta_ac + np.sum(l_cs[5:12], axis=0) / cf * 10 ** 6 / 3600
 
     middle_period = (heating_period == cooling_period)
 
@@ -906,7 +903,7 @@ def get_non_occupant_room_temperature_balanced(
 
 def get_non_occupant_room_absolute_humidity_balanced(
         cooling_period: np.ndarray, l_cl: np.ndarray, v_local_nr: np.ndarray, v_d_supply: np.ndarray,
-        x_ac: np.ndarray, x_set_c: float) -> np.ndarray:
+        x_ac: np.ndarray) -> np.ndarray:
     """
         calculate non occupant room absolute humidity
     Args:
@@ -915,7 +912,6 @@ def get_non_occupant_room_absolute_humidity_balanced(
         v_local_nr: local ventilation amount in non occupant room, m3/h (8760 times)
         v_d_supply: supply air volume, m3/h (5 rooms * 8760 times)
         x_ac: air conditioned absolute humidity, kg/kg(DA) (8760 times)
-        x_set_c: set absolute humidity for cooling, kg/kgDA
     Returns:
         non occupant room absolute humidity, kg/kgDA (8760 times)
     """
@@ -926,7 +922,7 @@ def get_non_occupant_room_absolute_humidity_balanced(
     # latent heat of evaporation, kJ/kg
     l_wtr = get_evaporation_latent_heat()
 
-    x_d_nac_c = x_set_c + np.sum(l_cl[5:12], axis=0) / (l_wtr * rho * (v_local_nr + np.sum(v_d_supply, axis=0)))
+    x_d_nac_c = x_ac + np.sum(l_cl[5:12], axis=0) / (l_wtr * rho * (v_local_nr + np.sum(v_d_supply, axis=0)))
 
     return x_d_nac_c * cooling_period + x_ac * np.logical_not(cooling_period)
 
@@ -1117,28 +1113,6 @@ def get_heat_source_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l
 
     return appendix.get_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
-# endregion
-
-
-def get_air_conditioned_temperature_for_heating() -> np.ndarray:
-    """
-    get air conditioned temperature for heating
-    Returns:
-        air conditioned temperature for heating, degree C, (8760 times)
-    """
-
-    return np.full(8760, 20.0)
-
-
-def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
-    """
-    get air conditioned temperature for cooling
-    Returns:
-        get air conditioned temperature for cooling, degree C, (8760 times)
-    """
-
-    return np.full(8760, 27.0)
-
 
 def get_theta_hs_out_max_h(
         theta_d_hs_in: np.ndarray, q_hs_max_h: np.ndarray, v_d_supply: np.ndarray) -> np.ndarray:
@@ -1195,6 +1169,28 @@ def get_x_hs_out_min_c(
     l_wtr = get_evaporation_latent_heat()
 
     return x_d_hs_in - q_hs_max_cl / (rho * l_wtr * np.sum(v_d_supply, axis=0)) * 10 ** 3
+
+# endregion
+
+
+def get_air_conditioned_temperature_for_heating() -> np.ndarray:
+    """
+    get air conditioned temperature for heating
+    Returns:
+        air conditioned temperature for heating, degree C, (8760 times)
+    """
+
+    return np.full(8760, 20.0)
+
+
+def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
+    """
+    get air conditioned temperature for cooling
+    Returns:
+        get air conditioned temperature for cooling, degree C, (8760 times)
+    """
+
+    return np.full(8760, 27.0)
 
 
 def get_maximum_heating_supply(
@@ -2181,12 +2177,11 @@ def get_main_value(
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac = get_non_occupant_room_temperature_balanced(
-        heating_period, cooling_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt,
-        theta_ac, theta_set_h, theta_set_c)
+        heating_period, cooling_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt, theta_ac)
 
     # non occupant room absolute humidity, kg/kgDA (8760 times)
     x_d_nac = get_non_occupant_room_absolute_humidity_balanced(
-        cooling_period, l_cl, v_local_nr, v_d_supply, x_ex, x_set_c)
+        cooling_period, l_cl, v_local_nr, v_d_supply, x_ac)
 
     # heat transfer through partition from occupant room to non occupant room balanced, MJ/h, (5 rooms * 8760 times)
     q_d_trs_prt = get_heat_transfer_through_partition_balanced(u_prt, a_prt, theta_ac, theta_d_nac)
