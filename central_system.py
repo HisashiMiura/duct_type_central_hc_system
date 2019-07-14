@@ -847,6 +847,22 @@ def get_air_conditioned_room_temperature(
     return theta_set_h * heating_period + theta_set_c * cooling_period + theta_ac_m * middle_period
 
 
+def get_air_conditioned_room_absolute_humidity(
+        cooling_period: np.ndarray, x_ex: np.ndarray, x_set_c: float) -> np.ndarray:
+    """
+    calculate air conditioned absolute humidity
+    Args:
+        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        x_ex: outdoor absolute humidity, kg/kgDA (8760 times)
+        x_set_c: set absolute humidity for cooling, kg/kgDA (=27 degree C and 60%)
+
+    Returns:
+        air conditioned room absolute humidity, kg/kgDA (8760 times)
+    """
+
+    return x_set_c * cooling_period + x_ex * np.logical_not(cooling_period)
+
+
 def get_non_occupant_room_temperature_balanced(
         heating_period: np.ndarray, cooling_period: np.ndarray,
         l_h: np.ndarray, l_cs: np.ndarray,
@@ -865,7 +881,7 @@ def get_non_occupant_room_temperature_balanced(
         v_d_supply: supply air volume, m3/h (5 rooms * 8760 times)
         u_prt: heat loss coefficient of the partition wall, W/m2K
         a_prt: area of the partition, m2 (5 rooms)
-        theta_ac: air conditioned temperature, degree C (5 rooms * 8760 times)
+        theta_ac: air conditioned temperature, degree C (8760 times)
         theta_set_h: set temperature for heating, degree C
         theta_set_c: set temperature for cooling, degree C
 
@@ -886,6 +902,33 @@ def get_non_occupant_room_temperature_balanced(
     middle_period = (heating_period == cooling_period)
 
     return theta_nac_h * heating_period + theta_nac_c * cooling_period + theta_ac * middle_period
+
+
+def get_non_occupant_room_absolute_humidity_balanced(
+        cooling_period: np.ndarray, l_cl: np.ndarray, v_local_nr: np.ndarray, v_d_supply: np.ndarray,
+        x_ac: np.ndarray, x_set_c: float) -> np.ndarray:
+    """
+        calculate non occupant room absolute humidity
+    Args:
+        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        l_cl: latent cooling load, MJ/h (12 rooms * 8760 times)
+        v_local_nr: local ventilation amount in non occupant room, m3/h (8760 times)
+        v_d_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        x_ac: air conditioned absolute humidity, kg/kg(DA) (8760 times)
+        x_set_c: set absolute humidity for cooling, kg/kgDA
+    Returns:
+        non occupant room absolute humidity, kg/kgDA (8760 times)
+    """
+
+    # air density, kg/m3
+    rho = get_air_density()
+
+    # latent heat of evaporation, kJ/kg
+    l_wtr = get_evaporation_latent_heat()
+
+    x_d_nac_c = x_set_c + np.sum(l_cl[5:12], axis=0) / (l_wtr * rho * (v_local_nr + np.sum(v_d_supply, axis=0)))
+
+    return x_d_nac_c * cooling_period + x_ac * np.logical_not(cooling_period)
 
 
 def get_heat_transfer_through_partition_balanced(
@@ -2038,7 +2081,7 @@ def get_main_value(
     # set temperature for heating, degree C, set temperature for cooling, degree C
     theta_set_h, theta_set_c = get_theta_set()
 
-    # set absolute humidty for cooling, kg/kgDA (when 28 degree C and 60 % )
+    # set absolute humidity for cooling, kg/kgDA (when 28 degree C and 60 % )
     x_set_c = get_x_set()
 
     # --- circulating air flow ---
@@ -2074,10 +2117,17 @@ def get_main_value(
     theta_ac = get_air_conditioned_room_temperature(
         heating_period, cooling_period, theta_ex, theta_set_h, theta_set_c)
 
+    # room absolute humidity, kg/kgDA (8760 times)
+    x_ac = get_air_conditioned_room_absolute_humidity(cooling_period, x_ex, x_set_c)
+
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac = get_non_occupant_room_temperature_balanced(
         heating_period, cooling_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt,
         theta_ac, theta_set_h, theta_set_c)
+
+    # non occupant room absolute humidity, kg/kgDA (8760 times)
+    x_d_nac = get_non_occupant_room_absolute_humidity_balanced(
+        cooling_period, l_cl, v_local_nr, v_d_supply, x_ex, x_set_c)
 
     # heat transfer through partition from occupant room to non occupant room balanced, MJ/h, (5 rooms * 8760 times)
     q_d_trs_prt = get_heat_transfer_through_partition_balanced(u_prt, a_prt, theta_ac, theta_d_nac)
@@ -2090,12 +2140,6 @@ def get_main_value(
 
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
-
-    # ----------------------------
-
-    # air conditioned temperature, degree C, (8760 times)
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # duct length in the standard house, m, ((5 rooms), (5 rooms), (5 rooms))
     l_duct_in_r, l_duct_ex_r, l_duct_r = get_standard_house_duct_length()
@@ -2111,6 +2155,12 @@ def get_main_value(
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_d_hs_in = get_heat_source_inlet_air_temperature_balanced(theta_d_nac)
+
+    # ----------------------------
+
+    # air conditioned temperature, degree C, (8760 times)
+    theta_ac_h = get_air_conditioned_temperature_for_heating()
+    theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # maximum heating output, MJ/h (8760 times)
     # heating
