@@ -1225,7 +1225,25 @@ def get_requested_supply_air_temperature_for_cooling(
     return np.minimum(theta_req_c, theta_ac)
 
 
-#def get_requested_supply_air_absolute_humidity_for_cooling(x_ac: np.ndarray, l_d_cl: np.ndarray, v_supply: np.ndarray)
+def get_requested_supply_air_absolute_humidity_for_cooling(
+        x_ac: np.ndarray, l_d_cl: np.ndarray, v_d_supply: np.ndarray) -> np.ndarray:
+    """
+    calculate the requested supply air absolute humidity for cooling
+    Args:
+        x_ac: air conditioned absolute humidity, kg/kg(DA) (8760 times)
+        l_d_cl: latent cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
+        v_d_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
+    Returns:
+        requested absolute humidity, kg/kgDA (5 rooms * 8760 times)
+    """
+
+    # air density, kg/m3
+    rho = get_air_density()
+
+    # latent heat of evaporation, kJ/kg
+    l_wtr = get_evaporation_latent_heat()
+
+    return x_ac - l_d_cl * 10 ** 3 / (v_d_supply * rho * l_wtr)
 
 # endregion
 
@@ -2232,8 +2250,13 @@ def get_main_value(
         theta_sur, theta_ac, l_d_h, v_d_supply, psi, l_duct)
     theta_req_c = get_requested_supply_air_temperature_for_cooling(
         theta_sur, theta_ac, l_d_cs, v_d_supply, psi, l_duct)
+    x_req_c = get_requested_supply_air_absolute_humidity_for_cooling(x_ac, l_d_cl, v_d_supply)
 
     # ----------------------------
+
+    # outlet temperature of heat source, degree C, (8760 times)
+    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, v_d_supply)
+    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(vav_system, theta_req_c, v_d_supply)
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
@@ -2250,10 +2273,6 @@ def get_main_value(
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(q_max_cs, q_max_cl, l_d_cs, l_d_cl)
-
-    # outlet temperature of heat source, degree C, (8760 times)
-    theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, v_d_supply)
-    theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(vav_system, theta_req_c, v_d_supply)
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply_h = get_each_supply_air_volume_for_heating(
