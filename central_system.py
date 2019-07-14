@@ -1170,6 +1170,60 @@ def get_x_hs_out_min_c(
 
     return x_d_hs_in - q_hs_max_cl / (rho * l_wtr * np.sum(v_d_supply, axis=0)) * 10 ** 3
 
+
+def get_requested_supply_air_temperature_for_heating(
+        theta_sur_h: np.ndarray, theta_ac: np.ndarray, l_d_h: np.ndarray, v_supply_h: np.ndarray,
+        psi: float, l_duct: np.ndarray) -> np.ndarray:
+    """
+    calculate the requested supply air temperature for heating
+    Args:
+        theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        theta_ac: air conditioned room temperature, degree C, (8760 times)
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
+        psi: linear heat loss coefficient of the duct, W/mK
+        l_duct: duct length, m, (5 rooms)
+    Returns:
+        requested temperature, degree C, (5 rooms * 8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    l_duct = np.array(l_duct).reshape(1, 5).T
+
+    theta_req_h = theta_sur_h + (theta_ac + l_d_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
+        * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
+
+    return np.maximum(theta_req_h, theta_ac)
+
+
+def get_requested_supply_air_temperature_for_cooling(
+        theta_sur_c: np.ndarray, theta_ac: np.ndarray, l_d_cs: np.ndarray, v_supply_c: np.ndarray,
+        psi: float, l_duct: np.ndarray) -> np.ndarray:
+    """
+    calculate the requested supply air temperature for heating
+    Args:
+        theta_sur_c: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
+        theta_ac: air conditioned room temperature, degree C, (8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        v_supply_c: supply air volume for heating, m3/h (5 rooms * 8760 times)
+        psi: linear heat loss coefficient of the duct, W/mK
+        l_duct: duct length, m
+    Returns:
+        requested temperature, degree C, (5 rooms * 8760 times)
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    l_duct = np.array(l_duct).reshape(1,5).T
+
+    theta_req_c = theta_sur_c - (theta_sur_c - theta_ac + l_d_cs * 10 ** 6 / (v_supply_c * c * rho)) \
+        * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
+
+    return np.minimum(theta_req_c, theta_ac)
+
 # endregion
 
 
@@ -1318,60 +1372,6 @@ def get_treated_untreated_heat_load_for_cooling(
     q_ut_cl = l_d_cl - q_t_cl
 
     return q_t_cs, q_t_cl, q_ut_cs, q_ut_cl
-
-
-def get_requested_supply_air_temperature_for_heating(
-        theta_sur_h: np.ndarray, theta_ac: np.ndarray, l_d_h: np.ndarray, v_supply_h: np.ndarray,
-        psi: float, l_duct: np.ndarray) -> np.ndarray:
-    """
-    calculate the requested supply air temperature for heating
-    Args:
-        theta_sur_h: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-        theta_ac: air conditioned room temperature, degree C, (8760 times)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-        v_supply_h: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        psi: linear heat loss coefficient of the duct, W/mK
-        l_duct: duct length, m, (5 rooms)
-    Returns:
-        requested temperature, degree C, (5 rooms * 8760 times)
-    """
-
-    c = get_specific_heat()
-    rho = get_air_density()
-
-    l_duct = np.array(l_duct).reshape(1, 5).T
-
-    theta_req_h = theta_sur_h + (theta_ac + l_d_h * 10 ** 6 / (v_supply_h * c * rho) - theta_sur_h) \
-        * np.exp(psi * l_duct * 3600 / (v_supply_h * c * rho))
-
-    return np.maximum(theta_req_h, theta_ac)
-
-
-def get_requested_supply_air_temperature_for_cooling(
-        theta_sur_c: np.ndarray, theta_ac: np.ndarray, l_d_cs: np.ndarray, v_supply_c: np.ndarray,
-        psi: float, l_duct: np.ndarray) -> np.ndarray:
-    """
-    calculate the requested supply air temperature for heating
-    Args:
-        theta_sur_c: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-        theta_ac: air conditioned room temperature, degree C, (8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
-        v_supply_c: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        psi: linear heat loss coefficient of the duct, W/mK
-        l_duct: duct length, m
-    Returns:
-        requested temperature, degree C, (5 rooms * 8760 times)
-    """
-
-    c = get_specific_heat()
-    rho = get_air_density()
-
-    l_duct = np.array(l_duct).reshape(1,5).T
-
-    theta_req_c = theta_sur_c - (theta_sur_c - theta_ac + l_d_cs * 10 ** 6 / (v_supply_c * c * rho)) \
-        * np.exp(psi * l_duct * 3600 / (v_supply_c * c * rho))
-
-    return np.minimum(theta_req_c, theta_ac)
 
 
 def get_decided_outlet_supply_air_temperature_for_heating(
@@ -2048,13 +2048,15 @@ def get_main_value(
         q_rtd_c: rated cooling capacity, W
     """
 
-    # --- system spec ---
+    # region system spec
 
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
         q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
 
-    # --- house spec ---
+    # endregion
+
+    # region house spec
 
     # floor area of non occupant room, m2
     a_nr = get_non_occupant_room_floor_area(a_mr, a_or, a_a, r_env)
@@ -2078,7 +2080,9 @@ def get_main_value(
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
 
-    # --- general property ---
+    # endregion
+
+    # region general property
 
     # air density, kg/m3
     rho = get_air_density()
@@ -2092,7 +2096,9 @@ def get_main_value(
     # calender
     calender = get_calender()
 
-    # --- external conditions ---
+    # endregion
+
+    # region external conditions
 
     # outdoor temperature, degree C (8760 times)
     theta_ex = get_outdoor_temperature(region=region)
@@ -2106,7 +2112,9 @@ def get_main_value(
     # SAT temperature, degree C, (8760 times)
     theta_sat = get_sat_temperature(region)
 
-    # --- occupant usage ---
+    # endregion
+
+    # region occupant usage
 
     # heating schedule (8760 times), cooling schedule (8760 times)
     heating_period, cooling_period = get_heating_and_cooling_schedule(region)
@@ -2129,7 +2137,9 @@ def get_main_value(
     # set absolute humidity for cooling, kg/kgDA (when 28 degree C and 60 % )
     x_set_c = get_x_set()
 
-    # --- circulating air flow ---
+    # endregion
+
+    # region circulating air flow
 
     # heating and cooling output for supply air estimation, MJ/h
     q_d_hs_h = get_heating_output_for_supply_air_estimation(
@@ -2153,7 +2163,9 @@ def get_main_value(
     # supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
     v_d_supply = get_each_supply_air_volume_not_vav_adjust(r_supply_des, v_d_hs_supply, v_vent)
 
-    # --- load ---
+    # endregion
+
+    # region load
 
     # heating load, and sensible and latent cooling load, MJ/h ((8760times), (8760 times), (8760 times))
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
@@ -2179,6 +2191,8 @@ def get_main_value(
     # heating and sensible cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
     l_d_h = get_occupant_room_load_for_heating_balanced(l_h, q_d_trs_prt)
     l_d_cs, l_d_cl = get_occupant_room_load_for_cooling_balanced(l_cs, l_cl, q_d_trs_prt)
+
+    # endregion
 
     # treated and untreated load
 
@@ -2210,6 +2224,12 @@ def get_main_value(
     theta_hs_out_min_c = get_theta_hs_out_min_c(theta_d_hs_in, q_hs_max_cs, v_d_supply)
     x_hs_out_min_c = get_x_hs_out_min_c(x_d_hs_in, q_hs_max_cl, v_d_supply)
 
+    # requested supply air temperature, degree C, (5 rooms * 8760 times)
+    theta_req_h = get_requested_supply_air_temperature_for_heating(
+        theta_sur, theta_ac, l_d_h, v_d_supply, psi, l_duct)
+    theta_req_c = get_requested_supply_air_temperature_for_cooling(
+        theta_sur, theta_ac, l_d_cs, v_d_supply, psi, l_duct)
+
     # ----------------------------
 
     # air conditioned temperature, degree C, (8760 times)
@@ -2227,16 +2247,6 @@ def get_main_value(
     # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
     q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
     q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(q_max_cs, q_max_cl, l_d_cs, l_d_cl)
-
-    # requested supply air temperature, degree C, (5 rooms * 8760 times)
-#    theta_req_h = get_requested_supply_air_temperature_for_heating(
-#        theta_sur, theta_ac, q_t_h, v_d_supply, psi, l_duct)
-#    theta_req_c = get_requested_supply_air_temperature_for_cooling(
-#        theta_sur, theta_ac, q_t_cs, v_d_supply, psi, l_duct)
-    theta_req_h = get_requested_supply_air_temperature_for_heating(
-        theta_sur, theta_ac, l_d_h, v_d_supply, psi, l_duct)
-    theta_req_c = get_requested_supply_air_temperature_for_cooling(
-        theta_sur, theta_ac, l_d_cs, v_d_supply, psi, l_duct)
 
     # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(vav_system, theta_req_h, v_d_supply)
