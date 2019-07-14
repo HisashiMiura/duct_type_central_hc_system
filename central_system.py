@@ -1075,7 +1075,7 @@ def get_duct_ambient_air_temperature(
         return (l_in * theta_ac + l_ex * theta_attic) / (l_in + l_ex)
 
 
-def get_heat_source_inlet_air_temperature_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
+def get_heat_source_inlet_air_balanced(theta_d_nac: np.ndarray) -> np.ndarray:
     """
     calculate the inlet air temperature of heat source
     Args:
@@ -2154,7 +2154,7 @@ def get_main_value(
     theta_sur = get_duct_ambient_air_temperature(is_duct_insulated, l_duct_in_r, l_duct_ex_r, theta_ac, theta_attic)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_d_hs_in = get_heat_source_inlet_air_temperature_balanced(theta_d_nac)
+    theta_d_hs_in = get_heat_source_inlet_air_balanced(theta_d_nac)
 
     # ----------------------------
 
