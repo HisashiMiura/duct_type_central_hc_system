@@ -1417,13 +1417,13 @@ def get_decided_outlet_supply_air_temperature_for_heating(
 
 
 def get_decided_outlet_supply_air_temperature_for_cooling(
-        vav_system: bool, theta_duct_up_c: np.ndarray, v_d_supply: np.ndarray,
+        vav_system: bool, theta_req_c: np.ndarray, v_d_supply: np.ndarray,
         theta_hs_out_min_c: np.ndarray) -> np.ndarray:
     """
     decide the outlet supply air temperature for cooling
     Args:
         vav_system: is vav system equipped or not
-        theta_duct_up_c: requested temperature, degree C, (5 rooms * 8760 times)
+        theta_req_c: requested supply air temperature of heat source, degree C, (5 rooms * 8760 times)
         v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
         theta_hs_out_min_c:
                 minimum temperature of output air of heat source when maximum output of cooling, degree C (8760 times)
@@ -1432,9 +1432,25 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
     """
 
     if vav_system:
-        return np.maximum(np.min(theta_duct_up_c, axis=0), theta_hs_out_min_c)
+        return np.maximum(np.min(theta_req_c, axis=0), theta_hs_out_min_c)
     else:
-        return np.maximum(np.sum(theta_duct_up_c * v_d_supply / v_d_supply.sum(axis=0), axis=0), theta_hs_out_min_c)
+        return np.maximum(np.sum(theta_req_c * v_d_supply / v_d_supply.sum(axis=0), axis=0), theta_hs_out_min_c)
+
+
+def get_decided_outlet_supply_air_absolute_humidity_for_cooling(
+        x_req_c: np.ndarray, v_d_supply: np.ndarray, x_hs_out_min_c: np.ndarray) -> np.ndarray:
+    """
+    decide the outlet supply air absolute humidity for cooling
+    Args:
+        x_req_c: requested supply air absoluted humidity of heat source, kg/kgDA (5 rooms * 8760 times)
+        v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
+        x_hs_out_min_c:
+            minimum absolute humidity of output air of heat source when maximum output of cooling, kg/kgDA (8760 times)
+    Returns:
+        decidec outlet supply air absolute humidity, kg/kgDA (8760 times)
+    """
+
+    return np.maximum(np.sum(x_req_c * v_d_supply / v_d_supply.sum(axis=0), axis=0), x_hs_out_min_c)
 
 
 def get_each_supply_air_volume_for_heating(
@@ -2258,13 +2274,14 @@ def get_main_value(
         theta_sur, theta_ac, l_d_cs, v_d_supply, psi, l_duct)
     x_req_c = get_requested_supply_air_absolute_humidity_for_cooling(x_ac, l_d_cl, v_d_supply)
 
-    # ----------------------------
-
-    # outlet temperature of heat source, degree C, (8760 times)
+    # outlet temperature and absoluted humidity of heat source, degree C, (8760 times)
     theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
         vav_system, theta_req_h, v_d_supply, theta_hs_out_max_h)
     theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(
         vav_system, theta_req_c, v_d_supply, theta_hs_out_min_c)
+    x_hs_out_c = get_decided_outlet_supply_air_absolute_humidity_for_cooling(x_req_c, v_d_supply, x_hs_out_min_c)
+
+    # ----------------------------
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
