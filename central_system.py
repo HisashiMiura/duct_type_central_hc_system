@@ -1089,7 +1089,6 @@ def get_heat_source_inlet_air_balanced(theta_d_nac: np.ndarray, x_d_nac: np.ndar
     return theta_d_nac, x_d_nac
 
 
-
 def get_heat_source_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     """
     calculate maximum heating output
@@ -2159,17 +2158,17 @@ def get_main_value(
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_d_hs_in, x_d_hs_in = get_heat_source_inlet_air_balanced(theta_d_nac, x_d_nac)
 
-    # ----------------------------
-
-    # air conditioned temperature, degree C, (8760 times)
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
     # maximum heating output, MJ/h (8760 times)
     # heating
     q_hs_max_h = get_heat_source_maximum_heating_output(region, q_rtd_h)
     # sensible cooling & latent cooling
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
+
+    # ----------------------------
+
+    # air conditioned temperature, degree C, (8760 times)
+    theta_ac_h = get_air_conditioned_temperature_for_heating()
+    theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # maximum heating and cooling output for each rooms
     # heating, MJ/h, (5 rooms * 8760 times)
