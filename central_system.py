@@ -1345,21 +1345,25 @@ def get_each_supply_air_volume(
         theta_hs_out_h = np.where(theta_hs_out_h > theta_ac, theta_hs_out_h, theta_hs_out_h + 1)
         theta_hs_out_c = np.where(theta_ac > theta_hs_out_c, theta_hs_out_c, theta_hs_out_c - 1)
 
-        v_h = np.clip(
-            (l_d_h * 10 ** 6 + (theta_hs_out_h - theta_sur) * psi * l_duct * 3600)
-            / (c * rho * (theta_hs_out_h - theta_ac)), v_vent, v_d_supply)
+        v_h = np.where(theta_hs_out_h > theta_ac,
+                       np.clip(
+                           (l_d_h * 10 ** 6 + (theta_hs_out_h - theta_sur) * psi * l_duct * 3600)
+                           / (c * rho * (theta_hs_out_h - theta_ac)), v_vent, v_d_supply),
+                       v_vent)
 
-        v_c = np.clip(
-            (l_d_cs * 10 ** 6 + (theta_sur - theta_hs_out_c) * psi * l_duct * 3600)
-            / (c * rho * (theta_ac - theta_hs_out_c)), v_vent, v_d_supply)
+        v_c = np.where(theta_ac > theta_hs_out_c,
+                       np.clip(
+                           (l_d_cs * 10 ** 6 + (theta_sur - theta_hs_out_c) * psi * l_duct * 3600)
+                           / (c * rho * (theta_ac - theta_hs_out_c)), v_vent, v_d_supply),
+                       v_vent)
 
     else:
 
-        v_h = np.where(np.sum(l_d_h, axis=0) > 0.0, v_d_supply, v_vent)
-        v_c = np.where(np.sum(l_d_cs, axis=0) > 0.0, v_d_supply, v_vent)
+        v_h = v_d_supply
+        v_c = v_d_supply
 
-    v_supply_h = np.where(theta_hs_out_h > theta_ac, v_h, v_vent)
-    v_supply_c = np.where(theta_ac > theta_hs_out_c, v_c, v_vent)
+    v_supply_h = np.where(np.sum(l_d_h, axis=0) > 0.0, v_h, v_vent)
+    v_supply_c = np.where(np.sum(l_d_cs, axis=0) > 0.0, v_c, v_vent)
 
     middle_period = (heating_period == cooling_period)
 
