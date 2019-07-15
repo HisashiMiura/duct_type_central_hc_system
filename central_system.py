@@ -2432,11 +2432,11 @@ def get_main_value(
             'output_of_heat_source_for_supply_air_volume_estimation_heating': q_d_hs_h,  # MJ/h
             'output_of_heat_source_for_supply_air_volume_estimation_cooling': q_d_hs_c,  # MJ/h
             'supply_air_volume_of_heat_source': v_d_hs_supply,  # MJ/h
-            'supply_air_volume_room1': v_d_supply[0],  # MJ/h
-            'supply_air_volume_room2': v_d_supply[1],  # MJ/h
-            'supply_air_volume_room3': v_d_supply[2],  # MJ/h
-            'supply_air_volume_room4': v_d_supply[3],  # MJ/h
-            'supply_air_volume_room5': v_d_supply[4],  # MJ/h
+            'designed_supply_air_volume_room1': v_d_supply[0],  # MJ/h
+            'designed_supply_air_volume_room2': v_d_supply[1],  # MJ/h
+            'designed_supply_air_volume_room3': v_d_supply[2],  # MJ/h
+            'designed_supply_air_volume_room4': v_d_supply[3],  # MJ/h
+            'designed_supply_air_volume_room5': v_d_supply[4],  # MJ/h
             'non_occupant_room_temperature': theta_d_nac,  # degree C
             'heat_loss_through_partition_heating_room1': q_d_trs_prt[0],  # MJ/h
             'heat_loss_through_partition_heating_room2': q_d_trs_prt[1],  # MJ/h
