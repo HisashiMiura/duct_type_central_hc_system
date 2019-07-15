@@ -1516,7 +1516,7 @@ def get_treated_untreated_heat_load_for_cooling(
 
 
 def get_duct_heat_loss_for_heating(
-        theta_sur_h: np.ndarray, theta_hs_out_h: np.ndarray, v_supply: np.ndarray, theta_ac_h: np.ndarray,
+        theta_sur_h: np.ndarray, theta_hs_out_h: np.ndarray, v_supply: np.ndarray,
         psi: float, l_duct: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
     """
     calculate the heat loss from the ducts for heating
@@ -1524,7 +1524,6 @@ def get_duct_heat_loss_for_heating(
         theta_sur_h: duct ambient temperature, degree C, (5 rooms * 8760 times)
         theta_hs_out_h: outlet temperature of heat source, degree C, (8760 times)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        theta_ac_h: air conditioned temperature, degree C, (8760 times)
         psi: liner heat loss coefficient, W/mK
         l_duct: duct length, m, (5 rooms)
         l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
@@ -1533,13 +1532,13 @@ def get_duct_heat_loss_for_heating(
     l_duct = np.array(l_duct).reshape(1, 5).T
 
     q_duct_h = get_duct_heat_loss_from_upside_temperature(
-        theta_sur_h, theta_hs_out_h, v_supply, theta_ac_h, psi, l_duct)
+        theta_sur_h, theta_hs_out_h, v_supply, psi, l_duct)
 
     return np.where(np.sum(l_d_h, axis=0) > 0.0, q_duct_h, 0.0)
 
 
 def get_duct_heat_gain_for_cooling(
-        theta_sur_c: np.ndarray, theta_hs_out_c: np.ndarray, v_supply: np.ndarray, theta_ac_c: np.ndarray,
+        theta_sur_c: np.ndarray, theta_hs_out_c: np.ndarray, v_supply: np.ndarray,
         psi: float, l_duct: np.ndarray, l_d_cs: np.ndarray) -> np.ndarray:
     """
     calculate the heat gain to the ducts for cooling
@@ -1547,7 +1546,6 @@ def get_duct_heat_gain_for_cooling(
         theta_sur_c: duct ambient temperature, degree C, (5 rooms * 8760 times)
         theta_hs_out_c: outlet temperature of heat source, degree C, (8760 times)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        theta_ac_c: air conditioned temperature, degree C, (8760 times)
         psi: liner heat loss coefficient, W/mK
         l_duct: duct length, m, (5 rooms)
         l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
@@ -1556,7 +1554,7 @@ def get_duct_heat_gain_for_cooling(
     l_duct = np.array(l_duct).reshape(1, 5).T
 
     q_duct_c = - get_duct_heat_loss_from_upside_temperature(
-        theta_sur_c, theta_hs_out_c, v_supply, theta_ac_c, psi, l_duct)
+        theta_sur_c, theta_hs_out_c, v_supply, psi, l_duct)
 
     return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_duct_c, 0.0)
 
@@ -1987,14 +1985,13 @@ def get_load_from_upside_temperature(
 
 
 def get_duct_heat_loss_from_upside_temperature(
-        t_sur: float, t_up: float, v: float, t_ac: float, psi: float, length: float) -> float:
+        t_sur: float, t_up: float, v: float, psi: float, length: float) -> float:
     """
     Calculate the upside air temperature of the duct from the heating load in the room and air supply volume
     Args:
         t_sur: the ambient temperature around the duct, degree C
         t_up: upside air temperature, degree C
         v: supply air volume, m3/h
-        t_ac: air conditioned room temperature, degree C
         psi: linear heat loss coefficient, W/mK
         length: duct length, m
     Returns:
@@ -2267,19 +2264,17 @@ def get_main_value(
 
     # ----------------------------
 
-    # air conditioned temperature, degree C, (8760 times)
-    theta_ac_h = get_air_conditioned_temperature_for_heating()
-    theta_ac_c = get_air_conditioned_temperature_for_cooling()
-
     # heat loss from ducts, heat gain to ducts, MJ/h, (5 rooms * 8760 times), reference
-    q_loss_duct_h = get_duct_heat_loss_for_heating(
-        theta_sur, theta_hs_out_h, v_supply, theta_ac_h, psi, l_duct, l_d_h)
-    q_gain_duct_c = get_duct_heat_gain_for_cooling(
-        theta_sur, theta_hs_out_c, v_supply, theta_ac_c, psi, l_duct, l_d_cs)
+    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur, theta_hs_out_h, v_supply, psi, l_duct, l_d_h)
+    q_gain_duct_c = get_duct_heat_gain_for_cooling(theta_sur, theta_hs_out_c, v_supply, psi, l_duct, l_d_cs)
 
     # supply air temperature, degree C, (5 rooms * 8760 times), reference
     theta_supply_h = get_supply_air_temperature_for_heating(theta_sur, theta_hs_out_h, psi, l_duct, v_supply)
     theta_supply_c = get_supply_air_temperature_for_cooling(theta_sur, theta_hs_out_c, psi, l_duct, v_supply)
+
+    # air conditioned temperature, degree C, (8760 times)
+    theta_ac_h = get_air_conditioned_temperature_for_heating()
+    theta_ac_c = get_air_conditioned_temperature_for_cooling()
 
     # maximum heating and cooling output for each rooms
     # heating, MJ/h, (5 rooms * 8760 times)
