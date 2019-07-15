@@ -1600,14 +1600,12 @@ def get_treated_untreated_heat_load_for_cooling(
 
 
 def get_actual_air_conditioned_temperature_for_heating(
-        theta_ac_h: np.ndarray, c: float, rho: float, v_supply: np.ndarray, theta_supply_h: np.ndarray,
+        theta_ac_h: np.ndarray, v_supply: np.ndarray, theta_supply_h: np.ndarray,
         q_t_h: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
     """
     calculate the actual air conditioned temperature for heating
     Args:
         theta_ac_h: air conditioned temperature, degree C, (8760 times)
-        c: specific heat of air, J/kgK
-        rho: air density, kg/m3
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
         q_t_h: treated heating load, MJ/h, (5 rooms * 8760 times)
@@ -1619,6 +1617,9 @@ def get_actual_air_conditioned_temperature_for_heating(
         actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
     """
 
+    rho = get_air_density()
+    c = get_specific_heat()
+
     a_prt = a_prt.reshape(1, 5).T
     a_hcz = a_hcz[0:5].reshape(1, 5).T
 
@@ -1627,14 +1628,12 @@ def get_actual_air_conditioned_temperature_for_heating(
 
 
 def get_actual_air_conditioned_temperature_for_cooling(
-        theta_ac_c: np.ndarray, c: float, rho: float, v_supply: np.ndarray, theta_supply_c: np.ndarray,
+        theta_ac_c: np.ndarray, v_supply: np.ndarray, theta_supply_c: np.ndarray,
         q_t_cs: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
     """
     calculate the actual air conditioned temperature for heating
     Args:
         theta_ac_c: air conditioned temperature, degree C, (8760 times)
-        c: specific heat of air, J/kgK
-        rho: air density, kg/m3
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
         q_t_cs: treated sensible cooling load, MJ/h, (5 rooms * 8760 times)
@@ -1645,6 +1644,9 @@ def get_actual_air_conditioned_temperature_for_cooling(
     Returns:
         actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
     """
+
+    rho = get_air_density()
+    c = get_specific_heat()
 
     a_prt = a_prt.reshape(1, 5).T
     a_hcz = a_hcz[0:5].reshape(1, 5).T
@@ -2290,9 +2292,9 @@ def get_main_value(
 
     # actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
     theta_ac_act_h = get_actual_air_conditioned_temperature_for_heating(
-        theta_ac_h, c, rho, v_supply, theta_supply_h, q_t_h, u_prt, a_prt, a_hcz, q)
+        theta_ac_h, v_supply, theta_supply_h, q_t_h, u_prt, a_prt, a_hcz, q)
     theta_ac_act_c = get_actual_air_conditioned_temperature_for_cooling(
-        theta_ac_c, c, rho, v_supply, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
+        theta_ac_c, v_supply, theta_supply_c, q_t_cs, u_prt, a_prt, a_hcz, q)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
     l_d_act_h = get_actual_treated_load_for_heating(theta_supply_h, theta_ac_act_h, v_supply, l_d_h)
