@@ -1289,22 +1289,6 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
         return np.maximum(np.sum(theta_req_c * v_d_supply / v_d_supply.sum(axis=0), axis=0), theta_hs_out_min_c)
 
 
-def get_decided_outlet_supply_air_absolute_humidity_for_cooling(
-        x_req_c: np.ndarray, v_d_supply: np.ndarray, x_hs_out_min_c: np.ndarray) -> np.ndarray:
-    """
-    decide the outlet supply air absolute humidity for cooling
-    Args:
-        x_req_c: requested supply air absolute humidity of heat source, kg/kgDA (5 rooms * 8760 times)
-        v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
-        x_hs_out_min_c:
-            minimum absolute humidity of output air of heat source when maximum output of cooling, kg/kgDA (8760 times)
-    Returns:
-        decided outlet supply air absolute humidity, kg/kgDA (8760 times)
-    """
-
-    return np.maximum(np.sum(x_req_c * v_d_supply / v_d_supply.sum(axis=0), axis=0), x_hs_out_min_c)
-
-
 def get_each_supply_air_volume(
         heating_period: np.ndarray, cooling_period: np.ndarray,
         vav_system: bool, l_d_h: np.ndarray, l_d_cs: np.ndarray,
@@ -1368,6 +1352,22 @@ def get_each_supply_air_volume(
     middle_period = (heating_period == cooling_period)
 
     return v_supply_h * heating_period + v_supply_c * cooling_period + v_vent * middle_period
+
+
+def get_decided_outlet_supply_air_absolute_humidity_for_cooling(
+        x_req_c: np.ndarray, v_supply: np.ndarray, x_hs_out_min_c: np.ndarray) -> np.ndarray:
+    """
+    decide the outlet supply air absolute humidity for cooling
+    Args:
+        x_req_c: requested supply air absolute humidity of heat source, kg/kgDA (5 rooms * 8760 times)
+        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        x_hs_out_min_c:
+            minimum absolute humidity of output air of heat source when maximum output of cooling, kg/kgDA (8760 times)
+    Returns:
+        decided outlet supply air absolute humidity, kg/kgDA (8760 times)
+    """
+
+    return np.maximum(np.sum(x_req_c * v_supply / v_supply.sum(axis=0), axis=0), x_hs_out_min_c)
 
 
 def get_duct_heat_loss_for_heating(
@@ -1517,6 +1517,17 @@ def get_actual_air_conditioned_temperature(
 
     return theta_ac_act_h * heating_period + theta_ac_act_c * cooling_period + theta_ac * middle_period
 
+
+def get_actual_air_conditioned_absolute_humidity(x_ac: np.ndarray) -> np.ndarray:
+    """
+    calculate actual air conditioned absolute humidity
+    Args:
+        x_ac: air conditioned absolute humidity, kg/kgDA (8760 times)
+    Returns:
+        actual air conditioned absolute humidity, kg/kgDA (5 rooms * 8760 times)
+    """
+
+    return np.tile(x_ac, (5, 1))
 
 # endregion
 
@@ -2267,33 +2278,40 @@ def get_main_value(
         theta_sur, theta_ac, l_d_cs, v_d_supply, psi, l_duct)
     x_req_c = get_requested_supply_air_absolute_humidity_for_cooling(x_ac, l_d_cl, v_d_supply)
 
-    # outlet temperature and absolute humidity of heat source, degree C, (8760 times)
+    # outlet temperature of heat source, degree C, (8760 times)
     theta_hs_out_h = get_decided_outlet_supply_air_temperature_for_heating(
         vav_system, theta_req_h, v_d_supply, theta_hs_out_max_h)
     theta_hs_out_c = get_decided_outlet_supply_air_temperature_for_cooling(
         vav_system, theta_req_c, v_d_supply, theta_hs_out_min_c)
-    x_hs_out_c = get_decided_outlet_supply_air_absolute_humidity_for_cooling(x_req_c, v_d_supply, x_hs_out_min_c)
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply = get_each_supply_air_volume(
         heating_period, cooling_period, vav_system, l_d_h, l_d_cs, theta_hs_out_h, theta_hs_out_c, theta_sur,
         psi, l_duct, theta_ac, v_vent, v_d_supply)
 
+    # outlet absolute humidity of heat source, kg/kgDA (8760 times)
+    x_hs_out_c = get_decided_outlet_supply_air_absolute_humidity_for_cooling(x_req_c, v_supply, x_hs_out_min_c)
+
     # heat loss from ducts, heat gain to ducts, MJ/h, (5 rooms * 8760 times), reference
     q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur, theta_hs_out_h, v_supply, psi, l_duct, l_d_h)
     q_gain_duct_c = get_duct_heat_gain_for_cooling(theta_sur, theta_hs_out_c, v_supply, psi, l_duct, l_d_cs)
 
-    # supply air temperature, degree C, (5 rooms * 8760 times), reference
+    # supply air temperature, degree C (5 rooms * 8760 times)
     theta_supply_h = get_supply_air_temperature_for_heating(
         theta_sur, theta_hs_out_h, psi, l_duct, v_supply, theta_ac, l_d_h)
+    # supply air temperature, degree C (5 rooms * 8760 times)
     theta_supply_c = get_supply_air_temperature_for_cooling(
         theta_sur, theta_hs_out_c, psi, l_duct, v_supply, theta_ac, l_d_cs)
+    # supply air absolute humidity, kg/kgDA (5 rooms * 8760 times)
     x_supply_c = get_supply_air_absolute_humidity_for_cooling(x_hs_out_c, x_ac, l_d_cl)
 
     # actual air conditioned temperature, degree C, (5 rooms * 8760 times)
     theta_ac_act = get_actual_air_conditioned_temperature(
         heating_period, cooling_period, theta_ac, v_supply, theta_supply_h, theta_supply_c,
         l_d_h, l_d_cs, u_prt, a_prt, a_hcz, q)
+
+    # actual air conditioned absolute humidity, kg/kgDA (5 rooms * 8760 times)
+    x_ac_act = get_actual_air_conditioned_absolute_humidity(x_ac)
 
     # ----------------------------
 
