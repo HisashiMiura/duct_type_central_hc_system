@@ -1461,6 +1461,103 @@ def get_supply_air_temperature_for_cooling(
 
     return np.where(np.sum(l_d_cs, axis=0) > 0.0, theta_supply_c, theta_ac)
 
+
+def get_actual_air_conditioned_temperature(
+        heating_period: np.ndarray, cooling_period: np.ndarray,
+        theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_h: np.ndarray, theta_supply_c: np.ndarray,
+        l_d_h: np.ndarray, l_d_cs: np.ndarray,
+        u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
+    """
+    calculate the actual air conditioned temperature
+    Args:
+        heating_period: heating schedule, operation day represents True, (8760 times)
+        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        theta_ac: air conditioned temperature, degree C, (8760 times)
+        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
+        theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        l_d_cs: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
+        q: float,
+    Returns:
+        actual air conditioned temperature, degree C, (5 rooms * 8760 times)
+    """
+
+    rho = get_air_density()
+    c = get_specific_heat()
+
+    a_prt = a_prt.reshape(1, 5).T
+    a_hcz = a_hcz[0:5].reshape(1, 5).T
+
+    middle_period = (heating_period == cooling_period)
+
+    theta_ac_act_h = np.minimum(theta_ac + (c * rho * v_supply * (theta_supply_h - theta_ac) - l_d_h * 10 ** 6)
+                                / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600), theta_ac)
+
+    theta_ac_act_c = np.maximum(theta_ac - (c * rho * v_supply * (theta_ac - theta_supply_c) - l_d_cs * 10 ** 6)
+                                / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600), theta_ac)
+
+    return theta_ac_act_h * heating_period + theta_ac_act_c * cooling_period + theta_ac * middle_period
+
+
+def get_actual_air_conditioned_temperature_for_heating(
+        theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_h: np.ndarray,
+        l_d_h: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
+    """
+    calculate the actual air conditioned temperature for heating
+    Args:
+        theta_ac: air conditioned temperature, degree C, (8760 times)
+        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
+        q: float,
+    Returns:
+        actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+    """
+
+    rho = get_air_density()
+    c = get_specific_heat()
+
+    a_prt = a_prt.reshape(1, 5).T
+    a_hcz = a_hcz[0:5].reshape(1, 5).T
+
+    return theta_ac + (c * rho * v_supply * (theta_supply_h - theta_ac) - l_d_h * 10 ** 6) \
+           / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600)
+
+
+def get_actual_air_conditioned_temperature_for_cooling(
+        theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_c: np.ndarray,
+        l_d_cs: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
+    """
+    calculate the actual air conditioned temperature for heating
+    Args:
+        theta_ac: air conditioned temperature, degree C, (8760 times)
+        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
+        l_d_cs: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        u_prt: heat loss coefficient of the partition wall, W/m2K
+        a_prt: area of the partition, m2, (5 rooms)
+        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
+        q: float,
+    Returns:
+        actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+    """
+
+    rho = get_air_density()
+    c = get_specific_heat()
+
+    a_prt = a_prt.reshape(1, 5).T
+    a_hcz = a_hcz[0:5].reshape(1, 5).T
+
+    return theta_ac - (c * rho * v_supply * (theta_ac - theta_supply_c) - l_d_cs * 10 ** 6) \
+           / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600)
+
 # endregion
 
 
@@ -1611,60 +1708,6 @@ def get_treated_untreated_heat_load_for_cooling(
     return q_t_cs, q_t_cl, q_ut_cs, q_ut_cl
 
 
-def get_actual_air_conditioned_temperature_for_heating(
-        theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_h: np.ndarray,
-        l_d_h: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
-    """
-    calculate the actual air conditioned temperature for heating
-    Args:
-        theta_ac: air conditioned temperature, degree C, (8760 times)
-        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-        u_prt: heat loss coefficient of the partition wall, W/m2K
-        a_prt: area of the partition, m2, (5 rooms)
-        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
-        q: float,
-    Returns:
-        actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
-    """
-
-    rho = get_air_density()
-    c = get_specific_heat()
-
-    a_prt = a_prt.reshape(1, 5).T
-    a_hcz = a_hcz[0:5].reshape(1, 5).T
-
-    return theta_ac + (c * rho * v_supply * (theta_supply_h - theta_ac) - l_d_h * 10 ** 6) \
-           / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600)
-
-
-def get_actual_air_conditioned_temperature_for_cooling(
-        theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_c: np.ndarray,
-        l_d_cs: np.ndarray, u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
-    """
-    calculate the actual air conditioned temperature for heating
-    Args:
-        theta_ac: air conditioned temperature, degree C, (8760 times)
-        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
-        l_d_cs: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-        u_prt: heat loss coefficient of the partition wall, W/m2K
-        a_prt: area of the partition, m2, (5 rooms)
-        a_hcz: floor area of heating and cooling zones, m2, (12 rooms)
-        q: float,
-    Returns:
-        actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
-    """
-
-    rho = get_air_density()
-    c = get_specific_heat()
-
-    a_prt = a_prt.reshape(1, 5).T
-    a_hcz = a_hcz[0:5].reshape(1, 5).T
-
-    return theta_ac - (c * rho * v_supply * (theta_ac - theta_supply_c) - l_d_cs * 10 ** 6) \
-           / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600)
 
 
 def get_actual_treated_load_for_heating(
@@ -2287,6 +2330,9 @@ def get_main_value(
         theta_sur, theta_hs_out_c, psi, l_duct, v_supply, theta_ac, l_d_cs)
 
     # actual air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+    theta_ac_act = get_actual_air_conditioned_temperature(
+        heating_period, cooling_period, theta_ac, v_supply, theta_supply_h, theta_supply_c,
+        l_d_h, l_d_cs, u_prt, a_prt, a_hcz, q)
     theta_ac_act_h = get_actual_air_conditioned_temperature_for_heating(
         theta_ac, v_supply, theta_supply_h, l_d_h, u_prt, a_prt, a_hcz, q)
     theta_ac_act_c = get_actual_air_conditioned_temperature_for_cooling(
