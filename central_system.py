@@ -1655,6 +1655,7 @@ def get_actual_non_occupant_room_temperature(
            + np.sum(k_prt * (theta_ac_act - theta_d_nac), axis=0)) / (k_evp + np.sum(k_prt, axis=0))
     return theta_nac
 
+
 def get_actual_non_occupant_room_absolute_humidity(x_d_nac: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room absolute humidity, kg/kgDA
@@ -1665,7 +1666,6 @@ def get_actual_non_occupant_room_absolute_humidity(x_d_nac: np.ndarray) -> np.nd
     """
 
     return x_d_nac
-
 
 
 def get_actual_non_occupant_room_heating_load(
@@ -1731,8 +1731,6 @@ def get_actual_non_occupant_room_latent_cooling_load(
     l_d_act_nac_cl = np.sum((x_nac - x_ac_act_c) * rho * l_wtr * v_supply * 10 ** (-3), axis=0)
 
     return np.where(np.sum(l_d_cl, axis=0) > 0.0, l_d_act_nac_cl, 0.0)
-
-# endregion
 
 
 def get_actual_heat_loss_through_partition_for_heating(
@@ -1834,6 +1832,8 @@ def get_heat_source_cooling_output(
     q_hs_cl = np.sum(l_cl[0:5], axis=0)
 
     return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_hs_cs, 0.0), q_hs_cl
+
+# endregion
 
 
 # region duct heat balance
@@ -2161,7 +2161,7 @@ def get_main_value(
 
     # endregion
 
-    # treated and untreated load
+    # region treated and untreated load
 
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
@@ -2252,8 +2252,6 @@ def get_main_value(
     l_d_act_nac_cs = get_actual_non_occupant_room_sensible_cooling_load(theta_ac_act, theta_nac, v_supply, l_d_cs)
     l_d_act_nac_cl = get_actual_non_occupant_room_latent_cooling_load(x_ac_act, x_nac, v_supply, l_d_cl)
 
-    # ----------------------------
-
     # actual heat loss or gain through partitions, MJ/h, (5 rooms * 8760 times)
     q_trs_prt_h = get_actual_heat_loss_through_partition_for_heating(u_prt, a_prt, theta_ac_act, theta_nac, l_d_h)
     q_trs_prt_c = get_actual_heat_gain_through_partition_for_cooling(u_prt, a_prt, theta_ac_act, theta_nac, l_d_cs)
@@ -2264,6 +2262,8 @@ def get_main_value(
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, l_d_h)
     q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_hs_in, theta_hs_out_c, v_supply, l_cl, l_d_cs)
+
+    # endregion
 
     return {
         'constant_value': {
