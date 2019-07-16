@@ -1655,7 +1655,6 @@ def get_actual_non_occupant_room_temperature(
            + np.sum(k_prt * (theta_ac_act - theta_d_nac), axis=0)) / (k_evp + np.sum(k_prt, axis=0))
     return theta_nac
 
-
 def get_actual_non_occupant_room_absolute_humidity(x_d_nac: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room absolute humidity, kg/kgDA
@@ -1667,17 +1666,16 @@ def get_actual_non_occupant_room_absolute_humidity(x_d_nac: np.ndarray) -> np.nd
 
     return x_d_nac
 
-# endregion
 
 
-def get_actual_non_occupant_room_load_for_heating(
-        theta_ac_act_h: np.ndarray, theta_nac_h: np.ndarray, v_supply: np.ndarray,
+def get_actual_non_occupant_room_heating_load(
+        theta_ac_act: np.ndarray, theta_nac: np.ndarray, v_supply: np.ndarray,
         l_d_h: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room heating load
     Args:
-        theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
-        theta_nac_h: non occupant room temperature, degree C (8760 times)
+        theta_ac_act: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
+        theta_nac: non occupant room temperature, degree C (8760 times)
         v_supply: supply air volume, m3/h
         l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     Returns:
@@ -1687,19 +1685,19 @@ def get_actual_non_occupant_room_load_for_heating(
     c = get_specific_heat()
     rho = get_air_density()
 
-    l_d_act_nac_h = np.sum((theta_ac_act_h - theta_nac_h) * c * rho * v_supply * 10 ** (-6), axis=0)
+    l_d_act_nac_h = np.sum((theta_ac_act - theta_nac) * c * rho * v_supply * 10 ** (-6), axis=0)
 
     return np.where(np.sum(l_d_h, axis=0) > 0.0, l_d_act_nac_h, 0.0)
 
 
-def get_actual_non_occupant_room_load_for_cooling(
-        theta_ac_act_c: np.ndarray, theta_nac_c: np.ndarray, v_supply: np.ndarray,
+def get_actual_non_occupant_room_sensible_cooling_load(
+        theta_ac_act: np.ndarray, theta_nac: np.ndarray, v_supply: np.ndarray,
         l_d_cs: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room sensible cooling load
     Args:
-        theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
-        theta_nac_c: non occupant room temperature, degree C (8760 times)
+        theta_ac_act: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
+        theta_nac: non occupant room temperature, degree C (8760 times)
         v_supply: supply air volume, m3/h
         l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
     Returns:
@@ -1709,9 +1707,32 @@ def get_actual_non_occupant_room_load_for_cooling(
     c = get_specific_heat()
     rho = get_air_density()
 
-    l_d_act_nac_cs = np.sum((theta_nac_c - theta_ac_act_c) * c * rho * v_supply * 10 ** (-6), axis=0)
+    l_d_act_nac_cs = np.sum((theta_nac - theta_ac_act) * c * rho * v_supply * 10 ** (-6), axis=0)
 
     return np.where(np.sum(l_d_cs, axis=0) > 0.0, l_d_act_nac_cs, 0.0)
+
+
+def get_actual_non_occupant_room_latent_cooling_load(
+        x_ac_act_c: np.ndarray, x_nac: np.ndarray, v_supply: np.ndarray, l_d_cl: np.ndarray) -> np.ndarray:
+    """
+    calculate actual non occupant room latent cooling load
+    Args:
+        x_ac_act_c: air onditioned absolute humidity for cooling, kg/kgDA (5 rooms * 8760 times)
+        x_nac: non occupant room absolute humidity, kg/kgDA (8760 times)
+        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
+        l_d_cl: latent cooling load of occupant room, MJ/h (5 rooms * 8760 times)
+    Returns:
+        actual non occupant room latent cooling load, MJ/h (8760 times)
+    """
+
+    rho = get_air_density()
+    l_wtr = get_evaporation_latent_heat()
+
+    l_d_act_nac_cl = np.sum((x_nac - x_ac_act_c) * rho * l_wtr * v_supply * 10 ** (-3), axis=0)
+
+    return np.where(np.sum(l_d_cl, axis=0) > 0.0, l_d_act_nac_cl, 0.0)
+
+# endregion
 
 
 def get_actual_heat_loss_through_partition_for_heating(
@@ -1759,28 +1780,16 @@ def get_actual_heat_gain_through_partition_for_cooling(
     return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_trs_prt_c, 0.0)
 
 
-def get_heat_source_inlet_air_temperature_for_heating(theta_nac_h: np.ndarray) -> np.ndarray:
+def get_heat_source_inlet_air_temperature(theta_nac: np.ndarray) -> np.ndarray:
     """
     get heat source inlet air temperature for heating
     Args:
-        theta_nac_h: non occupant room temperature, degree C (8760 times)
+        theta_nac: non occupant room temperature, degree C (8760 times)
     Returns:
         heat source inlet air temperature, degree C (8760 times)
     """
 
-    return theta_nac_h
-
-
-def get_heat_source_inlet_air_temperature_for_cooling(theta_nac_c: np.ndarray) -> np.ndarray:
-    """
-    get heat source inlet air temperature for cooling
-    Args:
-        theta_nac_c: non occupant room temperature, degree C (8760 times)
-    Returns:
-        heat source inlet air temperature, degree C (8760 times)
-    """
-
-    return theta_nac_c
+    return theta_nac
 
 
 def get_heat_source_heating_output(
@@ -2238,23 +2247,23 @@ def get_main_value(
     # actual non occupant room absolute humidity, kg/kgDA, (8760 times)
     x_nac = get_actual_non_occupant_room_absolute_humidity(x_d_nac)
 
-    # ----------------------------
-
     # actual non occupant room load, MJ/h, (8760 times)
-    l_d_act_nac_h = get_actual_non_occupant_room_load_for_heating(theta_ac_act, theta_nac, v_supply, l_d_h)
-    l_d_act_nac_cs = get_actual_non_occupant_room_load_for_cooling(theta_ac_act, theta_nac, v_supply, l_d_cs)
+    l_d_act_nac_h = get_actual_non_occupant_room_heating_load(theta_ac_act, theta_nac, v_supply, l_d_h)
+    l_d_act_nac_cs = get_actual_non_occupant_room_sensible_cooling_load(theta_ac_act, theta_nac, v_supply, l_d_cs)
+    l_d_act_nac_cl = get_actual_non_occupant_room_latent_cooling_load(x_ac_act, x_nac, v_supply, l_d_cl)
+
+    # ----------------------------
 
     # actual heat loss or gain through partitions, MJ/h, (5 rooms * 8760 times)
     q_trs_prt_h = get_actual_heat_loss_through_partition_for_heating(u_prt, a_prt, theta_ac_act, theta_nac, l_d_h)
     q_trs_prt_c = get_actual_heat_gain_through_partition_for_cooling(u_prt, a_prt, theta_ac_act, theta_nac, l_d_cs)
 
     # inlet air temperature of heat source,degree C, (8760 times)
-    theta_hs_in_h = get_heat_source_inlet_air_temperature_for_heating(theta_nac)
-    theta_hs_in_c = get_heat_source_inlet_air_temperature_for_cooling(theta_nac)
+    theta_hs_in = get_heat_source_inlet_air_temperature(theta_nac)
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in_h, v_supply, l_d_h)
-    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_hs_in_c, theta_hs_out_c, v_supply, l_cl, l_d_cs)
+    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, l_d_h)
+    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_hs_in, theta_hs_out_c, v_supply, l_cl, l_d_cs)
 
     return {
         'constant_value': {
