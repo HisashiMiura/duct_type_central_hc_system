@@ -1583,6 +1583,32 @@ def get_actual_treated_latent_cooling_load(
     
     return (x_ac_act_c - x_supply_c) * l_wtr * rho * v_supply * 10 ** (-3)
 
+
+def get_untreated_load(
+        l_d_act_h: np.ndarray, l_d_h: np.ndarray,
+        l_d_act_cs: np.ndarray, l_d_cs: np.ndarray,
+        l_d_act_cl: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    Args:
+        l_d_act_h: actual treated heating load, MJ/h, (5 rooms * 8760 times)
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        l_d_act_cs: actual treated sensible cooling load, MJ/h, (5 rooms * 8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms * 8760 times)
+        l_d_act_cl: actual treated latent cooling load, MJ/h, (5 rooms * 8760 times)
+        l_d_cl: latent cooling load of occupant room, MJ/h, (5 rooms * 8760 times)
+    Returns:
+        untreated heating load, MJ/h, (5 rooms * 8760 times)
+        untreated sensible cooling load, MJ/h, (5 rooms * 8760 times)
+        untreated latent cooling load, MJ/h, (5 rooms * 8760 times)
+    """
+
+    # untreated load, MJ/h
+    q_ut_h = np.clip(l_d_h - l_d_act_h, 0.0, None)
+    q_ut_cs = np.clip(l_d_cs - l_d_act_cs, 0.0, None)
+    q_ut_cl = np.clip(l_d_cl - l_d_act_cl, 0.0, None)
+
+    return q_ut_h, q_ut_cs, q_ut_cl
+
 # endregion
 
 
@@ -1604,135 +1630,6 @@ def get_air_conditioned_temperature_for_cooling() -> np.ndarray:
     """
 
     return np.full(8760, 27.0)
-
-
-def get_maximum_heating_supply(
-        theta_d_hs_in_h: np.ndarray, q_hs_max_h: np.ndarray, v_d_supply: np.ndarray, theta_set_h: np.ndarray,
-        psi: float, l_duct: np.ndarray, theta_sur: np.ndarray) -> np.ndarray:
-    """
-    calculate maximum output for heating
-    Args:
-        theta_d_hs_in_h: inlet air temperature of the heat source for heating, degree C (8760 times)
-        q_hs_max_h: maximum heating output, MJ/h (8760 times)
-        v_d_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        theta_set_h: set temperature for heating, degree C
-        psi: linear heat loss coefficient of the duct, W/mK
-        l_duct: duct length, m, (5 rooms)
-        theta_sur: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    Returns:
-        maximum output for heating, MJ/h, (5 rooms * 8760 times)
-    """
-
-    c = get_specific_heat()
-    rho = get_air_density()
-
-    # maximum outlet air temperature of heat source, degree C, (8760 times)
-    theta_hs_out_max_h = theta_d_hs_in_h + q_hs_max_h / (c * rho * np.sum(v_d_supply, axis=0)) * 10 ** 6
-
-    theta_hs_out_max_h = np.minimum(theta_hs_out_max_h, 45.0)
-
-    l_duct = np.array(l_duct).reshape(1, 5).T
-
-    q_max_h = get_load_from_upside_temperature(
-        t_sur=theta_sur, t_up=theta_hs_out_max_h, v=v_d_supply, t_ac=theta_set_h, psi=psi, length=l_duct)
-
-    return np.clip(q_max_h, 0.0, None)
-
-
-def get_maximum_cooling_supply(
-        theta_d_hs_in_c: np.ndarray, l_d_cl: np.ndarray, q_hs_max_cs: np.ndarray, q_hs_max_cl: np.ndarray,
-        v_d_supply: np.ndarray, theta_set_c: np.ndarray, psi: float, l_duct: np.ndarray,
-        theta_sur: np.ndarray) -> np.ndarray:
-    """
-    calculate maximum output for cooling
-    Args:
-        theta_d_hs_in_c: inlet air temperature of the heat source for cooling, degree C (8760 times)
-        l_d_cl: latent cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
-        q_hs_max_cs: maximum sensible cooling output, MJ/h (8760 times)
-        q_hs_max_cl: maximum latent cooling output, MJ/h (8760 times)
-        v_d_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
-        theta_set_c: set temperature for cooling, degree C
-        psi: linear heat loss coefficient of the duct, W/mK
-        l_duct: duct length, m, (5 rooms)
-        theta_sur: ambient temperature around the ducts, degree C, (5 rooms * 8760 times)
-    Returns:
-        maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times), maximum output for latent cooling, MJ/h, (5 rooms * 8760 times)
-    """
-
-    c = get_specific_heat()
-    rho = get_air_density()
-
-    # minimum outlet air temperature of heat source, degree C, (8760 times)
-    theta_hs_out_min_c = theta_d_hs_in_c - q_hs_max_cs / (c * rho * np.sum(v_d_supply, axis=0)) * 10 ** 6
-
-    theta_hs_out_min_c = np.maximum(theta_hs_out_min_c, 15.0)
-
-    # duct length, m
-    l_duct = np.array(l_duct).reshape(1, 5).T
-
-    q_max_cs = - get_load_from_upside_temperature(
-        t_sur=theta_sur, t_up=theta_hs_out_min_c, v=v_d_supply, t_ac=theta_set_c, psi=psi, length=l_duct)
-
-    l_cl_sum = np.sum(l_d_cl, axis=0)
-
-    r = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_d_cl, l_cl_sum)
-
-    q_max_cl = r * q_hs_max_cl
-
-    return np.clip(q_max_cs, 0.0, None), q_max_cl
-
-
-def get_treated_untreated_heat_load_for_heating(q_max_h: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
-    """
-    Args:
-        q_max_h: maximum output for heating, MJ/h
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-    Returns:
-        (a,b)
-            a: treated heating load, MJ/h, (5 rooms * 8760 times)
-            b: untreated heating load, MJ/h, (5 rooms * 8760 times)
-    """
-
-    # treated load, MJ/h
-    q_t_h = np.minimum(l_d_h, q_max_h)
-
-    # untreated load, MJ/h
-    q_ut_h = l_d_h - q_t_h
-
-    return q_t_h, q_ut_h
-
-
-def get_treated_untreated_heat_load_for_cooling(
-        q_max_cs: np.ndarray, q_max_cl: np.ndarray, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> np.ndarray:
-    """
-    Args:
-        q_max_cs: maximum output for sensible cooling, MJ/h, (5 rooms * 8760 times)
-        q_max_cl: maximum output for latent cooling, MJ/h, (5 rooms * 8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
-        l_d_cl: latent cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
-    Returns:
-        (a,b,c,d)
-            a: treated sensible heating load, MJ/h, (5 rooms * 8760 times)
-            b: treated latent heating load, MJ/h, (5 rooms * 8760 times)
-            c: untreated sensible heating load, MJ/h, (5 rooms * 8760 times)
-            d: untreated latent heating load, MJ/h, (5 rooms * 8760 times)
-    """
-
-    # treated load, MJ/h
-    #  sensible
-    q_t_cs = np.minimum(q_max_cs, l_d_cs)
-    #  latent
-    q_t_cl = np.minimum(q_max_cl, l_d_cl)
-
-    # untreated load, MJ/h
-    #  sensible
-    q_ut_cs = l_d_cs - q_t_cs
-    #  latent
-    q_ut_cl = l_d_cl - q_t_cl
-
-    return q_t_cs, q_t_cl, q_ut_cs, q_ut_cl
-
-
 
 
 def get_actual_non_occupant_room_temperature_for_heating(
@@ -2330,19 +2227,11 @@ def get_main_value(
     l_d_act_cs = get_actual_treated_sensible_cooling_load(theta_supply_c, theta_ac_act, v_supply)
     l_d_act_cl = get_actual_treated_latent_cooling_load(x_supply_c, x_ac_act, v_supply)
 
+    # untreated load, MJ/h, (5 rooms * 8760 times, 5 rooms * 8760 times, 5 rooms * 8760 times)
+    q_ut_h, q_ut_cs, q_ut_cl = get_untreated_load(
+        l_d_act_h, l_d_h, l_d_act_cs, l_d_cs, l_d_act_cl, l_d_cl)
+
     # ----------------------------
-
-    # maximum heating and cooling output for each rooms
-    # heating, MJ/h, (5 rooms * 8760 times)
-    q_max_h = get_maximum_heating_supply(
-        theta_d_hs_in, q_hs_max_h, v_d_supply, theta_set_h, psi, l_duct, theta_sur)
-    # sensible and latent cooling, MJ/h, (5 rooms * 8760 times), (5 rooms * 8760 times)
-    q_max_cs, q_max_cl = get_maximum_cooling_supply(
-        theta_d_hs_in, l_d_cl, q_hs_max_cs, q_hs_max_cl, v_d_supply, theta_set_c, psi, l_duct, theta_sur)
-
-    # treated and untreated heat load for heating and cooling, MJ/h, (5 rooms * 8760 times)
-    q_t_h, q_ut_h = get_treated_untreated_heat_load_for_heating(q_max_h, l_d_h)
-    q_t_cs, q_t_cl, q_ut_cs, q_ut_cl = get_treated_untreated_heat_load_for_cooling(q_max_cs, q_max_cl, l_d_cs, l_d_cl)
 
     # air conditioned temperature, degree C, (8760 times)
     theta_ac_h = get_air_conditioned_temperature_for_heating()
@@ -2446,36 +2335,6 @@ def get_main_value(
             'maximum_output_heating': q_hs_max_h,  # MJ/h
             'maximum_output_sensible_cooling': q_hs_max_cs,  # MJ/h
             'maximum_output_latent_cooling': q_hs_max_cl,  # MJ/h
-            'maximum_output_heating_room1': q_max_h[0],  # MJ/h
-            'maximum_output_heating_room2': q_max_h[1],  # MJ/h
-            'maximum_output_heating_room3': q_max_h[2],  # MJ/h
-            'maximum_output_heating_room4': q_max_h[3],  # MJ/h
-            'maximum_output_heating_room5': q_max_h[4],  # MJ/h
-            'maximum_output_sensible_cooling_room1': q_max_cs[0],  # MJ/h
-            'maximum_output_sensible_cooling_room2': q_max_cs[1],  # MJ/h
-            'maximum_output_sensible_cooling_room3': q_max_cs[2],  # MJ/h
-            'maximum_output_sensible_cooling_room4': q_max_cs[3],  # MJ/h
-            'maximum_output_sensible_cooling_room5': q_max_cs[4],  # MJ/h
-            'maximum_output_latent_cooling_room1': q_max_cl[0],  # MJ/h
-            'maximum_output_latent_cooling_room2': q_max_cl[1],  # MJ/h
-            'maximum_output_latent_cooling_room3': q_max_cl[2],  # MJ/h
-            'maximum_output_latent_cooling_room4': q_max_cl[3],  # MJ/h
-            'maximum_output_latent_cooling_room5': q_max_cl[4],  # MJ/h
-            'treated_heating_load_room1': q_t_h[0],  # MJ/h
-            'treated_heating_load_room2': q_t_h[1],  # MJ/h
-            'treated_heating_load_room3': q_t_h[2],  # MJ/h
-            'treated_heating_load_room4': q_t_h[3],  # MJ/h
-            'treated_heating_load_room5': q_t_h[4],  # MJ/h
-            'treated_sensible_cooling_load_room1': q_t_cs[0],  # MJ/h
-            'treated_sensible_cooling_load_room2': q_t_cs[1],  # MJ/h
-            'treated_sensible_cooling_load_room3': q_t_cs[2],  # MJ/h
-            'treated_sensible_cooling_load_room4': q_t_cs[3],  # MJ/h
-            'treated_sensible_cooling_load_room5': q_t_cs[4],  # MJ/h
-            'treated_latent_cooling_load_room1': q_t_cl[0],  # MJ/h
-            'treated_latent_cooling_load_room2': q_t_cl[1],  # MJ/h
-            'treated_latent_cooling_load_room3': q_t_cl[2],  # MJ/h
-            'treated_latent_cooling_load_room4': q_t_cl[3],  # MJ/h
-            'treated_latent_cooling_load_room5': q_t_cl[4],  # MJ/h
             'untreated_heating_load_room1': q_ut_h[0],  # MJ/h
             'untreated_heating_load_room2': q_ut_h[1],  # MJ/h
             'untreated_heating_load_room3': q_ut_h[2],  # MJ/h
@@ -2533,16 +2392,21 @@ def get_main_value(
             'actual_air_conditioned_temperature_room3': theta_ac_act[2],  # degree C
             'actual_air_conditioned_temperature_room4': theta_ac_act[3],  # degree C
             'actual_air_conditioned_temperature_room5': theta_ac_act[4],  # degree C
-            'actual_treated_load_heating_room1': l_d_act_h[0],  # MJ/h
-            'actual_treated_load_heating_room2': l_d_act_h[1],  # MJ/h
-            'actual_treated_load_heating_room3': l_d_act_h[2],  # MJ/h
-            'actual_treated_load_heating_room4': l_d_act_h[3],  # MJ/h
-            'actual_treated_load_heating_room5': l_d_act_h[4],  # MJ/h
-            'actual_treated_load_cooling_room1': l_d_act_cs[0],  # MJ/h
-            'actual_treated_load_cooling_room2': l_d_act_cs[1],  # MJ/h
-            'actual_treated_load_cooling_room3': l_d_act_cs[2],  # MJ/h
-            'actual_treated_load_cooling_room4': l_d_act_cs[3],  # MJ/h
-            'actual_treated_load_cooling_room5': l_d_act_cs[4],  # MJ/h
+            'actual_treated_heating_load_room1': l_d_act_h[0],  # MJ/h
+            'actual_treated_heating_load_room2': l_d_act_h[1],  # MJ/h
+            'actual_treated_heating_load_room3': l_d_act_h[2],  # MJ/h
+            'actual_treated_heating_load_room4': l_d_act_h[3],  # MJ/h
+            'actual_treated_heating_load_room5': l_d_act_h[4],  # MJ/h
+            'actual_treated_sensible_cooling_load_room1': l_d_act_cs[0],  # MJ/h
+            'actual_treated_sensible_cooling_load_room2': l_d_act_cs[1],  # MJ/h
+            'actual_treated_sensible_cooling_load_room3': l_d_act_cs[2],  # MJ/h
+            'actual_treated_sensible_cooling_load_room4': l_d_act_cs[3],  # MJ/h
+            'actual_treated_sensible_cooling_load_room5': l_d_act_cs[4],  # MJ/h
+            'actual_treated_latent_cooling_load_room1': l_d_act_cl[0],  # MJ/h
+            'actual_treated_latent_cooling_load_room2': l_d_act_cl[1],  # MJ/h
+            'actual_treated_latent_cooling_load_room3': l_d_act_cl[2],  # MJ/h
+            'actual_treated_latent_cooling_load_room4': l_d_act_cl[3],  # MJ/h
+            'actual_treated_latent_cooling_load_room5': l_d_act_cl[4],  # MJ/h
             'actual_non_occupant_room_temperature_heating': theta_nac_h,  # degree C
             'actual_non_occupant_room_temperature_cooling': theta_nac_c,  # degree C
             'actual_non_occupant_room_load_heating': l_d_act_nac_h,  # MJ/h
