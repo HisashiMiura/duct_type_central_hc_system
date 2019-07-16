@@ -1531,9 +1531,11 @@ def get_actual_air_conditioned_absolute_humidity(x_ac: np.ndarray) -> np.ndarray
 
 
 def get_actual_treated_heating_load(
+        heating_period: np.ndarray,
         theta_supply_h: np.ndarray, theta_ac_act_h: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     Args:
+        heating_period: heating period
         theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         v_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
@@ -1544,13 +1546,17 @@ def get_actual_treated_heating_load(
     c = get_specific_heat()
     rho = get_air_density()
 
-    return (theta_supply_h - theta_ac_act_h) * c * rho * v_supply * 10 ** (-6)
+    l_d_act_h = (theta_supply_h - theta_ac_act_h) * c * rho * v_supply * 10 ** (-6)
+
+    return l_d_act_h * heating_period
 
 
 def get_actual_treated_sensible_cooling_load(
+        cooling_period: np.ndarray,
         theta_supply_c: np.ndarray, theta_ac_act_c: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     Args:
+        cooling_period: cooling period
         theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
@@ -1561,14 +1567,18 @@ def get_actual_treated_sensible_cooling_load(
     c = get_specific_heat()
     rho = get_air_density()
 
-    return (theta_ac_act_c - theta_supply_c) * c * rho * v_supply * 10 ** (-6)
+    l_d_act_cs = (theta_ac_act_c - theta_supply_c) * c * rho * v_supply * 10 ** (-6)
+
+    return l_d_act_cs * cooling_period
 
 
 def get_actual_treated_latent_cooling_load(
+        cooling_period: np.ndarray,
         x_supply_c: np.ndarray, x_ac_act_c: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     calculate actual treated latent cooling load
     Args:
+        cooling_period: cooling period
         x_supply_c: supply air absolute humidity, kg/kgDA (5 rooms * 8760 times)
         x_ac_act_c: air conditioned absolute humidity for cooling, kg/kgDA (5 rooms * 8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
@@ -1580,8 +1590,10 @@ def get_actual_treated_latent_cooling_load(
     l_wtr = get_evaporation_latent_heat()
     
     rho = get_air_density()
-    
-    return (x_ac_act_c - x_supply_c) * l_wtr * rho * v_supply * 10 ** (-3)
+
+    l_d_act_cl = (x_ac_act_c - x_supply_c) * l_wtr * rho * v_supply * 10 ** (-3)
+
+    return l_d_act_cl * cooling_period
 
 
 def get_untreated_load(
@@ -2223,9 +2235,9 @@ def get_main_value(
     x_ac_act = get_actual_air_conditioned_absolute_humidity(x_ac)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    l_d_act_h = get_actual_treated_heating_load(theta_supply_h, theta_ac_act, v_supply)
-    l_d_act_cs = get_actual_treated_sensible_cooling_load(theta_supply_c, theta_ac_act, v_supply)
-    l_d_act_cl = get_actual_treated_latent_cooling_load(x_supply_c, x_ac_act, v_supply)
+    l_d_act_h = get_actual_treated_heating_load(heating_period, theta_supply_h, theta_ac_act, v_supply)
+    l_d_act_cs = get_actual_treated_sensible_cooling_load(cooling_period, theta_supply_c, theta_ac_act, v_supply)
+    l_d_act_cl = get_actual_treated_latent_cooling_load(cooling_period, x_supply_c, x_ac_act, v_supply)
 
     # untreated load, MJ/h, (5 rooms * 8760 times, 5 rooms * 8760 times, 5 rooms * 8760 times)
     q_ut_h, q_ut_cs, q_ut_cl = get_untreated_load(
