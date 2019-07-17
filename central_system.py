@@ -1803,13 +1803,12 @@ def get_heat_source_inlet_air_absolute_humidity(x_nac: np.ndarray) -> np.ndarray
 
 
 def get_heat_source_heating_output(
-        theta_hs_out_h: np.ndarray, theta_hs_in_h: np.ndarray, v_supply: np.ndarray,
-        l_d_h: np.ndarray) -> np.ndarray:
+        theta_hs_out_h: np.ndarray, theta_hs_in: np.ndarray, v_supply: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
     """
     calculate heat source heating output
     Args:
         theta_hs_out_h: supply air temperature, degree C, (5 rooms * 8760 times)
-        theta_hs_in_h: inlet air temperature of the heat source for heating, degree C (8760 times)
+        theta_hs_in: inlet air temperature of the heat source, degree C (8760 times)
         v_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
         l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
     Returns:
@@ -1819,31 +1818,35 @@ def get_heat_source_heating_output(
     c = get_specific_heat()
     rho = get_air_density()
 
-    q_hs_h = np.maximum((theta_hs_out_h - theta_hs_in_h) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
+    q_hs_h = np.maximum((theta_hs_out_h - theta_hs_in) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
 
     return np.where(np.sum(l_d_h, axis=0) > 0.0, q_hs_h, 0.0)
 
 
 def get_heat_source_cooling_output(
-        theta_hs_in_c: np.ndarray, theta_hs_out_c: np.ndarray, v_supply: np.ndarray, l_cl: np.ndarray,
-        l_d_cs: np.ndarray) -> np.ndarray:
+        theta_hs_in: np.ndarray, x_hs_in: np.ndarray, theta_hs_out_c: np.ndarray, x_hs_out_c: np.ndarray,
+        v_supply: np.ndarray, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     Args:
-        theta_hs_in_c: inlet air temperature of the heat source for cooling, degree C (8760 times)
+        theta_hs_in: inlet air temperature of the heat source for cooling, degree C (8760 times)
+        x_hs_in: inlet air absolute humidity of the heat source, kg/kgDA (8760 times)
         theta_hs_out_c: supply air temperature, degree C (8760 times)
+        x_hs_out_c: supply air absolute humidity, kg/kgDA (8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
-        l_cl: latent cooling load, MJ/h, (12 rooms * 8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h (5 rooms *  8760 times)
+        l_d_cl: latent cooling load of occupant room, MJ/h (5 rooms * 8760 times)
     """
 
     c = get_specific_heat()
     rho = get_air_density()
+    l_wtr = get_evaporation_latent_heat()
 
-    q_hs_cs = np.maximum((theta_hs_in_c - theta_hs_out_c) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
+    q_hs_cs = np.maximum((theta_hs_in - theta_hs_out_c) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
 
-    q_hs_cl = np.sum(l_cl[0:5], axis=0)
+    q_hs_cl = np.maximum((x_hs_in - x_hs_out_c) * rho * l_wtr * np.sum(v_supply, axis=0) * 10 ** (-3), 0.0)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_hs_cs, 0.0), q_hs_cl
+    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_hs_cs, 0.0),\
+           np.where(np.sum(l_d_cl, axis=0) > 0.0, q_hs_cl, 0.0)
 
 # endregion
 
@@ -2275,7 +2278,8 @@ def get_main_value(
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, l_d_h)
-    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(theta_hs_in, theta_hs_out_c, v_supply, l_cl, l_d_cs)
+    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(
+        theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, l_d_cs, l_d_cl)
 
     # endregion
 

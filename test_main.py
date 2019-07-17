@@ -20,7 +20,7 @@ class TestMain(unittest.TestCase):
         self.assertAlmostEqual(5.7031, df_t.heating_load_room1[0])
         self.assertAlmostEqual(17.85745693530602, df_t.output_of_heat_source_heating[0])
         self.assertAlmostEqual(1.0609561341074933, df_t.output_of_heat_source_sensible_cooling[4798])
-        self.assertAlmostEqual(1.87939, df_t.output_of_heat_source_latent_cooling[4798])
+        self.assertAlmostEqual(1.187266007959914, df_t.output_of_heat_source_latent_cooling[4798])
 
 
 if __name__ == '__main__':
