@@ -1780,7 +1780,7 @@ def get_actual_heat_gain_through_partition_for_cooling(
 
 def get_heat_source_inlet_air_temperature(theta_nac: np.ndarray) -> np.ndarray:
     """
-    get heat source inlet air temperature for heating
+    get heat source inlet air temperature
     Args:
         theta_nac: non occupant room temperature, degree C (8760 times)
     Returns:
@@ -1788,6 +1788,18 @@ def get_heat_source_inlet_air_temperature(theta_nac: np.ndarray) -> np.ndarray:
     """
 
     return theta_nac
+
+
+def get_heat_source_inlet_air_absolute_humidity(x_nac: np.ndarray) -> np.ndarray:
+    """
+    get heat source inlet air absolute humidity
+    Args:
+        x_nac: non occupant room absolute humidity, kg/kgDA (8760 times)
+    Returns:
+        heat source inlet air absolute humidity, kg/kgDA (8760 times)
+    """
+
+    return x_nac
 
 
 def get_heat_source_heating_output(
@@ -2258,6 +2270,8 @@ def get_main_value(
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in = get_heat_source_inlet_air_temperature(theta_nac)
+    # inlet air absolute humidity of heat source, kg/kgDA (8760 times)
+    x_hs_in = get_heat_source_inlet_air_absolute_humidity(x_nac)
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, l_d_h)
