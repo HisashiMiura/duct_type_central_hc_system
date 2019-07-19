@@ -215,16 +215,16 @@ def get_calender() -> np.ndarray:
 
 # region occupant usage
 
-def get_heating_and_cooling_schedule(region: int) -> (np.ndarray, np.ndarray):
+def get_heating_and_cooling_schedule(region: int) -> (np.ndarray, np.ndarray, np.ndarray):
     """
     get the heating and cooling schedule
     operation represents True as boolean type
     Args:
         region: region, 1-8
     Returns:
-        (heating schedule, cooling schedule)
         heating schedule, operation day represents True, (8760 times)
         cooling schedule, operation day represents True, (8760 times)
+        heating and cooling schedule, operation day represents 'h', 'c' or 'm' (8760 times)
     """
 
     heating_period = np.array([
@@ -249,7 +249,9 @@ def get_heating_and_cooling_schedule(region: int) -> (np.ndarray, np.ndarray):
                                   [False] * 83 + [True] * 265 + [False] * 17,
                               ][region - 1])
 
-    return np.repeat(heating_period, 24), np.repeat(cooling_period,24)
+    hc_period = np.where(heating_period, 'h', np.where(cooling_period, 'c', 'm'))
+
+    return np.repeat(hc_period, 24)
 
 
 def get_n_p(a_mr: float, a_or: float, a_nr: float, calender: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
@@ -533,7 +535,7 @@ def get_sat_temperature(region: int) -> np.ndarray:
 def get_heating_output_for_supply_air_estimation(
         a_a: float, q: float, mu_h: float, v_vent: np.ndarray,
         theta_ex: np.ndarray, j: np.ndarray,
-        heating_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, v_local: np.ndarray,
+        hc_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, v_local: np.ndarray,
         theta_set_h: float):
     """
     get heating output for supply air estimation
@@ -544,7 +546,7 @@ def get_heating_output_for_supply_air_estimation(
         v_vent: mechanical ventilation, m3/h, (5 rooms)
         theta_ex: outdoor temperature, degree C (8760 times)
         j: horizontal solar radiation, W/m2K (8760 times)
-        heating_period: heating schedule (8760 times)
+        hc_period: heating and cooling schedule (8760 times)
         n_p: number of people (8760 times)
         q_gen: heat generation, W (8760 times)
         v_local: local ventilation amount, m3/h (8760 times)
@@ -562,7 +564,7 @@ def get_heating_output_for_supply_air_estimation(
     q_d_hs_h = np.maximum(
         (((q - 0.35 * 0.5 * 2.4) * a_a + c * rho * (v_local + sum(v_vent)) / 3600) * (theta_set_h - theta_ex)
          - mu_h * a_a * j - q_gen - n_p * 79.0) * 3600 * 10 ** (-6),
-        0.0) * heating_period
+        0.0) * (hc_period == 'h')
 
     return q_d_hs_h
 
@@ -570,7 +572,7 @@ def get_heating_output_for_supply_air_estimation(
 def get_cooling_output_for_supply_air_estimation(
         a_a: float, q: float, mu_c: float, v_vent: np.ndarray,
         theta_ex: np.ndarray, x_ex: np.ndarray, j: np.ndarray,
-        cooling_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, w_gen: np.ndarray, v_local: np.ndarray,
+        hc_period: np.ndarray, n_p: np.ndarray, q_gen: np.ndarray, w_gen: np.ndarray, v_local: np.ndarray,
         theta_set_c: float, x_set_c: float):
     """
     get heating output for supply air estimation
@@ -582,7 +584,7 @@ def get_cooling_output_for_supply_air_estimation(
         theta_ex: outdoor temperature, degree C (8760 times)
         x_ex: outdoor absolute humidity, kg/kg(DA) (8760 times)
         j: horizontal solar radiation, W/m2K (8760 times)
-        cooling_period: cooling schedule (8760 times)
+        hc_period: heating and cooling schedule (8760 times)
         n_p: number of people (8760 times)
         q_gen: heat generation, W (8760 times)
         w_gen: moisture generation, g/h (8760 times)
@@ -606,11 +608,11 @@ def get_cooling_output_for_supply_air_estimation(
         (((q - 0.35 * 0.5 * 2.4) * a_a + c * rho * (v_local + sum(v_vent)) / 3600) * (
                     theta_ex - theta_set_c)
          + mu_c * a_a * j + q_gen + n_p * 51.0) * 3600 * 10 ** (-6),
-        0.0) * cooling_period
+        0.0) * (hc_period == 'c')
 
     q_d_hs_cl = np.maximum(
         (((v_local + sum(v_vent)) * rho * (x_ex - x_set_c) * 10 ** 3 + w_gen) * l_wtr
-         + n_p * 40.0 * 3600) * 10 ** (-6), 0.0) * cooling_period
+         + n_p * 40.0 * 3600) * 10 ** (-6), 0.0) * (hc_period == 'c')
 
     return q_d_hs_cs + q_d_hs_cl
 
@@ -714,14 +716,13 @@ def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
 
 
 def get_heat_source_supply_air_volume(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         q_d_hs_h: np.ndarray, q_d_hs_c: np.ndarray, q_hs_rtd_h: float, q_hs_rtd_c: float,
         v_hs_min: float, v_hs_rtd_h: float, v_hs_rtd_c: float) -> np.ndarray:
     """
     calculate the supply air volume
     Args:
-        heating_period: heating schedule (8760 times)
-        cooling_period: cooling schedule (8760 times)
+        hc_period: heating and cooling schedule (8760 times)
         q_d_hs_h: heating output of the system for estimation of the supply air volume, MJ/h
         q_d_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
         q_hs_rtd_h: rated heating output, MJ/h
@@ -745,7 +746,7 @@ def get_heat_source_supply_air_volume(
     v_d_hs_supply_h = np.vectorize(get_v)(q_d_hs_h, q_hs_rtd_h, v_hs_rtd_h)
     v_d_hs_supply_c = np.vectorize(get_v)(q_d_hs_c, q_hs_rtd_c, v_hs_rtd_c)
 
-    return v_d_hs_supply_h * heating_period + v_d_hs_supply_c * cooling_period
+    return v_d_hs_supply_h * (hc_period == 'h') + v_d_hs_supply_c * (hc_period == 'c')
 
 
 def get_supply_air_volume_valance(a_hcz: np.ndarray) -> np.ndarray:
@@ -826,13 +827,12 @@ def get_load(region: int, insulation: str, solar_gain: str, a_mr: float, a_or: f
 
 
 def get_air_conditioned_room_temperature(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         theta_ex: np.ndarray, theta_set_h: float, theta_set_c: float) -> np.ndarray:
     """
     calculate air conditioned room temperature
     Args:
-        heating_period: heating schedule, operation day represents True, (8760 times)
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule, operation day represents True, (8760 times)
         theta_ex: outdoor temperature, degree C, (8760 times)
         theta_set_h: set temperature for heating, degree C
         theta_set_c: set temperature for cooling, degree C
@@ -842,17 +842,15 @@ def get_air_conditioned_room_temperature(
 
     theta_ac_m = np.clip(theta_ex, theta_set_h, theta_set_c)
 
-    middle_period = (heating_period == cooling_period)
-
-    return theta_set_h * heating_period + theta_set_c * cooling_period + theta_ac_m * middle_period
+    return theta_set_h * (hc_period == 'h') + theta_set_c * (hc_period == 'c') + theta_ac_m * (hc_period == 'm')
 
 
 def get_air_conditioned_room_absolute_humidity(
-        cooling_period: np.ndarray, x_ex: np.ndarray, x_set_c: float) -> np.ndarray:
+        hc_period: np.ndarray, x_ex: np.ndarray, x_set_c: float) -> np.ndarray:
     """
     calculate air conditioned absolute humidity
     Args:
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule (8760 times)
         x_ex: outdoor absolute humidity, kg/kgDA (8760 times)
         x_set_c: set absolute humidity for cooling, kg/kgDA (=27 degree C and 60%)
 
@@ -860,19 +858,18 @@ def get_air_conditioned_room_absolute_humidity(
         air conditioned room absolute humidity, kg/kgDA (8760 times)
     """
 
-    return x_set_c * cooling_period + x_ex * np.logical_not(cooling_period)
+    return x_set_c * (hc_period == 'c') + x_ex * (hc_period != 'c')
 
 
 def get_non_occupant_room_temperature_balanced(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         l_h: np.ndarray, l_cs: np.ndarray,
         q: float, a_nr: float, v_local_nr: np.ndarray,
         v_d_supply: np.ndarray, u_prt: float, a_prt: np.ndarray,
         theta_ac: np.ndarray) -> np.ndarray:
     """
     Args:
-        heating_period: heating schedule, operation day represents True, (8760 times)
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule, (8760 times)
         l_h: heating load, MJ/h (12 rooms * 8760 times)
         l_cs: sensible cooling load, MJ/h (12 rooms * 8760 times)
         q: Q value, W/m2K
@@ -896,18 +893,16 @@ def get_non_occupant_room_temperature_balanced(
 
     theta_nac_c = theta_ac + np.sum(l_cs[5:12], axis=0) / cf * 10 ** 6 / 3600
 
-    middle_period = (heating_period == cooling_period)
-
-    return theta_nac_h * heating_period + theta_nac_c * cooling_period + theta_ac * middle_period
+    return theta_nac_h * (hc_period == 'h') + theta_nac_c * (hc_period == 'c') + theta_ac * (hc_period == 'm')
 
 
 def get_non_occupant_room_absolute_humidity_balanced(
-        cooling_period: np.ndarray, l_cl: np.ndarray, v_local_nr: np.ndarray, v_d_supply: np.ndarray,
+        hc_period: np.ndarray, l_cl: np.ndarray, v_local_nr: np.ndarray, v_d_supply: np.ndarray,
         x_ac: np.ndarray) -> np.ndarray:
     """
         calculate non occupant room absolute humidity
     Args:
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule (8760 times)
         l_cl: latent cooling load, MJ/h (12 rooms * 8760 times)
         v_local_nr: local ventilation amount in non occupant room, m3/h (8760 times)
         v_d_supply: supply air volume, m3/h (5 rooms * 8760 times)
@@ -924,7 +919,7 @@ def get_non_occupant_room_absolute_humidity_balanced(
 
     x_d_nac_c = x_ac + np.sum(l_cl[5:12], axis=0) / (l_wtr * rho * (v_local_nr + np.sum(v_d_supply, axis=0)))
 
-    return x_d_nac_c * cooling_period + x_ac * np.logical_not(cooling_period)
+    return x_d_nac_c * (hc_period == 'c') + x_ac * (hc_period != 'c')
 
 
 def get_heat_transfer_through_partition_balanced(
@@ -1290,7 +1285,7 @@ def get_decided_outlet_supply_air_temperature_for_cooling(
 
 
 def get_each_supply_air_volume(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         vav_system: bool, l_d_h: np.ndarray, l_d_cs: np.ndarray,
         theta_hs_out_h: np.ndarray, theta_hs_out_c: np.ndarray, theta_sur: np.ndarray,
         psi: float, l_duct: np.ndarray, theta_ac: np.ndarray,
@@ -1298,8 +1293,7 @@ def get_each_supply_air_volume(
     """
     calculate each supply air volume
     Args:
-        heating_period: heating schedule, operation day represents True, (8760 times)
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule, (8760 times)
         vav_system: is vav system equipped or not
         l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
         l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
@@ -1349,9 +1343,7 @@ def get_each_supply_air_volume(
     v_supply_h = np.where(np.sum(l_d_h, axis=0) > 0.0, v_h, v_vent)
     v_supply_c = np.where(np.sum(l_d_cs, axis=0) > 0.0, v_c, v_vent)
 
-    middle_period = (heating_period == cooling_period)
-
-    return v_supply_h * heating_period + v_supply_c * cooling_period + v_vent * middle_period
+    return v_supply_h * (hc_period == 'h') + v_supply_c * (hc_period == 'c') + v_vent * (hc_period == 'm')
 
 
 def get_decided_outlet_supply_air_absolute_humidity_for_cooling(
@@ -1478,15 +1470,14 @@ def get_supply_air_absolute_humidity_for_cooling(
 
 
 def get_actual_air_conditioned_temperature(
-        heating_period: np.ndarray, cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         theta_ac: np.ndarray, v_supply: np.ndarray, theta_supply_h: np.ndarray, theta_supply_c: np.ndarray,
         l_d_h: np.ndarray, l_d_cs: np.ndarray,
         u_prt: float, a_prt: np.ndarray, a_hcz: np.ndarray, q: float) -> np.ndarray:
     """
     calculate the actual air conditioned temperature
     Args:
-        heating_period: heating schedule, operation day represents True, (8760 times)
-        cooling_period: cooling schedule, operation day represents True, (8760 times)
+        hc_period: heating and cooling schedule, (8760 times)
         theta_ac: air conditioned temperature, degree C, (8760 times)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
@@ -1507,15 +1498,13 @@ def get_actual_air_conditioned_temperature(
     a_prt = a_prt.reshape(1, 5).T
     a_hcz = a_hcz[0:5].reshape(1, 5).T
 
-    middle_period = (heating_period == cooling_period)
-
     theta_ac_act_h = np.maximum(theta_ac + (c * rho * v_supply * (theta_supply_h - theta_ac) - l_d_h * 10 ** 6)
                                 / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600), theta_ac)
 
     theta_ac_act_c = np.minimum(theta_ac - (c * rho * v_supply * (theta_ac - theta_supply_c) - l_d_cs * 10 ** 6)
                                 / (c * rho * v_supply + (u_prt * a_prt + q * a_hcz) * 3600), theta_ac)
 
-    return theta_ac_act_h * heating_period + theta_ac_act_c * cooling_period + theta_ac * middle_period
+    return theta_ac_act_h * (hc_period == 'h') + theta_ac_act_c * (hc_period == 'c') + theta_ac * (hc_period == 'm')
 
 
 def get_actual_air_conditioned_absolute_humidity(x_ac: np.ndarray) -> np.ndarray:
@@ -1531,11 +1520,11 @@ def get_actual_air_conditioned_absolute_humidity(x_ac: np.ndarray) -> np.ndarray
 
 
 def get_actual_treated_heating_load(
-        heating_period: np.ndarray,
+        hc_period: np.ndarray,
         theta_supply_h: np.ndarray, theta_ac_act_h: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     Args:
-        heating_period: heating period
+        hc_period: heating and cooling period (8760 times)
         theta_supply_h: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         v_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
@@ -1548,15 +1537,15 @@ def get_actual_treated_heating_load(
 
     l_d_act_h = (theta_supply_h - theta_ac_act_h) * c * rho * v_supply * 10 ** (-6)
 
-    return l_d_act_h * heating_period
+    return l_d_act_h * (hc_period == 'h')
 
 
 def get_actual_treated_sensible_cooling_load(
-        cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         theta_supply_c: np.ndarray, theta_ac_act_c: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     Args:
-        cooling_period: cooling period
+        hc_period: heating and cooling period (8760 times)
         theta_supply_c: supply air temperatures, degree C, (5 rooms * 8760 times)
         theta_ac_act_c: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
@@ -1569,16 +1558,16 @@ def get_actual_treated_sensible_cooling_load(
 
     l_d_act_cs = (theta_ac_act_c - theta_supply_c) * c * rho * v_supply * 10 ** (-6)
 
-    return l_d_act_cs * cooling_period
+    return l_d_act_cs * (hc_period == 'c')
 
 
 def get_actual_treated_latent_cooling_load(
-        cooling_period: np.ndarray,
+        hc_period: np.ndarray,
         x_supply_c: np.ndarray, x_ac_act_c: np.ndarray, v_supply: np.ndarray) -> np.ndarray:
     """
     calculate actual treated latent cooling load
     Args:
-        cooling_period: cooling period
+        hc_period: cooling period
         x_supply_c: supply air absolute humidity, kg/kgDA (5 rooms * 8760 times)
         x_ac_act_c: air conditioned absolute humidity for cooling, kg/kgDA (5 rooms * 8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
@@ -1593,7 +1582,7 @@ def get_actual_treated_latent_cooling_load(
 
     l_d_act_cl = (x_ac_act_c - x_supply_c) * l_wtr * rho * v_supply * 10 ** (-3)
 
-    return l_d_act_cl * cooling_period
+    return l_d_act_cl * (hc_period == 'c')
 
 
 def get_untreated_load(
@@ -2403,8 +2392,8 @@ def get_main_value(
 
     # region occupant usage
 
-    # heating schedule (8760 times), cooling schedule (8760 times)
-    heating_period, cooling_period = get_heating_and_cooling_schedule(region)
+    # heating and cooling schedule (8760 times)
+    hc_period = get_heating_and_cooling_schedule(region)
 
     # number of people (8760 times)
     n_p, _, _, _ = get_n_p(a_mr, a_or, a_nr, calender)
@@ -2430,9 +2419,9 @@ def get_main_value(
 
     # heating and cooling output for supply air estimation, MJ/h
     q_d_hs_h = get_heating_output_for_supply_air_estimation(
-        a_a, q, mu_h, v_vent, theta_ex, j, heating_period, n_p, q_gen, v_local, theta_set_h)
+        a_a, q, mu_h, v_vent, theta_ex, j, hc_period, n_p, q_gen, v_local, theta_set_h)
     q_d_hs_c = get_cooling_output_for_supply_air_estimation(
-        a_a, q, mu_c, v_vent, theta_ex, x_ex, j, cooling_period, n_p, q_gen, w_gen, v_local, theta_set_c, x_set_c)
+        a_a, q, mu_c, v_vent, theta_ex, x_ex, j, hc_period, n_p, q_gen, w_gen, v_local, theta_set_c, x_set_c)
 
     # minimum supply air volume of the system for heating and cooling, (m3/h, m3/h)
     v_hs_min = get_minimum_air_volume(v_vent)
@@ -2442,7 +2431,7 @@ def get_main_value(
 
     # supply air volume of heat source, m3/h
     v_d_hs_supply = get_heat_source_supply_air_volume(
-        heating_period, cooling_period, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
+        hc_period, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
@@ -2458,19 +2447,18 @@ def get_main_value(
     l_h, l_cs, l_cl = get_load(region, insulation, solar_gain, a_mr, a_or, a_a, r_env)
 
     # heating and cooling room temperature, degree C (8760 times)
-    theta_ac = get_air_conditioned_room_temperature(
-        heating_period, cooling_period, theta_ex, theta_set_h, theta_set_c)
+    theta_ac = get_air_conditioned_room_temperature(hc_period, theta_ex, theta_set_h, theta_set_c)
 
     # room absolute humidity, kg/kgDA (8760 times)
-    x_ac = get_air_conditioned_room_absolute_humidity(cooling_period, x_ex, x_set_c)
+    x_ac = get_air_conditioned_room_absolute_humidity(hc_period, x_ex, x_set_c)
 
     # non occupant room temperature balanced, degree C, (8760 times)
     theta_d_nac = get_non_occupant_room_temperature_balanced(
-        heating_period, cooling_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt, theta_ac)
+        hc_period, l_h, l_cs, q, a_nr, v_local_nr, v_d_supply, u_prt, a_prt, theta_ac)
 
     # non occupant room absolute humidity, kg/kgDA (8760 times)
     x_d_nac = get_non_occupant_room_absolute_humidity_balanced(
-        cooling_period, l_cl, v_local_nr, v_d_supply, x_ac)
+        hc_period, l_cl, v_local_nr, v_d_supply, x_ac)
 
     # heat transfer through partition from occupant room to non occupant room balanced, MJ/h, (5 rooms * 8760 times)
     q_d_trs_prt = get_heat_transfer_through_partition_balanced(u_prt, a_prt, theta_ac, theta_d_nac)
@@ -2525,7 +2513,7 @@ def get_main_value(
 
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply = get_each_supply_air_volume(
-        heating_period, cooling_period, vav_system, l_d_h, l_d_cs, theta_hs_out_h, theta_hs_out_c, theta_sur,
+        hc_period, vav_system, l_d_h, l_d_cs, theta_hs_out_h, theta_hs_out_c, theta_sur,
         psi, l_duct, theta_ac, v_vent, v_d_supply)
 
     # outlet absolute humidity of heat source, kg/kgDA (8760 times)
@@ -2546,16 +2534,16 @@ def get_main_value(
 
     # actual air conditioned temperature, degree C, (5 rooms * 8760 times)
     theta_ac_act = get_actual_air_conditioned_temperature(
-        heating_period, cooling_period, theta_ac, v_supply, theta_supply_h, theta_supply_c,
+        hc_period, theta_ac, v_supply, theta_supply_h, theta_supply_c,
         l_d_h, l_d_cs, u_prt, a_prt, a_hcz, q)
 
     # actual air conditioned absolute humidity, kg/kgDA (5 rooms * 8760 times)
     x_ac_act = get_actual_air_conditioned_absolute_humidity(x_ac)
 
     # actual treated load for heating, MJ/h, (5 rooms * 8760 times)
-    l_d_act_h = get_actual_treated_heating_load(heating_period, theta_supply_h, theta_ac_act, v_supply)
-    l_d_act_cs = get_actual_treated_sensible_cooling_load(cooling_period, theta_supply_c, theta_ac_act, v_supply)
-    l_d_act_cl = get_actual_treated_latent_cooling_load(cooling_period, x_supply_c, x_ac_act, v_supply)
+    l_d_act_h = get_actual_treated_heating_load(hc_period, theta_supply_h, theta_ac_act, v_supply)
+    l_d_act_cs = get_actual_treated_sensible_cooling_load(hc_period, theta_supply_c, theta_ac_act, v_supply)
+    l_d_act_cl = get_actual_treated_latent_cooling_load(hc_period, x_supply_c, x_ac_act, v_supply)
 
     # untreated load, MJ/h, (5 rooms * 8760 times, 5 rooms * 8760 times, 5 rooms * 8760 times)
     q_ut_h, q_ut_cs, q_ut_cl = get_untreated_load(
