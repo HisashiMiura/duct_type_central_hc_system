@@ -2004,7 +2004,7 @@ def get_main_value(
         default_heat_source_spec: bool,
         v_hs_rtd_h: float, v_hs_rtd_c: float,
         is_duct_insulated: bool, vav_system: bool,
-        q_rtd_h: float =None, q_rtd_c: float=None):
+        q_rtd_h: float =None, q_rtd_c: float=None, e_rtd_h: float =None, e_rtd_c: float = None):
     """
     Args:
         region: region, 1-8
@@ -2028,6 +2028,8 @@ def get_main_value(
         vav_system: is VAV system applied ?
         q_rtd_h: rated heating capacity, W
         q_rtd_c: rated cooling capacity, W
+        e_rtd_h: rated heating efficiency
+        e_rtd_c: rated cooling efficiency
     """
 
     # region system spec
@@ -2087,6 +2089,9 @@ def get_main_value(
 
     # outdoor absolute humidity, kg/kg(DA) (8760 times)
     x_ex = get_absolute_humidity(region)
+
+    # outdoor relative humidity, % (8760 times)
+    h_ex = get_relative_humidity(theta_ex, x_ex)
 
     # horizontal solar radiation, W/m2K (8760 times)
     j = get_horizontal_solar(region)
@@ -2200,7 +2205,7 @@ def get_main_value(
     q_hs_max_h = get_heat_source_maximum_heating_output(region, q_rtd_h)
     q_hs_max_cs, q_hs_max_cl = get_heat_source_maximum_cooling_output(q_rtd_c, l_d_cs, l_d_cl)
 
-    # maximum and minimum temperature and absolute humidity when maximum output of heat sourace
+    # maximum and minimum temperature and absolute humidity when maximum output of heat source
     theta_hs_out_max_h = get_theta_hs_out_max_h(theta_d_hs_in, q_hs_max_h, v_d_supply)
     theta_hs_out_min_c = get_theta_hs_out_min_c(theta_d_hs_in, q_hs_max_cs, v_d_supply)
     x_hs_out_min_c = get_x_hs_out_min_c(x_d_hs_in, q_hs_max_cl, v_d_supply)
@@ -2285,8 +2290,6 @@ def get_main_value(
 
     return {
         'constant_value': {
-            'air_density': rho,  # kg/m3
-            'air_specific_heat': c,  # J/kgK
             'duct_length_room1': l_duct[0],  # m
             'duct_length_room2': l_duct[1],  # m
             'duct_length_room3': l_duct[2],  # m
@@ -2312,32 +2315,11 @@ def get_main_value(
             'rated_capacity_cooling': q_hs_rtd_c,  # MJ/h
         },
         'time_value': {
-            'heating_load_room1': l_h[0],  # MJ/h
-            'heating_load_room2': l_h[1],  # MJ/h
-            'heating_load_room3': l_h[2],  # MJ/h
-            'heating_load_room4': l_h[3],  # MJ/h
-            'heating_load_room5': l_h[4],  # MJ/h
-            'sensible_cooling_load_room1': l_cs[0],  # MJ/h
-            'sensible_cooling_load_room2': l_cs[1],  # MJ/h
-            'sensible_cooling_load_room3': l_cs[2],  # MJ/h
-            'sensible_cooling_load_room4': l_cs[3],  # MJ/h
-            'sensible_cooling_load_room5': l_cs[4],  # MJ/h
-            'latent_cooling_load_room1': l_cl[0],  # MJ/h
-            'latent_cooling_load_room2': l_cl[1],  # MJ/h
-            'latent_cooling_load_room3': l_cl[2],  # MJ/h
-            'latent_cooling_load_room4': l_cl[3],  # MJ/h
-            'latent_cooling_load_room5': l_cl[4],  # MJ/h
-            'old_heating_load_sum_of_12_rooms': np.sum(l_h, axis=0),  # MJ/h
-            'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
-            'old_latent_cooling_load_sum_of_12_rooms': np.sum(l_cl, axis=0),  # MJ/h
-            'air_conditioned_temperature': theta_ac,  # degree C
-            'sat_temperature': theta_sat,  # degree C
-            'attic_temperature': theta_attic,  # degree C
-            'duct_ambient_temperature_room1': theta_sur[0],  # degree C
-            'duct_ambient_temperature_room2': theta_sur[1],  # degree C
-            'duct_ambient_temperature_room3': theta_sur[2],  # degree C
-            'duct_ambient_temperature_room4': theta_sur[3],  # degree C
-            'duct_ambient_temperature_room5': theta_sur[4],  # degree C
+            'outdoor temperature': theta_ex,  # degree C
+            'outdoor absolute humidity': x_ex,  # kg/kgDA
+            'outdoor relative humidity': h_ex,  # %
+            'horizontal solar radiation': j,  # W/m2K
+            'SAT temperature': theta_sat,  # degree C
             'output_of_heat_source_for_supply_air_volume_estimation_heating': q_d_hs_h,  # MJ/h
             'output_of_heat_source_for_supply_air_volume_estimation_cooling': q_d_hs_c,  # MJ/h
             'supply_air_volume_of_heat_source': v_d_hs_supply,  # MJ/h
@@ -2346,40 +2328,80 @@ def get_main_value(
             'designed_supply_air_volume_room3': v_d_supply[2],  # MJ/h
             'designed_supply_air_volume_room4': v_d_supply[3],  # MJ/h
             'designed_supply_air_volume_room5': v_d_supply[4],  # MJ/h
+            'old_heating_load_room1': l_h[0],  # MJ/h
+            'old_heating_load_room2': l_h[1],  # MJ/h
+            'old_heating_load_room3': l_h[2],  # MJ/h
+            'old_heating_load_room4': l_h[3],  # MJ/h
+            'old_heating_load_room5': l_h[4],  # MJ/h
+            'old_sensible_cooling_load_room1': l_cs[0],  # MJ/h
+            'old_sensible_cooling_load_room2': l_cs[1],  # MJ/h
+            'old_sensible_cooling_load_room3': l_cs[2],  # MJ/h
+            'old_sensible_cooling_load_room4': l_cs[3],  # MJ/h
+            'old_sensible_cooling_load_room5': l_cs[4],  # MJ/h
+            'old_latent_cooling_load_room1': l_cl[0],  # MJ/h
+            'old_latent_cooling_load_room2': l_cl[1],  # MJ/h
+            'old_latent_cooling_load_room3': l_cl[2],  # MJ/h
+            'old_latent_cooling_load_room4': l_cl[3],  # MJ/h
+            'old_latent_cooling_load_room5': l_cl[4],  # MJ/h
+            'old_heating_load_sum_of_non_occupant_rooms': np.sum(l_h[5:12], axis=0),  # MJ/h
+            'old_sensible_cooling_load_sum_of_non_occupant_rooms': np.sum(l_cs[5:12], axis=0),  # MJ/h
+            'old_latent_cooling_load_sum_of_non_occupant_rooms': np.sum(l_cl[5:12], axis=0),  # MJ/h
+            'old_heating_load_sum_of_12_rooms': np.sum(l_h, axis=0),  # MJ/h
+            'old_sensible_cooling_load_sum_of_12_rooms': np.sum(l_cs, axis=0),  # MJ/h
+            'old_latent_cooling_load_sum_of_12_rooms': np.sum(l_cl, axis=0),  # MJ/h
+            'air_conditioned_temperature': theta_ac,  # degree C
+            'air_conditioned_absolute_humidity': x_ac,  # kg/kgDA
             'non_occupant_room_temperature': theta_d_nac,  # degree C
+            'non_occupant_room_absolute_humidity': x_d_nac,  # kg/kgDA
             'heat_loss_through_partition_heating_room1': q_d_trs_prt[0],  # MJ/h
             'heat_loss_through_partition_heating_room2': q_d_trs_prt[1],  # MJ/h
             'heat_loss_through_partition_heating_room3': q_d_trs_prt[2],  # MJ/h
             'heat_loss_through_partition_heating_room4': q_d_trs_prt[3],  # MJ/h
             'heat_loss_through_partition_heating_room5': q_d_trs_prt[4],  # MJ/h
+            'heating_load_room1': l_d_h[0],  # MJ/h
+            'heating_load_room2': l_d_h[1],  # MJ/h
+            'heating_load_room3': l_d_h[2],  # MJ/h
+            'heating_load_room4': l_d_h[3],  # MJ/h
+            'heating_load_room5': l_d_h[4],  # MJ/h
+            'sensible_cooling_load_room1': l_d_cs[0],  # MJ/h
+            'sensible_cooling_load_room2': l_d_cs[1],  # MJ/h
+            'sensible_cooling_load_room3': l_d_cs[2],  # MJ/h
+            'sensible_cooling_load_room4': l_d_cs[3],  # MJ/h
+            'sensible_cooling_load_room5': l_d_cs[4],  # MJ/h
+            'latent_cooling_load_room1': l_d_cl[0],  # MJ/h
+            'latent_cooling_load_room2': l_d_cl[1],  # MJ/h
+            'latent_cooling_load_room3': l_d_cl[2],  # MJ/h
+            'latent_cooling_load_room4': l_d_cl[3],  # MJ/h
+            'latent_cooling_load_room5': l_d_cl[4],  # MJ/h
+            'attic_temperature': theta_attic,  # degree C
+            'duct_ambient_temperature_room1': theta_sur[0],  # degree C
+            'duct_ambient_temperature_room2': theta_sur[1],  # degree C
+            'duct_ambient_temperature_room3': theta_sur[2],  # degree C
+            'duct_ambient_temperature_room4': theta_sur[3],  # degree C
+            'duct_ambient_temperature_room5': theta_sur[4],  # degree C
+            'inlet air temperature of heat source': theta_d_hs_in,  # degree C
+            'inlet air absolute humidity of heat source': x_d_hs_in,  # kg/kgDA
             'maximum_output_heating': q_hs_max_h,  # MJ/h
             'maximum_output_sensible_cooling': q_hs_max_cs,  # MJ/h
             'maximum_output_latent_cooling': q_hs_max_cl,  # MJ/h
-            'untreated_heating_load_room1': q_ut_h[0],  # MJ/h
-            'untreated_heating_load_room2': q_ut_h[1],  # MJ/h
-            'untreated_heating_load_room3': q_ut_h[2],  # MJ/h
-            'untreated_heating_load_room4': q_ut_h[3],  # MJ/h
-            'untreated_heating_load_room5': q_ut_h[4],  # MJ/h
-            'untreated_sensible_cooling_load_room1': q_ut_cs[0],  # MJ/h
-            'untreated_sensible_cooling_load_room2': q_ut_cs[1],  # MJ/h
-            'untreated_sensible_cooling_load_room3': q_ut_cs[2],  # MJ/h
-            'untreated_sensible_cooling_load_room4': q_ut_cs[3],  # MJ/h
-            'untreated_sensible_cooling_load_room5': q_ut_cs[4],  # MJ/h
-            'untreated_latent_cooling_load_room1': q_ut_cl[0],  # MJ/h
-            'untreated_latent_cooling_load_room2': q_ut_cl[1],  # MJ/h
-            'untreated_latent_cooling_load_room3': q_ut_cl[2],  # MJ/h
-            'untreated_latent_cooling_load_room4': q_ut_cl[3],  # MJ/h
-            'untreated_latent_cooling_load_room5': q_ut_cl[4],  # MJ/h
-            'duct_upside_supply_air_temperature_heating_room1': theta_req_h[0],  # degree C
-            'duct_upside_supply_air_temperature_heating_room2': theta_req_h[1],  # degree C
-            'duct_upside_supply_air_temperature_heating_room3': theta_req_h[2],  # degree C
-            'duct_upside_supply_air_temperature_heating_room4': theta_req_h[3],  # degree C
-            'duct_upside_supply_air_temperature_heating_room5': theta_req_h[4],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room1': theta_req_c[0],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room2': theta_req_c[1],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room3': theta_req_c[2],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room4': theta_req_c[3],  # degree C
-            'duct_upside_supply_air_temperature_cooling_room5': theta_req_c[4],  # degree C
+            'maximum temperature when maximum output of heat source': theta_hs_out_max_h,  # degree C
+            'minimum temperature when maximum output of heat source': theta_hs_out_min_c,  # degree C
+            'minimum absolute humidity when maximum output of heat source': x_hs_out_min_c,  # kg/kgDA
+            'requested_supply_air_temperature_heating_room1': theta_req_h[0],  # degree C
+            'requested_supply_air_temperature_heating_room2': theta_req_h[1],  # degree C
+            'requested_supply_air_temperature_heating_room3': theta_req_h[2],  # degree C
+            'requested_supply_air_temperature_heating_room4': theta_req_h[3],  # degree C
+            'requested_supply_air_temperature_heating_room5': theta_req_h[4],  # degree C
+            'requested_supply_air_temperature_cooling_room1': theta_req_c[0],  # degree C
+            'requested_supply_air_temperature_cooling_room2': theta_req_c[1],  # degree C
+            'requested_supply_air_temperature_cooling_room3': theta_req_c[2],  # degree C
+            'requested_supply_air_temperature_cooling_room4': theta_req_c[3],  # degree C
+            'requested_supply_air_temperature_cooling_room5': theta_req_c[4],  # degree C
+            'requested_supply_air_absolute_humidity_cooling_room1': x_req_c[0],  # kg/kgDA
+            'requested_supply_air_absolute_humidity_cooling_room2': x_req_c[1],  # kg/kgDA
+            'requested_supply_air_absolute_humidity_cooling_room3': x_req_c[2],  # kg/kgDA
+            'requested_supply_air_absolute_humidity_cooling_room4': x_req_c[3],  # kg/kgDA
+            'requested_supply_air_absolute_humidity_cooling_room5': x_req_c[4],  # kg/kgDA
             'outlet_temperature_of_heat_source_heating': theta_hs_out_h,  # degree C
             'outlet_temperature_of_heat_source_cooling': theta_hs_out_c,  # degree C
             'supply_air_volume_room1': v_supply[0],  # degree C
@@ -2387,6 +2409,7 @@ def get_main_value(
             'supply_air_volume_room3': v_supply[2],  # degree C
             'supply_air_volume_room4': v_supply[3],  # degree C
             'supply_air_volume_room5': v_supply[4],  # degree C
+            'outlet_absolute_humidity_of_heat_source_cooling': x_hs_out_c,  # kg/kgDA
             'duct_heat_loss_heating_room1': q_loss_duct_h[0],  # MJ/h
             'duct_heat_loss_heating_room2': q_loss_duct_h[1],  # MJ/h
             'duct_heat_loss_heating_room3': q_loss_duct_h[2],  # MJ/h
@@ -2407,11 +2430,21 @@ def get_main_value(
             'supply_air_temperature_cooling_room3': theta_supply_c[2],  # degree C
             'supply_air_temperature_cooling_room4': theta_supply_c[3],  # degree C
             'supply_air_temperature_cooling_room5': theta_supply_c[4],  # degree C
+            'supply_air_absolute_humidity_cooling_room1': x_supply_c[0],  # kg/kgDA
+            'supply_air_absolute_humidity_cooling_room2': x_supply_c[1],  # kg/kgDA
+            'supply_air_absolute_humidity_cooling_room3': x_supply_c[2],  # kg/kgDA
+            'supply_air_absolute_humidity_cooling_room4': x_supply_c[3],  # kg/kgDA
+            'supply_air_absolute_humidity_cooling_room5': x_supply_c[4],  # kg/kgDA
             'actual_air_conditioned_temperature_room1': theta_ac_act[0],  # degree C
             'actual_air_conditioned_temperature_room2': theta_ac_act[1],  # degree C
             'actual_air_conditioned_temperature_room3': theta_ac_act[2],  # degree C
             'actual_air_conditioned_temperature_room4': theta_ac_act[3],  # degree C
             'actual_air_conditioned_temperature_room5': theta_ac_act[4],  # degree C
+            'actual_air_conditioned_absolute_humidity_room1': x_ac_act[0],  # kg/kgDA
+            'actual_air_conditioned_absolute_humidity_room2': x_ac_act[1],  # kg/kgDA
+            'actual_air_conditioned_absolute_humidity_room3': x_ac_act[2],  # kg/kgDA
+            'actual_air_conditioned_absolute_humidity_room4': x_ac_act[3],  # kg/kgDA
+            'actual_air_conditioned_absolute_humidity_room5': x_ac_act[4],  # kg/kgDA
             'actual_treated_heating_load_room1': l_d_act_h[0],  # MJ/h
             'actual_treated_heating_load_room2': l_d_act_h[1],  # MJ/h
             'actual_treated_heating_load_room3': l_d_act_h[2],  # MJ/h
@@ -2427,9 +2460,26 @@ def get_main_value(
             'actual_treated_latent_cooling_load_room3': l_d_act_cl[2],  # MJ/h
             'actual_treated_latent_cooling_load_room4': l_d_act_cl[3],  # MJ/h
             'actual_treated_latent_cooling_load_room5': l_d_act_cl[4],  # MJ/h
+            'untreated_heating_load_room1': q_ut_h[0],  # MJ/h
+            'untreated_heating_load_room2': q_ut_h[1],  # MJ/h
+            'untreated_heating_load_room3': q_ut_h[2],  # MJ/h
+            'untreated_heating_load_room4': q_ut_h[3],  # MJ/h
+            'untreated_heating_load_room5': q_ut_h[4],  # MJ/h
+            'untreated_sensible_cooling_load_room1': q_ut_cs[0],  # MJ/h
+            'untreated_sensible_cooling_load_room2': q_ut_cs[1],  # MJ/h
+            'untreated_sensible_cooling_load_room3': q_ut_cs[2],  # MJ/h
+            'untreated_sensible_cooling_load_room4': q_ut_cs[3],  # MJ/h
+            'untreated_sensible_cooling_load_room5': q_ut_cs[4],  # MJ/h
+            'untreated_latent_cooling_load_room1': q_ut_cl[0],  # MJ/h
+            'untreated_latent_cooling_load_room2': q_ut_cl[1],  # MJ/h
+            'untreated_latent_cooling_load_room3': q_ut_cl[2],  # MJ/h
+            'untreated_latent_cooling_load_room4': q_ut_cl[3],  # MJ/h
+            'untreated_latent_cooling_load_room5': q_ut_cl[4],  # MJ/h
             'actual_non_occupant_room_temperature': theta_nac,  # degree C
-            'actual_non_occupant_room_load_heating': l_d_act_nac_h,  # MJ/h
-            'actual_non_occupant_room_load_cooling': l_d_act_nac_cs,  # MJ/h
+            'actual_non_occupant_room_absolute_humidity': x_nac,  # kg/kgDA
+            'actual_non_occupant_room_heating_load': l_d_act_nac_h,  # MJ/h
+            'actual_non_occupant_room_sensible_cooling_load': l_d_act_nac_cs,  # MJ/h
+            'actual_non_occupant_room_latent_cooling_load': l_d_act_nac_cl,  # MJ/h
             'actual_heat_loss_through_partitions_heating_room1': q_trs_prt_h[0],  # MJ/h
             'actual_heat_loss_through_partitions_heating_room2': q_trs_prt_h[1],  # MJ/h
             'actual_heat_loss_through_partitions_heating_room3': q_trs_prt_h[2],  # MJ/h
@@ -2440,6 +2490,8 @@ def get_main_value(
             'actual_heat_gain_through_partitions_heating_room3': q_trs_prt_c[2],  # MJ/h
             'actual_heat_gain_through_partitions_heating_room4': q_trs_prt_c[3],  # MJ/h
             'actual_heat_gain_through_partitions_heating_room5': q_trs_prt_c[4],  # MJ/h
+            'actual_inlet_air_temperature_of_heat_source': theta_hs_in,  # degree C
+            'actual_inlet_absolute_humidity_of_heat_source': x_hs_in,  # kg/kgDA
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
             'output_of_heat_source_sensible_cooling': q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': q_hs_cl,  # MJ/h

@@ -11,7 +11,7 @@ import appendix
 import read_load
 
 
-def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, cs.SystemSpec):
+def get_spec(cn: int) -> (int, envelope.FloorArea, envelope.Spec, appendix.SystemSpec):
 
     return {
         # 地域による違い
