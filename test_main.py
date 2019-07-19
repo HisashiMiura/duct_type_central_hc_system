@@ -13,7 +13,7 @@ class TestMain(unittest.TestCase):
 
         result = ac.get_main_value(CASE)
 
-        t = result['time_value']
+        t = result.get_time_value_dict()
 
         df_t = pd.DataFrame(t)
 

@@ -16,13 +16,7 @@ if __name__ == '__main__':
 
     d = cs.get_main_value(**args)
 
-#    d = cs.get_main_value(region=6,
-#                          a_mr=29.81, a_or=51.34, a_a=120.08, r_env=266.0/90.0,
-#                          insulation='h11', solar_gain='middle',
-#                          default_heat_source_spec=True, supply_air_rtd_h=1800.0, supply_air_rtd_c=1800.0,
-#                          is_duct_insulated=True, vav_system=False)
-
-    t = d['time_value']
+    t = d.get_time_value_dict()
 
     df_t = pd.DataFrame(t)
 
