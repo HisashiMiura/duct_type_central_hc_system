@@ -1,4 +1,4 @@
-from typing import List, Tuple
+﻿from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
@@ -2333,16 +2333,19 @@ def get_main_value(
             'old_heating_load_room3': l_h[2],  # MJ/h
             'old_heating_load_room4': l_h[3],  # MJ/h
             'old_heating_load_room5': l_h[4],  # MJ/h
+            'old_heating_load_sum_of_occupant_rooms': np.sum(l_h[0:5], axis=0),  # MJ/h
             'old_sensible_cooling_load_room1': l_cs[0],  # MJ/h
             'old_sensible_cooling_load_room2': l_cs[1],  # MJ/h
             'old_sensible_cooling_load_room3': l_cs[2],  # MJ/h
             'old_sensible_cooling_load_room4': l_cs[3],  # MJ/h
             'old_sensible_cooling_load_room5': l_cs[4],  # MJ/h
+            'old_sensible_cooling_load_sum_of_occupant_rooms': np.sum(l_cs[0:5], axis=0),  # MJ/h
             'old_latent_cooling_load_room1': l_cl[0],  # MJ/h
             'old_latent_cooling_load_room2': l_cl[1],  # MJ/h
             'old_latent_cooling_load_room3': l_cl[2],  # MJ/h
             'old_latent_cooling_load_room4': l_cl[3],  # MJ/h
             'old_latent_cooling_load_room5': l_cl[4],  # MJ/h
+            'old_latent_cooling_load_sum_of_occupant_rooms': np.sum(l_cl[0:5], axis=0),  # MJ/h
             'old_heating_load_sum_of_non_occupant_rooms': np.sum(l_h[5:12], axis=0),  # MJ/h
             'old_sensible_cooling_load_sum_of_non_occupant_rooms': np.sum(l_cs[5:12], axis=0),  # MJ/h
             'old_latent_cooling_load_sum_of_non_occupant_rooms': np.sum(l_cl[5:12], axis=0),  # MJ/h
@@ -2450,31 +2453,37 @@ def get_main_value(
             'actual_treated_heating_load_room3': l_d_act_h[2],  # MJ/h
             'actual_treated_heating_load_room4': l_d_act_h[3],  # MJ/h
             'actual_treated_heating_load_room5': l_d_act_h[4],  # MJ/h
+            'actual_treated_heating_load_all': np.sum(l_d_act_h, axis=0),  # MJ/h
             'actual_treated_sensible_cooling_load_room1': l_d_act_cs[0],  # MJ/h
             'actual_treated_sensible_cooling_load_room2': l_d_act_cs[1],  # MJ/h
             'actual_treated_sensible_cooling_load_room3': l_d_act_cs[2],  # MJ/h
             'actual_treated_sensible_cooling_load_room4': l_d_act_cs[3],  # MJ/h
             'actual_treated_sensible_cooling_load_room5': l_d_act_cs[4],  # MJ/h
+            'actual_treated_sensible_cooling_load_all': np.sum(l_d_act_cs, axis=0),  # MJ/h
             'actual_treated_latent_cooling_load_room1': l_d_act_cl[0],  # MJ/h
             'actual_treated_latent_cooling_load_room2': l_d_act_cl[1],  # MJ/h
             'actual_treated_latent_cooling_load_room3': l_d_act_cl[2],  # MJ/h
             'actual_treated_latent_cooling_load_room4': l_d_act_cl[3],  # MJ/h
             'actual_treated_latent_cooling_load_room5': l_d_act_cl[4],  # MJ/h
+            'actual_treated_latent_cooling_load_all': np.sum(l_d_act_cl, axis=0),  # MJ/h
             'untreated_heating_load_room1': q_ut_h[0],  # MJ/h
             'untreated_heating_load_room2': q_ut_h[1],  # MJ/h
             'untreated_heating_load_room3': q_ut_h[2],  # MJ/h
             'untreated_heating_load_room4': q_ut_h[3],  # MJ/h
             'untreated_heating_load_room5': q_ut_h[4],  # MJ/h
+            'untreated_heating_load_all': np.sum(q_ut_h, axis=0),  # MJ/h
             'untreated_sensible_cooling_load_room1': q_ut_cs[0],  # MJ/h
             'untreated_sensible_cooling_load_room2': q_ut_cs[1],  # MJ/h
             'untreated_sensible_cooling_load_room3': q_ut_cs[2],  # MJ/h
             'untreated_sensible_cooling_load_room4': q_ut_cs[3],  # MJ/h
             'untreated_sensible_cooling_load_room5': q_ut_cs[4],  # MJ/h
+            'untreated_sensible_cooling_load_all': np.sum(q_ut_cs, axis=0),  # MJ/h
             'untreated_latent_cooling_load_room1': q_ut_cl[0],  # MJ/h
             'untreated_latent_cooling_load_room2': q_ut_cl[1],  # MJ/h
             'untreated_latent_cooling_load_room3': q_ut_cl[2],  # MJ/h
             'untreated_latent_cooling_load_room4': q_ut_cl[3],  # MJ/h
             'untreated_latent_cooling_load_room5': q_ut_cl[4],  # MJ/h
+            'untreated_latent_cooling_load_all': np.sum(q_ut_cl, axis=0),  # MJ/h
             'actual_non_occupant_room_temperature': theta_nac,  # degree C
             'actual_non_occupant_room_absolute_humidity': x_nac,  # kg/kgDA
             'actual_non_occupant_room_heating_load': l_d_act_nac_h,  # MJ/h
@@ -2485,11 +2494,13 @@ def get_main_value(
             'actual_heat_loss_through_partitions_heating_room3': q_trs_prt_h[2],  # MJ/h
             'actual_heat_loss_through_partitions_heating_room4': q_trs_prt_h[3],  # MJ/h
             'actual_heat_loss_through_partitions_heating_room5': q_trs_prt_h[4],  # MJ/h
-            'actual_heat_gain_through_partitions_heating_room1': q_trs_prt_c[0],  # MJ/h
-            'actual_heat_gain_through_partitions_heating_room2': q_trs_prt_c[1],  # MJ/h
-            'actual_heat_gain_through_partitions_heating_room3': q_trs_prt_c[2],  # MJ/h
-            'actual_heat_gain_through_partitions_heating_room4': q_trs_prt_c[3],  # MJ/h
-            'actual_heat_gain_through_partitions_heating_room5': q_trs_prt_c[4],  # MJ/h
+            'actual_heat_loss_through_partitions_heating_all': np.sum(q_trs_prt_h, axis=0),  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_room1': q_trs_prt_c[0],  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_room2': q_trs_prt_c[1],  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_room3': q_trs_prt_c[2],  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_room4': q_trs_prt_c[3],  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_room5': q_trs_prt_c[4],  # MJ/h
+            'actual_heat_gain_through_partitions_cooling_all': np.sum(q_trs_prt_c, axis=0),  # MJ/h
             'actual_inlet_air_temperature_of_heat_source': theta_hs_in,  # degree C
             'actual_inlet_absolute_humidity_of_heat_source': x_hs_in,  # kg/kgDA
             'output_of_heat_source_heating': q_hs_h,  # MJ/h
