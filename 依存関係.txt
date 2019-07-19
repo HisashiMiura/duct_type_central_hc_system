@@ -1,9 +1,3 @@
-circulating_air_flow
-- system_spec
-- house_spec
-- general_property
-- occupant_usage
-
 external_conditions
 
 general_property
@@ -16,14 +10,11 @@ occupant_usage
 
 system_spec
 
-explain_functions
+circulating_air_flow
 - system_spec
 - house_spec
 - general_property
-- external_conditions
 - occupant_usage
-- circulating_air_flow
-- load
 
 load
 - system_spec
@@ -32,3 +23,12 @@ load
 - external_conditions
 - occupant_usage
 - circulating_air_flow 
+
+treated_and_untreated_heat
+- system_spec
+- house_spec
+- general_property
+- external_conditions
+- occupant_usage
+- circulating_air_flow
+- load
