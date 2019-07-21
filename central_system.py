@@ -978,6 +978,20 @@ def get_occupant_room_load_for_cooling_balanced(
 
 # region treated and untreated load
 
+def get_operation(l_d_h, l_d_cs):
+    """
+    judge operation
+    Args:
+        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+
+    Returns:
+        operation (8760 times) 'h' = heating operation, 'c' = cooling operation, 'n' = operation stop
+    """
+
+    return np.where(np.sum(l_d_h, axis=0) > 0.0, 'h', np.where(np.sum(l_d_cs, axis=0) > 0.0, 'c', 'n'))
+
+
 def get_duct_linear_heat_loss_coefficient() -> float:
     """
     get the liner heat loss coefficient (W/mK) of the duct
@@ -1289,7 +1303,7 @@ def get_each_supply_air_volume(
         vav_system: bool, l_d_h: np.ndarray, l_d_cs: np.ndarray,
         theta_hs_out_h: np.ndarray, theta_hs_out_c: np.ndarray, theta_sur: np.ndarray,
         psi: float, l_duct: np.ndarray, theta_ac: np.ndarray,
-        v_vent: np.ndarray, v_d_supply: np.ndarray) -> np.ndarray:
+        v_vent: np.ndarray, v_d_supply: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate each supply air volume
     Args:
@@ -1305,6 +1319,7 @@ def get_each_supply_air_volume(
         theta_ac: air conditioned temperature, degree C (8760 times)
         v_vent: supply air volume of mechanical ventilation, m3/h, (5 rooms)
         v_d_supply: supply air volume without vav adjustment, m3/h (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         each supply air volume adjusted, m3/h, (5 rooms * 8760 times)
     """
@@ -1340,8 +1355,8 @@ def get_each_supply_air_volume(
         v_h = v_d_supply
         v_c = v_d_supply
 
-    v_supply_h = np.where(np.sum(l_d_h, axis=0) > 0.0, v_h, v_vent)
-    v_supply_c = np.where(np.sum(l_d_cs, axis=0) > 0.0, v_c, v_vent)
+    v_supply_h = np.where(operation == 'h', v_h, v_vent)
+    v_supply_c = np.where(operation == 'c', v_c, v_vent)
 
     return v_supply_h * (hc_period == 'h') + v_supply_c * (hc_period == 'c') + v_vent * (hc_period == 'm')
 
@@ -1362,53 +1377,37 @@ def get_decided_outlet_supply_air_absolute_humidity_for_cooling(
     return np.maximum(np.sum(x_req_c * v_supply / v_supply.sum(axis=0), axis=0), x_hs_out_min_c)
 
 
-def get_duct_heat_loss_for_heating(
-        theta_sur_h: np.ndarray, theta_hs_out_h: np.ndarray, v_supply: np.ndarray,
-        psi: float, l_duct: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
+def get_duct_heat_loss_and_gain(
+        theta_sur: np.ndarray, theta_hs_out_h: np.ndarray, theta_hs_out_c: np.ndarray, v_supply: np.ndarray,
+        psi: float, l_duct: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
-    calculate the heat loss from the ducts for heating
+    calculate the heat loss and gain of the ducts
     Args:
-        theta_sur_h: duct ambient temperature, degree C, (5 rooms * 8760 times)
+        theta_sur: duct ambient temperature, degree C, (5 rooms * 8760 times)
         theta_hs_out_h: outlet temperature of heat source, degree C, (8760 times)
-        v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        psi: liner heat loss coefficient, W/mK
-        l_duct: duct length, m, (5 rooms)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
-    """
-
-    l_duct = np.array(l_duct).reshape(1, 5).T
-
-    q_duct_h = get_duct_heat_loss_from_upside_temperature(
-        theta_sur_h, theta_hs_out_h, v_supply, psi, l_duct)
-
-    return np.where(np.sum(l_d_h, axis=0) > 0.0, q_duct_h, 0.0)
-
-
-def get_duct_heat_gain_for_cooling(
-        theta_sur_c: np.ndarray, theta_hs_out_c: np.ndarray, v_supply: np.ndarray,
-        psi: float, l_duct: np.ndarray, l_d_cs: np.ndarray) -> np.ndarray:
-    """
-    calculate the heat gain to the ducts for cooling
-    Args:
-        theta_sur_c: duct ambient temperature, degree C, (5 rooms * 8760 times)
         theta_hs_out_c: outlet temperature of heat source, degree C, (8760 times)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         psi: liner heat loss coefficient, W/mK
         l_duct: duct length, m, (5 rooms)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        operation: operation (8760 times)
     """
 
     l_duct = np.array(l_duct).reshape(1, 5).T
 
-    q_duct_c = - get_duct_heat_loss_from_upside_temperature(
-        theta_sur_c, theta_hs_out_c, v_supply, psi, l_duct)
+    q_duct_h = np.where(operation == 'h',
+                        get_duct_heat_loss_from_upside_temperature(theta_sur, theta_hs_out_h, v_supply, psi, l_duct),
+                        0.0)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_duct_c, 0.0)
+    q_duct_c = np.where(operation == 'c',
+                        - get_duct_heat_loss_from_upside_temperature(theta_sur, theta_hs_out_c, v_supply, psi, l_duct),
+                        0.0)
+
+    return q_duct_h, q_duct_c
 
 
 def get_supply_air_temperature_for_heating(
         theta_sur: np.ndarray, theta_hs_out_h: np.ndarray, psi: float, l_duct: np.ndarray,
-        v_supply: np.ndarray, theta_ac: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
+        v_supply: np.ndarray, theta_ac: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate supply air temperatures for heating
     Args:
@@ -1418,7 +1417,7 @@ def get_supply_air_temperature_for_heating(
         l_duct: duct length, m, (5 rooms)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         theta_ac: air conditioned temperature, degree C (8760 times)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         supply air temperatures, degree C, (5 rooms * 8760 times)
     """
@@ -1427,12 +1426,12 @@ def get_supply_air_temperature_for_heating(
 
     theta_supply_h = get_downside_temperature_from_upside_temperature(theta_sur, theta_hs_out_h, v_supply, psi, l_duct)
 
-    return np.where(np.sum(l_d_h, axis=0) > 0.0, theta_supply_h, theta_ac)
+    return np.where(operation == 'h', theta_supply_h, theta_ac)
 
 
 def get_supply_air_temperature_for_cooling(
         theta_sur: np.ndarray, theta_hs_out_c: np.ndarray, psi: float, l_duct: np.ndarray,
-        v_supply: np.ndarray, theta_ac: np.ndarray, l_d_cs: np.ndarray) -> np.ndarray:
+        v_supply: np.ndarray, theta_ac: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate supply air temperatures for cooling
     Args:
@@ -1442,7 +1441,7 @@ def get_supply_air_temperature_for_cooling(
         l_duct: duct length, m, (5 rooms)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
         theta_ac: air conditioned temperature, degree C (8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         supply air temperatures, degree C, (5 rooms * 8760 times)
     """
@@ -1451,22 +1450,22 @@ def get_supply_air_temperature_for_cooling(
 
     theta_supply_c = get_downside_temperature_from_upside_temperature(theta_sur, theta_hs_out_c, v_supply, psi, l_duct)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, theta_supply_c, theta_ac)
+    return np.where(operation == 'c', theta_supply_c, theta_ac)
 
 
 def get_supply_air_absolute_humidity_for_cooling(
-        x_hs_out_c: np.ndarray, x_ac: np.ndarray, l_d_cl: np.ndarray) -> np.ndarray:
+        x_hs_out_c: np.ndarray, x_ac: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate supply air absolute humidity for cooling
     Args:
         x_hs_out_c: decided outlet supply air absolute humidity, kg/kgDA (8760 times)
         x_ac: air conditioned absolute humidity, kg/kgDA (8760 times)
-        l_d_cl: latent cooling load in the occupant rooms, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         supply air absolute humidity, kg/kgDA (5 rooms * 8760 times)
     """
 
-    return np.where(np.sum(l_d_cl, axis=0) > 0.0, x_hs_out_c, x_ac)
+    return np.where(operation == 'c', x_hs_out_c, x_ac)
 
 
 def get_actual_air_conditioned_temperature(
@@ -1659,14 +1658,14 @@ def get_actual_non_occupant_room_absolute_humidity(x_d_nac: np.ndarray) -> np.nd
 
 def get_actual_non_occupant_room_heating_load(
         theta_ac_act: np.ndarray, theta_nac: np.ndarray, v_supply: np.ndarray,
-        l_d_h: np.ndarray) -> np.ndarray:
+        operation: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room heating load
     Args:
         theta_ac_act: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         theta_nac: non occupant room temperature, degree C (8760 times)
         v_supply: supply air volume, m3/h
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         actual non occupant room heating load, MJ/h, (8760 times)
     """
@@ -1676,19 +1675,19 @@ def get_actual_non_occupant_room_heating_load(
 
     l_d_act_nac_h = np.sum((theta_ac_act - theta_nac) * c * rho * v_supply * 10 ** (-6), axis=0)
 
-    return np.where(np.sum(l_d_h, axis=0) > 0.0, l_d_act_nac_h, 0.0)
+    return np.where(operation == 'h', l_d_act_nac_h, 0.0)
 
 
 def get_actual_non_occupant_room_sensible_cooling_load(
         theta_ac_act: np.ndarray, theta_nac: np.ndarray, v_supply: np.ndarray,
-        l_d_cs: np.ndarray) -> np.ndarray:
+        operation: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room sensible cooling load
     Args:
         theta_ac_act: air conditioned temperature for cooling, degree C, (5 rooms * 8760 times)
         theta_nac: non occupant room temperature, degree C (8760 times)
         v_supply: supply air volume, m3/h
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        operation: operation (8760 times)
     Returns:
         actual non occupant room sensible cooling load, MJ/h, (8760 times)
     """
@@ -1698,18 +1697,18 @@ def get_actual_non_occupant_room_sensible_cooling_load(
 
     l_d_act_nac_cs = np.sum((theta_nac - theta_ac_act) * c * rho * v_supply * 10 ** (-6), axis=0)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, l_d_act_nac_cs, 0.0)
+    return np.where(operation == 'c', l_d_act_nac_cs, 0.0)
 
 
 def get_actual_non_occupant_room_latent_cooling_load(
-        x_ac_act_c: np.ndarray, x_nac: np.ndarray, v_supply: np.ndarray, l_d_cl: np.ndarray) -> np.ndarray:
+        x_ac_act_c: np.ndarray, x_nac: np.ndarray, v_supply: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate actual non occupant room latent cooling load
     Args:
         x_ac_act_c: air onditioned absolute humidity for cooling, kg/kgDA (5 rooms * 8760 times)
         x_nac: non occupant room absolute humidity, kg/kgDA (8760 times)
         v_supply: supply air volume, m3/h (5 rooms * 8760 times)
-        l_d_cl: latent cooling load of occupant room, MJ/h (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         actual non occupant room latent cooling load, MJ/h (8760 times)
     """
@@ -1719,12 +1718,12 @@ def get_actual_non_occupant_room_latent_cooling_load(
 
     l_d_act_nac_cl = np.sum((x_nac - x_ac_act_c) * rho * l_wtr * v_supply * 10 ** (-3), axis=0)
 
-    return np.where(np.sum(l_d_cl, axis=0) > 0.0, l_d_act_nac_cl, 0.0)
+    return np.where(operation == 'c', l_d_act_nac_cl, 0.0)
 
 
 def get_actual_heat_loss_through_partition_for_heating(
         u_prt: float, a_prt: np.ndarray, theta_ac_act_h: np.ndarray, theta_nac_h: np.ndarray,
-        l_d_h: np.ndarray) -> np.ndarray:
+        operation: np.ndarray) -> np.ndarray:
     """
     calculate actual heat loss through the partition
     Args:
@@ -1732,7 +1731,7 @@ def get_actual_heat_loss_through_partition_for_heating(
         a_prt: area of the partition, m2, (5 rooms)
         theta_ac_act_h: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         theta_nac_h: non occupant room temperature, degree C (8760 times)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         heat loss through the partition, MJ/h (5 rooms * 8760 times)
     """
@@ -1742,19 +1741,19 @@ def get_actual_heat_loss_through_partition_for_heating(
 
     q_trs_prt_h = u_prt * a_prt * (theta_ac_act_h - theta_nac_h) * 3600 * 10 ** (-6)
 
-    return np.where(np.sum(l_d_h, axis=0) > 0.0, q_trs_prt_h, 0.0)
+    return np.where(operation == 'h', q_trs_prt_h, 0.0)
 
 
 def get_actual_heat_gain_through_partition_for_cooling(
         u_prt: float, a_prt: np.ndarray, theta_ac_act_c: np.ndarray, theta_nac_c: np.ndarray,
-        l_d_cs: np.ndarray) -> np.ndarray:
+        operation: np.ndarray) -> np.ndarray:
     """
     Args:
         u_prt: heat loss coefficient of the partition wall, W/m2K
         a_prt: area of the partition, m2
         theta_ac_act_c: air conditioned temperature for heating, degree C, (5 rooms * 8760 times)
         theta_nac_c: non occupant room temperature, degree C (8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h, (5 rooms *  8760 times)
+        operation: operation (8760 times)
     Returns:
         heat gain through the partition, MJ/h (5 rooms * 8760 times)
     """
@@ -1764,7 +1763,7 @@ def get_actual_heat_gain_through_partition_for_cooling(
 
     q_trs_prt_c = u_prt * a_prt * (theta_nac_c - theta_ac_act_c) * 3600 * 10 ** (-6)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_trs_prt_c, 0.0)
+    return np.where(operation == 'c', q_trs_prt_c, 0.0)
 
 
 def get_heat_source_inlet_air_temperature(theta_nac: np.ndarray) -> np.ndarray:
@@ -1792,14 +1791,14 @@ def get_heat_source_inlet_air_absolute_humidity(x_nac: np.ndarray) -> np.ndarray
 
 
 def get_heat_source_heating_output(
-        theta_hs_out_h: np.ndarray, theta_hs_in: np.ndarray, v_supply: np.ndarray, l_d_h: np.ndarray) -> np.ndarray:
+        theta_hs_out_h: np.ndarray, theta_hs_in: np.ndarray, v_supply: np.ndarray, operation: np.ndarray) -> np.ndarray:
     """
     calculate heat source heating output
     Args:
         theta_hs_out_h: supply air temperature, degree C, (5 rooms * 8760 times)
         theta_hs_in: inlet air temperature of the heat source, degree C (8760 times)
         v_supply: supply air volume for heating, m3/h (5 rooms * 8760 times)
-        l_d_h: heating load of occupant room, MJ/h, (5 rooms * 8760 times)
+        operation: operation (8760 times)
     Returns:
         heating output, MJ/h, (8760 times)
     """
@@ -1809,12 +1808,12 @@ def get_heat_source_heating_output(
 
     q_hs_h = np.maximum((theta_hs_out_h - theta_hs_in) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
 
-    return np.where(np.sum(l_d_h, axis=0) > 0.0, q_hs_h, 0.0)
+    return np.where(operation == 'h', q_hs_h, 0.0)
 
 
 def get_heat_source_cooling_output(
         theta_hs_in: np.ndarray, x_hs_in: np.ndarray, theta_hs_out_c: np.ndarray, x_hs_out_c: np.ndarray,
-        v_supply: np.ndarray, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
+        v_supply: np.ndarray, operation: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     Args:
         theta_hs_in: inlet air temperature of the heat source for cooling, degree C (8760 times)
@@ -1822,8 +1821,7 @@ def get_heat_source_cooling_output(
         theta_hs_out_c: supply air temperature, degree C (8760 times)
         x_hs_out_c: supply air absolute humidity, kg/kgDA (8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
-        l_d_cs: sensible cooling load of occupant room, MJ/h (5 rooms *  8760 times)
-        l_d_cl: latent cooling load of occupant room, MJ/h (5 rooms * 8760 times)
+        operation: operation (8760 times)
     """
 
     c = get_specific_heat()
@@ -1834,8 +1832,7 @@ def get_heat_source_cooling_output(
 
     q_hs_cl = np.maximum((x_hs_in - x_hs_out_c) * rho * l_wtr * np.sum(v_supply, axis=0) * 10 ** (-3), 0.0)
 
-    return np.where(np.sum(l_d_cs, axis=0) > 0.0, q_hs_cs, 0.0),\
-           np.where(np.sum(l_d_cl, axis=0) > 0.0, q_hs_cl, 0.0)
+    return np.where(operation == 'c', q_hs_cs, 0.0), np.where(operation == 'c', q_hs_cl, 0.0)
 
 # endregion
 
@@ -2471,6 +2468,9 @@ def get_main_value(
 
     # region treated and untreated load
 
+    # operation (8760 times) h = heating operation, c = cooling operation, n = non operation
+    operation = get_operation(l_d_h, l_d_cs)
+
     # duct liner heat loss coefficient, W/mK
     psi = get_duct_linear_heat_loss_coefficient()
 
@@ -2514,23 +2514,23 @@ def get_main_value(
     # supply air volume for each room for heating, m3/h, (5 rooms * 8760 times)
     v_supply = get_each_supply_air_volume(
         hc_period, vav_system, l_d_h, l_d_cs, theta_hs_out_h, theta_hs_out_c, theta_sur,
-        psi, l_duct, theta_ac, v_vent, v_d_supply)
+        psi, l_duct, theta_ac, v_vent, v_d_supply, operation)
 
     # outlet absolute humidity of heat source, kg/kgDA (8760 times)
     x_hs_out_c = get_decided_outlet_supply_air_absolute_humidity_for_cooling(x_req_c, v_supply, x_hs_out_min_c)
 
     # heat loss from ducts, heat gain to ducts, MJ/h, (5 rooms * 8760 times), reference
-    q_loss_duct_h = get_duct_heat_loss_for_heating(theta_sur, theta_hs_out_h, v_supply, psi, l_duct, l_d_h)
-    q_gain_duct_c = get_duct_heat_gain_for_cooling(theta_sur, theta_hs_out_c, v_supply, psi, l_duct, l_d_cs)
+    q_loss_duct_h, q_gain_duct_c = get_duct_heat_loss_and_gain(
+        theta_sur, theta_hs_out_h, theta_hs_out_c, v_supply, psi, l_duct, operation)
 
     # supply air temperature, degree C (5 rooms * 8760 times)
     theta_supply_h = get_supply_air_temperature_for_heating(
-        theta_sur, theta_hs_out_h, psi, l_duct, v_supply, theta_ac, l_d_h)
+        theta_sur, theta_hs_out_h, psi, l_duct, v_supply, theta_ac, operation)
     # supply air temperature, degree C (5 rooms * 8760 times)
     theta_supply_c = get_supply_air_temperature_for_cooling(
-        theta_sur, theta_hs_out_c, psi, l_duct, v_supply, theta_ac, l_d_cs)
+        theta_sur, theta_hs_out_c, psi, l_duct, v_supply, theta_ac, operation)
     # supply air absolute humidity, kg/kgDA (5 rooms * 8760 times)
-    x_supply_c = get_supply_air_absolute_humidity_for_cooling(x_hs_out_c, x_ac, l_d_cl)
+    x_supply_c = get_supply_air_absolute_humidity_for_cooling(x_hs_out_c, x_ac, operation)
 
     # actual air conditioned temperature, degree C, (5 rooms * 8760 times)
     theta_ac_act = get_actual_air_conditioned_temperature(
@@ -2556,13 +2556,13 @@ def get_main_value(
     x_nac = get_actual_non_occupant_room_absolute_humidity(x_d_nac)
 
     # actual non occupant room load, MJ/h, (8760 times)
-    l_d_act_nac_h = get_actual_non_occupant_room_heating_load(theta_ac_act, theta_nac, v_supply, l_d_h)
-    l_d_act_nac_cs = get_actual_non_occupant_room_sensible_cooling_load(theta_ac_act, theta_nac, v_supply, l_d_cs)
-    l_d_act_nac_cl = get_actual_non_occupant_room_latent_cooling_load(x_ac_act, x_nac, v_supply, l_d_cl)
+    l_d_act_nac_h = get_actual_non_occupant_room_heating_load(theta_ac_act, theta_nac, v_supply, operation)
+    l_d_act_nac_cs = get_actual_non_occupant_room_sensible_cooling_load(theta_ac_act, theta_nac, v_supply, operation)
+    l_d_act_nac_cl = get_actual_non_occupant_room_latent_cooling_load(x_ac_act, x_nac, v_supply, operation)
 
     # actual heat loss or gain through partitions, MJ/h, (5 rooms * 8760 times)
-    q_trs_prt_h = get_actual_heat_loss_through_partition_for_heating(u_prt, a_prt, theta_ac_act, theta_nac, l_d_h)
-    q_trs_prt_c = get_actual_heat_gain_through_partition_for_cooling(u_prt, a_prt, theta_ac_act, theta_nac, l_d_cs)
+    q_trs_prt_h = get_actual_heat_loss_through_partition_for_heating(u_prt, a_prt, theta_ac_act, theta_nac, operation)
+    q_trs_prt_c = get_actual_heat_gain_through_partition_for_cooling(u_prt, a_prt, theta_ac_act, theta_nac, operation)
 
     # inlet air temperature of heat source,degree C, (8760 times)
     theta_hs_in = get_heat_source_inlet_air_temperature(theta_nac)
@@ -2570,9 +2570,9 @@ def get_main_value(
     x_hs_in = get_heat_source_inlet_air_absolute_humidity(x_nac)
 
     # output of heat source, MJ/h, (8760 times)
-    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, l_d_h)
+    q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, operation)
     q_hs_cs, q_hs_cl = get_heat_source_cooling_output(
-        theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, l_d_cs, l_d_cl)
+        theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, operation)
 
     # endregion
 
