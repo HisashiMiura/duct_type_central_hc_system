@@ -32,3 +32,5 @@ treated_and_untreated_heat
 - occupant_usage
 - circulating_air_flow
 - load
+
+energy
