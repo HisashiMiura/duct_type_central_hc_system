@@ -1813,7 +1813,7 @@ def get_heat_source_heating_output(
 
 def get_heat_source_cooling_output(
         theta_hs_in: np.ndarray, x_hs_in: np.ndarray, theta_hs_out_c: np.ndarray, x_hs_out_c: np.ndarray,
-        v_supply: np.ndarray, operation: np.ndarray) -> (np.ndarray, np.ndarray):
+        v_supply: np.ndarray, operation: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
     """
     Args:
         theta_hs_in: inlet air temperature of the heat source for cooling, degree C (8760 times)
@@ -1822,17 +1822,28 @@ def get_heat_source_cooling_output(
         x_hs_out_c: supply air absolute humidity, kg/kgDA (8760 times)
         v_supply: supply air volume for cooling, m3/h (5 rooms * 8760 times)
         operation: operation (8760 times)
+    Returns:
+        cooling output, MJ/h (8760 times)
+        sensible cooling output, MJ/h (8760 times)
+        latent cooling output, MJ/h (8760 times)
     """
 
     c = get_specific_heat()
     rho = get_air_density()
     l_wtr = get_evaporation_latent_heat()
 
-    q_hs_cs = np.maximum((theta_hs_in - theta_hs_out_c) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0)
+    q_hs_cs = np.where(operation == 'c',
+                       np.maximum(
+                           (theta_hs_in - theta_hs_out_c) * c * rho * np.sum(v_supply, axis=0) * 10 ** (-6), 0.0),
+                       0.0)
 
-    q_hs_cl = np.maximum((x_hs_in - x_hs_out_c) * rho * l_wtr * np.sum(v_supply, axis=0) * 10 ** (-3), 0.0)
+    q_hs_cl = np.where(operation == 'c',
+                       np.maximum((x_hs_in - x_hs_out_c) * rho * l_wtr * np.sum(v_supply, axis=0) * 10 ** (-3), 0.0),
+                       0.0)
 
-    return np.where(operation == 'c', q_hs_cs, 0.0), np.where(operation == 'c', q_hs_cl, 0.0)
+    q_hs_c = q_hs_cs + q_hs_cl
+
+    return q_hs_c, q_hs_cs, q_hs_cl
 
 # endregion
 
@@ -2055,6 +2066,7 @@ class OutputData:
         self.theta_hs_in = None
         self.x_hs_in = None
         self.q_hs_h = None
+        self.q_hs_c = None
         self.q_hs_cs = None
         self.q_hs_cl = None
 
@@ -2278,6 +2290,7 @@ class OutputData:
             'actual_inlet_air_temperature_of_heat_source': self.theta_hs_in,  # degree C
             'actual_inlet_absolute_humidity_of_heat_source': self.x_hs_in,  # kg/kgDA
             'output_of_heat_source_heating': self.q_hs_h,  # MJ/h
+            'output_of_heat_source_cooling': self.q_hs_c,  # MJ/h
             'output_of_heat_source_sensible_cooling': self.q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': self.q_hs_cl,  # MJ/h
         }
@@ -2571,7 +2584,7 @@ def get_main_value(
 
     # output of heat source, MJ/h, (8760 times)
     q_hs_h = get_heat_source_heating_output(theta_hs_out_h, theta_hs_in, v_supply, operation)
-    q_hs_cs, q_hs_cl = get_heat_source_cooling_output(
+    q_hs_c, q_hs_cs, q_hs_cl = get_heat_source_cooling_output(
         theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, operation)
 
     # endregion
@@ -2648,6 +2661,7 @@ def get_main_value(
     od.theta_hs_in = theta_hs_in
     od.x_hs_in = x_hs_in
     od.q_hs_h = q_hs_h
+    od.q_hs_c = q_hs_c
     od.q_hs_cs = q_hs_cs
     od.q_hs_cl = q_hs_cl
 
