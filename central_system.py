@@ -2816,10 +2816,7 @@ def get_main_value(
         region: int,
         a_mr: float, a_or: float, a_a: float, r_env: float,
         insulation: str, solar_gain: str,
-        default_heat_source_spec: bool,
-        v_hs_rtd_h: float, v_hs_rtd_c: float,
-        is_duct_insulated: bool, vav_system: bool,
-        q_rtd_h: float =None, q_rtd_c: float=None, e_rtd_h: float =None, e_rtd_c: float = None) -> (OutputData, dict):
+        system_spec: dict) -> (OutputData, dict):
     """
     Args:
         region: region, 1-8
@@ -2836,22 +2833,22 @@ def get_main_value(
             'small': small level
             'middle': middle level
             'large': large level
-        default_heat_source_spec: does use the default value for rated heating and cooling capacity ?
-        v_hs_rtd_h: rated supply air volume for heating, m3/h
-        v_hs_rtd_c: rated supply air volume for cooling, m3/h
-        is_duct_insulated: is the duct inside the insulated area or not
-        vav_system: is VAV system applied ?
-        q_rtd_h: rated heating capacity, W
-        q_rtd_c: rated cooling capacity, W
-        e_rtd_h: rated heating efficiency
-        e_rtd_c: rated cooling efficiency
+        system_spec: system spec
     """
+
+    default_heat_source_spec = system_spec['default_heat_source_spec']
+    v_hs_rtd_h = system_spec['v_hs_rtd_h']
+    v_hs_rtd_c = system_spec['v_hs_rtd_c']
+    is_duct_insulated = system_spec['is_duct_insulated']
+    vav_system = system_spec['vav_system']
 
     # region system spec
 
     # set default value for heating and cooling capacity, W
     if default_heat_source_spec:
         q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
+    else:
+        q_rtd_h, q_rtd_c = system_spec['cap_rtd_h'], system_spec['cap_rtd_c']
 
     # endregion
 

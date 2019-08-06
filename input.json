@@ -6,9 +6,11 @@
     "r_env": 2.95556,
     "insulation": "h11",
     "solar_gain": "middle",
-    "default_heat_source_spec": true,
-    "v_hs_rtd_h": 1800.0,
-    "v_hs_rtd_c": 1800.0,
-    "is_duct_insulated": true,
-    "vav_system": false
+    "system_spec": {
+      "default_heat_source_spec": true,
+      "v_hs_rtd_h": 1800.0,
+      "v_hs_rtd_c": 1800.0,
+      "is_duct_insulated": true,
+      "vav_system": false
+    }
 }

@@ -185,10 +185,15 @@ def draw_sum_bar_graph(x_title, ys):
 
 def get_main_value(cn: int) -> dict:
     spec = get_spec(cn)
+    system_spec = {
+        'default_heat_source_spec': True,
+        'v_hs_rtd_h': spec[7],
+        'v_hs_rtd_c': spec[8],
+        'is_duct_insulated': spec[9],
+        'vav_system': spec[10]
+    }
     return cs.get_main_value(region=spec[0],
                              a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4],
                              insulation=spec[5], solar_gain=spec[6],
-                             default_heat_source_spec=True,
-                             v_hs_rtd_h=spec[7], v_hs_rtd_c=spec[8],
-                             is_duct_insulated=spec[9], vav_system=spec[10])
+                             system_spec=system_spec)
 
