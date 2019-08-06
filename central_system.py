@@ -14,7 +14,8 @@ import appendix
 
 # region system spec
 
-def get_system_spec(region: int, a_a: float, system_spec: dict) -> (bool, float, float):
+def get_system_spec(region: int, a_a: float, system_spec: dict)\
+        -> (bool, float, float, bool, bool, float, float, float, float):
     """
     Args:
         region: region
@@ -28,33 +29,25 @@ def get_system_spec(region: int, a_a: float, system_spec: dict) -> (bool, float,
         is VAV system applied
         rated heating capacity, W
         rated cooling capacity, W
+        rated power for heating, W
+        rated power for cooling, W
     """
 
-    default_heat_source_spec = system_spec['default_heat_source_spec']
-    v_hs_rtd_h = system_spec['v_hs_rtd_h']
-    v_hs_rtd_c = system_spec['v_hs_rtd_c']
     is_duct_insulated = system_spec['is_duct_insulated']
     vav_system = system_spec['vav_system']
 
     # set default value for heating and cooling capacity, W
-    if default_heat_source_spec:
-        q_rtd_h, q_rtd_c = get_rated_capacity(region, a_a)
+    if system_spec['default_heat_source_spec']:
+        q_rtd_h, q_rtd_c = appendix.get_default_rated_capacity(region, a_a)
+        v_hs_rtd_h, v_hs_rtd_c = appendix.get_default_rated_supply_air_volume(q_rtd_h, q_rtd_c)
+        p_rtd_h, p_rtd_c = appendix.get_default_rated_power(q_rtd_h, q_rtd_c)
     else:
         q_rtd_h, q_rtd_c = system_spec['cap_rtd_h'], system_spec['cap_rtd_c']
+        v_hs_rtd_h, v_hs_rtd_c = system_spec['v_hs_rtd_h'], system_spec['v_hs_rtd_c']
+        p_rtd_h, p_rtd_c = system_spec['p_rtd_h'], system_spec['p_rtd_c']
 
-    return default_heat_source_spec, v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c
+    return v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c, p_rtd_h, p_rtd_c
 
-
-def get_rated_capacity(region: int, a_a: float) -> (float, float):
-    """
-    Args:
-        region: region, 1-8
-        a_a: total floor area
-    Returns:
-        rated heating capacity, W
-        rated cooling capacity, W
-    """
-    return appendix.get_rated_capacity(region, a_a)
 
 # endregion
 
@@ -2867,7 +2860,7 @@ def get_main_value(
 
     # region system spec
 
-    default_heat_source_spec, v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c = \
+    v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c, p_rtd_h, p_rtd_c = \
         get_system_spec(region, a_a, system_spec)
 
     # endregion

@@ -28,7 +28,7 @@ class SystemSpec:
         self.vav_system = vav_system
 
 
-def get_rated_capacity(region: int, a_a: float) -> (float, float):
+def get_default_rated_capacity(region: int, a_a: float) -> (float, float):
     """
     get the rated capacity
     Args:
@@ -72,6 +72,35 @@ def get_rated_capacity(region: int, a_a: float) -> (float, float):
     q_rtd_c = q_rq_c * a_a * f_ct * f_cl
 
     return q_rtd_h, q_rtd_c
+
+
+def get_default_rated_power(q_rtd_h: float, q_rtd_c: float) -> (float, float):
+    """
+    Args:
+        q_rtd_h: rated capacity for heating, W
+        q_rtd_c: rated capacity for cooling, W
+    Returns:
+        rated power for heating, W
+        rated power for cooling, W
+    """
+
+    return q_rtd_h/3.76, q_rtd_c/3.17
+
+
+def get_default_rated_supply_air_volume(q_rtd_h: float, q_rtd_c: float) -> (float, float):
+    """
+    Args:
+        q_rtd_h: rated capacity for heating, W
+        q_rtd_c: rated capacity for cooling, W
+    Returns:
+        rated supply air volume for heating, m3/h
+        rated supply air volume for cooling, m3/h
+    """
+
+    v_rtd_h = (1.69 * q_rtd_h * 10**(-3) + 14.5) * 60
+    v_rtd_c = (1.69 * q_rtd_c * 10**(-3) + 14.5) * 60
+
+    return v_rtd_h, v_rtd_c
 
 
 def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:

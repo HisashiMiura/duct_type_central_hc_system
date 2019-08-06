@@ -17,10 +17,10 @@ class TestMain(unittest.TestCase):
 
         df_t = pd.DataFrame(t)
 
-        self.assertAlmostEqual(6.2304730398910255, df_t.heating_load_room1[0])
-        self.assertAlmostEqual(17.85745693530602, df_t.output_of_heat_source_heating[0])
-        self.assertAlmostEqual(1.0609561341074933, df_t.output_of_heat_source_sensible_cooling[4798])
-        self.assertAlmostEqual(1.187266007959914, df_t.output_of_heat_source_latent_cooling[4798])
+        self.assertAlmostEqual(6.253757008549898, df_t.heating_load_room1[0])
+        self.assertAlmostEqual(17.958762933266666, df_t.output_of_heat_source_heating[0])
+        self.assertAlmostEqual(1.078978271180218, df_t.output_of_heat_source_sensible_cooling[4798])
+        self.assertAlmostEqual(1.1892895216075945, df_t.output_of_heat_source_latent_cooling[4798])
 
 
 if __name__ == '__main__':
