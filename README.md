@@ -3,12 +3,14 @@
 ## 主な変更点（計算結果に関わることのみ記載）
 20190423：初バージョン  
 20190603：熱源機の送風温度の上限値・下限値を設定  
+201907**：VAV無しについて熱源機出口温度の計算を変更
+20190805：熱源機処理負荷の計算については概ね完成
 
 ## 使い方
 
 ### はじめに
 - python 3系の最新版(3.7以上推奨）をインストールしてください。
-- 少なくとも pandas, numpy, functools, typing モジュールをインストールする必要があります。
+- 少なくとも pandas, numpy, scipy, functools, typing モジュールをインストールする必要があります。
 - その他、matplotlib, datetime, os, unittest モジュールを使用しています。
 - anaconda 等をインストールするとpython本体とパッケージで上記のモジュールがインストールされるため便利です。
 
@@ -19,7 +21,7 @@
 2. input.json ファイルが入力条件です。
 必要に応じて書き換えてください。
 値部分は半角小文字、地域区分等の整数は整数で、風量などの小数はきりの良い値であっても小数（例えば1800.0など）で入力してください。
-VAVか否か等のboolean型の場合は、半角小文字でtrue又はfalseを入力してください。
+VAVか否か等のboolean型の場合は、半角文字でtrue又はfalseを入力してください。
 その他、断熱区分などの文字列は、正確に入力し、ダブルクォーテーションマークで囲ってください。
 行の最後には必ず半角でコンマをつけて区切ってください。ただし、最終行はコンマ不要です。
 
@@ -47,6 +49,8 @@ solar_gain: 日射熱の取得性能です。下記の中から文字列で指�
 - middle: 日射熱取得「中」
 - large: 日射熱取得「大」
 
+以下の値は、辞書のkey=system_specでくくります。
+
 default_heat_source_spec: 熱源機の性能（熱源機容量）を指定するか否かです。デフォルト値を指定する場合はtrueを、入力する場合はfalseを指定します。（例：true）<br>
 なお、ここでtrueを指定した場合は、cap_rtd_h及びcap_rtd_cに値が指定されていたとしてもその値は参照されません。
 
@@ -70,13 +74,15 @@ vav_system: VAVシステムを採用するか否かです。採用する場合�
     "r_env": 2.95556,
     "insulation": "h11",
     "solar_gain": "middle",
-    "default_heat_source_spec": true,
-    "supply_air_rtd_h": 1800.0,
-    "supply_air_rtd_c": 1800.0,
-    "is_duct_insulated": true,
-    "vav_system": false,
-    "cap_rtd_h": 12000.0,
-    "cap_rtd_c": 12000.0
+    "system_spec": {
+      "default_heat_source_spec": true,
+      "supply_air_rtd_h": 1800.0,
+      "supply_air_rtd_c": 1800.0,
+      "is_duct_insulated": true,
+      "vav_system": false,
+      "cap_rtd_h": 12000.0,
+      "cap_rtd_c": 12000.0
+    }
 }
 
 熱源機特性にデフォルト値を用いず、個別の値を指定する場合
@@ -89,11 +95,13 @@ vav_system: VAVシステムを採用するか否かです。採用する場合�
     "r_env": 2.95556,
     "insulation": "h11",
     "solar_gain": "middle",
-    "default_heat_source_spec": false,
-    "supply_air_rtd_h": 1800.0,
-    "supply_air_rtd_c": 1800.0,
-    "is_duct_insulated": true,
-    "vav_system": false,
-    "cap_rtd_h": 12000.0,
-    "cap_rtd_c": 12000.0
+    "system_spec": {
+      "default_heat_source_spec": false,
+      "supply_air_rtd_h": 1800.0,
+      "supply_air_rtd_c": 1800.0,
+      "is_duct_insulated": true,
+      "vav_system": false,
+      "cap_rtd_h": 12000.0,
+      "cap_rtd_c": 12000.0      
+    }
 }
