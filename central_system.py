@@ -1,6 +1,7 @@
 ﻿from typing import List, Tuple
 import numpy as np
 import pandas as pd
+from scipy import optimize
 
 import read_conditions
 import envelope
@@ -1990,6 +1991,521 @@ def get_downside_temperature_from_upside_temperature(
 
 # endregion
 
+
+# region theoretical efficiency
+
+
+def get_a_f_hex() -> float:
+    """
+    Returns:
+        effective area for heat exchange of front projected area of heat exchanger of the internal unit, m2
+    """
+
+    return 0.23559
+
+
+def get_a_e_hex() -> float:
+    """
+    Returns:
+        effective area for heat exchange of the surface area of heat exchanger or the internal unit, m2
+    """
+
+    return 6.396
+
+
+def get_alpha_c_hex_h(v_hs: float) -> float:
+    """
+    calculate sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit
+    Args:
+        v_hs: air supply volume of heat source, m3/h
+    Returns:
+        sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit, W/m2K
+    """
+
+    # effective area for heat exchange of front projected area of heat exchanger of the internal unit, m2
+    a_f_hex = get_a_f_hex()
+
+    v = v_hs / 3600 / a_f_hex
+
+    return (- 0.0017 * v ** 2 + 0.044 * v + 0.0271) * 1000
+
+
+def get_alpha_c_hex_c(v_hs: float, x_hs_in_c: float) -> (float, float):
+    """
+    Args:
+        v_hs: air volume of heat source, m3/h
+        x_hs_in_c: inlet air absolute humidity of the heat source for cooling, kg/kgDA
+    Returns:
+        sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit, kW/m2K
+        latent heat transfer coefficient on the surface of the heat exchanger of the internal unit, kg/m2s
+    """
+
+    # effective area for heat exchange of front projected area of heat exchanger of the internal unit, m2
+    a_f_hex = get_a_f_hex()
+
+    v_hs = max(v_hs, 400.0)
+
+    alpha_d_hex_c = 0.050 * np.log(v_hs / 3600 / a_f_hex) + 0.073
+
+    # specific heat of the vapour at constant pressure, kJ/kg K
+    c_pw = 1846
+
+    # specific heat of the dry air  at constant pressure, kJ/kg K
+    c_p_air = 1006
+
+    alpha_c_hex_c = alpha_d_hex_c * (c_p_air + c_pw * x_hs_in_c)
+
+    return alpha_c_hex_c, alpha_d_hex_c
+
+
+def get_theta_surf_hex_test_h(theta_hs_in_h: float, q_hs_h: float, v_hs: float) -> float:
+    """
+    calculate surface temperature of heat exchanger for heating
+    Args:
+        theta_hs_in_h: inlet air temperature of heat source for heating, degree C
+        q_hs_h: refrigerant cycle capacity for heating, W
+        v_hs: air supply volume of heat source, m3/h
+    Returns:
+        surface temperature of the heat exchanger of the internal unit for heating, degree C
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    theta_hs_out_h = theta_hs_in_h + q_hs_h / (c * rho * v_hs) * 3600
+
+    # sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit, W/m2K
+    alpha_c_hex_h = get_alpha_c_hex_h(v_hs)
+
+    # effective area for heat exchange of the surface area of heat exchanger or the internal unit, m2
+    a_e_hex = get_a_e_hex()
+
+    return (theta_hs_in_h + theta_hs_out_h) / 2 + q_hs_h / (a_e_hex * alpha_c_hex_h)
+
+
+def get_q_hs_test_c(
+        theta_hs_in_c: float, x_hs_in_c: float, theta_surf_hex_c: float, v_hs: float) -> (float, float, float):
+    """
+    Args:
+        theta_hs_in_c: inlet air temperature of heat source for cooling, degree C
+        x_hs_in_c: inlet air absolute humidity of heat source for cooling, kg/kgDA
+        theta_surf_hex_c: surface temperature of the heat exchanger of the internal unit for cooling, degree C
+        v_hs: air supply volume of heat source, m3/h
+    Returns:
+        cooling capacity, W
+        sensible cooling capacity, W
+        latent cooling capacity, W
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    # latent heat of evaporation, kJ/kg
+    l_wtr = get_evaporation_latent_heat()
+
+    x_surf_hex_c = get_saturated_absolute_humidity(theta_surf_hex_c)
+
+    # effective area for heat exchange of the surface area of heat exchanger or the internal unit, m2
+    a_e_hex = get_a_e_hex()
+
+    alpha_c_hex_c, alpha_d_hex_c = get_alpha_c_hex_c(v_hs, x_hs_in_c)
+
+    q_hs_cs = (theta_hs_in_c - theta_surf_hex_c) / (3600/2/c/rho/v_hs + 1/a_e_hex/alpha_c_hex_c)
+
+    if x_hs_in_c > x_surf_hex_c:
+        q_hs_cl = (x_hs_in_c - x_surf_hex_c) / (3600/2/l_wtr/rho/v_hs/10**3 + 1/l_wtr/a_e_hex/alpha_d_hex_c/10**3)
+    else:
+        q_hs_cl = 0.0
+
+    q_hs = q_hs_cs + q_hs_cl
+
+    return q_hs, q_hs_cs, q_hs_cl
+
+
+def get_theta_surf_hex_test_c(theta_hs_in_c: float, x_hs_in_c: float, v_hs: float, q_hs_c: float) -> float:
+    """
+    Args:
+        theta_hs_in_c: inlet air temperature of heat source for cooling, degree C
+        x_hs_in_c: inlet air absolute humidity of heat source for cooling, kg/kgDA
+        v_hs: air supply volume of heat source, m3/h
+        q_hs_c: refrigerant cycle capacity for cooling, W
+    Returns:
+        surface temperature of the heat exchanger of the internal unit for cooling, degree C
+    """
+
+    def f(theta_surf_hex_c):
+        return get_q_hs_test_c(theta_hs_in_c, x_hs_in_c, theta_surf_hex_c, v_hs)[0] - q_hs_c
+
+    return float(optimize.fsolve(f, 0.0)[0])
+
+
+def get_theta_surf_hex_h(theta_hs_in_h: float, theta_hs_out_h: float, v_hs: float) -> float:
+    """
+    calculate surface temperature of heat exchanger for heating
+    Args:
+        theta_hs_in_h: inlet air temperature of heat source for heating, degree C
+        theta_hs_out_h: outlet air temperature of heat source for heating, degree C
+        v_hs: air supply volume of heat source, m3/h
+    Returns:
+        surface temperature of the heat exchanger of the internal unit for heating, degree C
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    # sensible heating capacity of heat source for heating, W
+    q_hs_h = (theta_hs_out_h - theta_hs_in_h) * c * rho * v_hs / 3600
+
+    # sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit, W/m2K
+    alpha_c_hex_h = get_alpha_c_hex_h(v_hs)
+
+    # effective area for heat exchange of the surface area of heat exchanger or the internal unit, m2
+    a_e_hex = get_a_e_hex()
+
+    return (theta_hs_in_h + theta_hs_out_h) / 2 + q_hs_h / (a_e_hex * alpha_c_hex_h)
+
+
+def get_theta_surf_hex_c(theta_hs_in_c: float, x_hs_in_c: float, theta_hs_out_c: float, v_hs: float) -> float:
+    """
+    calculate surface temperature of heat exchanger for cooling
+    Args:
+        theta_hs_in_c: inlet air temperature of heat source for cooling, degree C
+        x_hs_in_c: inlet air absolute humidity of heat source for cooling, kg/kgDA
+        theta_hs_out_c: outlet air temperature of heat source for cooling, degree C
+        v_hs: air supply volume of heat source, m3/h
+    Returns:
+        surface temperature of the heat exchanger of the internal unit for cooling, degree C
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    # sensible cooling capacity of heat source for heating, W
+    q_hs_c = (theta_hs_in_c - theta_hs_out_c) * c * rho * v_hs / 3600
+
+    # sensible heat transfer coefficient on the surface of the heat exchanger of the internal unit, W/m2K
+    alpha_c_hex_c = get_alpha_c_hex_c(v_hs, x_hs_in_c)[0]
+
+    # effective area for heat exchange of the surface area of heat exchanger or the internal unit, m2
+    a_e_hex = get_a_e_hex()
+
+    return (theta_hs_in_c + theta_hs_out_c) / 2 - q_hs_c / (a_e_hex * alpha_c_hex_c)
+
+
+def get_refrigerant_temperature_heating(theta_ex: float, theta_surf_hex_h: float) -> (float, float, float, float):
+    """
+    calculate temperatures of evaporator, condenser, super heat and sub cool for heating
+    Args:
+        theta_ex: outdoor temperature, degree C
+        theta_surf_hex_h: surface temperature of the heat exchanger in the internal unit, degree C
+    Returns:
+        evaporator temperature, degree C
+        condenser temperature, degree C
+        super heat temperature, degree C
+        sub cool temperature, degree C
+    """
+
+    theta_ref_cnd_h = np.clip(theta_surf_hex_h, None, 65.0)
+    theta_ref_evp_h = np.clip(theta_ex - (0.1 * theta_ref_cnd_h + 2.95), -50.0, None)
+    theta_ref_sc_h = 0.245 * theta_ref_cnd_h - 1.72
+    theta_ref_sh_h = 4.49 - 0.036 * theta_ref_cnd_h
+
+    return theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h
+
+
+def get_refrigerant_temperature_cooling(theta_ex: float, theta_surf_hex_c: float) -> (float, float, float, float):
+    """
+    calculate temperatures of evaporator, condenser, super heat and sub cool for cooling
+    Args:
+        theta_ex: outdoor temperature, degree C
+        theta_surf_hex_c: surface temperature of the heat exchanger in the internal unit, degree C
+    Returns:
+        evaporator temperature, degree C
+        condenser temperature, degree C
+        super heat temperature, degree C
+        sub cool temperature, degree C
+    """
+
+    theta_ref_evp_c = np.clip(theta_surf_hex_c, -50.0, None)
+    theta_ref_cnd_c = np.clip(np.clip(theta_ex + 27.4 - 1.35 * theta_ref_evp_c, theta_ex, None), None, 65.0)
+    theta_ref_sc_c = 0.772 * theta_ref_cnd_c - 25.6
+    theta_ref_sh_c = 0.194 * theta_ref_cnd_c - 3.86
+
+    return theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c
+
+
+def get_heat_pump_theoretical_efficiency_heating(
+        theta_ref_evp: float, theta_ref_cnd: float, theta_ref_sh: float, theta_ref_sc: float) -> float:
+    """
+    calculate theoretical efficiency
+    Args:
+        theta_ref_evp: temperature of evaporator, degree C
+        theta_ref_cnd: temperature of condenser, degree C
+        theta_ref_sh:  temperature of super heat, degree C
+        theta_ref_sc: temperature of sub cool, degree C
+    Returns:
+        theoretical heating efficiency of heat pump
+    """
+
+    e_th_h, _ = get_heat_pump_theoretical_efficiency(theta_ref_evp, theta_ref_cnd, theta_ref_sh, theta_ref_sc)
+
+    return e_th_h
+
+
+def get_heat_pump_theoretical_efficiency_cooling(
+        theta_ref_evp: float, theta_ref_cnd: float, theta_ref_sh: float, theta_ref_sc: float) -> float:
+    """
+    calculate theoretical efficiency
+    Args:
+        theta_ref_evp: temperature of evaporator, degree C
+        theta_ref_cnd: temperature of condenser, degree C
+        theta_ref_sh:  temperature of super heat, degree C
+        theta_ref_sc: temperature of sub cool, degree C
+    Returns:
+        theoretical cooling efficiency of heat pump
+    """
+
+    _, e_th_c = get_heat_pump_theoretical_efficiency(theta_ref_evp, theta_ref_cnd, theta_ref_sh, theta_ref_sc)
+
+    return e_th_c
+
+
+def get_heat_pump_theoretical_efficiency(
+        theta_ref_evp: float, theta_ref_cnd: float, theta_ref_sh: float, theta_ref_sc: float) -> (float, float):
+    """
+    calculate theoretical efficiency
+    Args:
+        theta_ref_evp: temperature of evaporator, degree C
+        theta_ref_cnd: temperature of condenser, degree C
+        theta_ref_sh:  temperature of super heat, degree C
+        theta_ref_sc: temperature of sub cool, degree C
+    Returns:
+        theoretical heating efficiency of heat pump
+        theoretical cooling efficiency of heat pump
+    """
+
+    # pressure of evaporator, MPa
+    p_ref_evp = get_f_p_sgas(theta_ref_evp)
+
+    # pressure of condenser, MPa
+    p_ref_cnd = get_f_p_sgas(theta_ref_cnd)
+
+    # temperature of condenser outlet, degree C
+    theta_ref_cnd_out = theta_ref_cnd - theta_ref_sc
+
+    # specific enthalpy of condenser outlet, kJ/kg
+    h_ref_cnd_out = get_f_h_liq(p_ref_cnd, theta_ref_cnd_out)
+
+    # temperature of compressor inlet, degree C
+    theta_ref_comp_in = theta_ref_evp + theta_ref_sh
+
+    # pressure of compressor inlet, MPa
+    p_ref_comp_in = p_ref_evp
+
+    # specific enthalpy of compressor inlet, kJ/kg
+    h_ref_comp_in = get_f_h_gas_comp_in(p_ref_comp_in, theta_ref_comp_in)
+
+    # specific entropy of compressor inlet, kJ/kg K
+    s_ref_comp_in = get_f_s_gas(p_ref_comp_in, h_ref_comp_in)
+
+    # specific entropy of compressor outlet, kJ/kg K
+    s_ref_comp_out = s_ref_comp_in
+
+    # pressure of compressor outlet, MPa
+    p_ref_comp_out = p_ref_cnd
+
+    # specific enthalpy of compressor outlet, kJ/kg
+    h_ref_comp_out = get_f_h_gas_comp_out(p_ref_comp_out, s_ref_comp_out)
+
+    # theoretical heating efficiency of heat pump
+    e_ref_h_th = (h_ref_comp_out - h_ref_cnd_out)/(h_ref_comp_out - h_ref_comp_in)
+
+    # theoretical cooling efficiency of heat pump
+    e_ref_c_th = e_ref_h_th - 1
+
+    return e_ref_h_th, e_ref_c_th
+
+
+def get_saturated_absolute_humidity(theta: float) -> float:
+    """
+    Args:
+        theta: temperature, degree C
+    Returns:
+        saturated absolute humidity, kg/kgDA
+    """
+
+    p_vs = get_saturated_vapour_pressure_by_temperature(theta)
+
+    return 0.622 * p_vs / (101325 - p_vs)
+
+
+def get_vapour_pressure_by_absolute_humidity(x: float) -> float:
+    """
+    calculate vapour pressure
+    Args:
+        x: absolute humidity, kg/kgDA
+    Returns:
+        vapour pressure, Pa
+    """
+
+    # convert unit from kg/kgDA to g/kgDA
+    x = x * 1000
+
+    # vapour pressure, Pa
+    p_v = 101325 * x / (622 + x)
+
+    return p_v
+
+
+def get_saturated_vapour_pressure_by_temperature(theta: float) -> float:
+    """
+    calculate relative humidity
+    Args:
+        theta: temperature, degree C
+    Returns:
+        saturated vapour pressure, Pa
+    """
+
+    # absolute temperature, K
+    t = theta + 273.16
+
+    a1 = -6096.9385
+    a2 = 21.2409642
+    a3 = -0.02711193
+    a4 = 0.00001673952
+    a5 = 2.433502
+    b1 = -6024.5282
+    b2 = 29.32707
+    b3 = 0.010613863
+    b4 = -0.000013198825
+    b5 = -0.49382577
+
+    # saturated vapour pressure, Pa
+    k = np.where(theta > 0.0,
+                 a1 / t + a2 + a3 * t + a4 * t ** 2 + a5 * np.log(t),
+                 b1 / t + b2 + b3 * t + b4 * t ** 2 + b5 * np.log(t))
+    p_vs = np.e ** k
+
+    return p_vs
+
+
+def get_f_p_sgas(theta: float) -> float:
+    """
+    calculate saturated vapor pressure
+    Args:
+        theta: saturated vapor temperature, degree C
+    Return:
+        saturated vapor pressure, MPa
+    """
+
+    return 2.75857926950901 * 10 ** (-17) * theta ** 8 \
+        + 1.49382057911753 * 10 ** (-15) * theta ** 7 \
+        + 6.52001687267015 * 10 ** (-14) * theta ** 6 \
+        + 9.14153034999975 * 10 ** (-12) * theta ** 5 \
+        + 3.18314616500361 * 10 ** (-9) * theta ** 4 \
+        + 1.60703566663019 * 10 ** (-6) * theta ** 3 \
+        + 3.06278984019513 * 10 ** (-4) * theta ** 2 \
+        + 2.54461992992037 * 10 ** (-2) * theta \
+        + 7.98086455154775 * 10 ** (-1)
+
+
+def get_f_h_gas_comp_in(p: float, theta: float) -> float:
+    """
+    calculate specific enthalpy of the heated vapour at the condition of the compressor inlet
+    Args:
+        p: pressure of the over heated vapour at the condition of the compressor inlet, MPa
+        theta: temperature of the over heated vapour at the condition of the compressor inlet, degree C
+    Return:
+        specific enthalpy of the over heated vapour, kJ/kg
+    """
+
+    return -1.00110355 * 10 ** (-1) * p ** 3 \
+        - 1.184450639 * 10 * p ** 2 \
+        - 2.052740252 * 10 ** 2 * p \
+        + 3.20391 * 10 ** (-6) * (theta + 273.15) ** 3 \
+        - 2.24685 * 10 ** (-3) * (theta + 273.15) ** 2 \
+        + 1.279436909 * (theta + 273.15) \
+        + 3.1271238 * 10 ** (-2) * p ** 2 * (theta + 273.15) \
+        - 1.415359 * 10 ** (-3) * p * (theta + 273.15) ** 2 \
+        + 1.05553912 * p * (theta + 273.15)+1.949505039 * 10 ** 2
+
+
+def get_f_h_gas_comp_out(p: float, s: float) -> float:
+    """
+    calculate specific enthalpy of the over heated vapour at the condition of the compressor outlet
+    Args:
+        p: pressure of the over heated vapour at the condition of the compressor outlet, MPa
+        s: specific entropy of the over heated vapour at the condition of the compressor outlet, kJ/kg K
+    Returns:
+        specific enthalpy of the over heated vapour at the condition of the copressor outlet, kJ/kg
+    """
+
+    return - 1.869892835947070 * 10 ** (-1) * p ** 4 \
+        + 8.223224182177200 * 10 ** (-1) * p ** 3 \
+        + 4.124595239531860 * p ** 2 \
+        - 8.346302788803210 * 10 * p \
+        - 1.016388214044490 * 10 ** 2 * s ** 4 \
+        + 8.652428629143880 * 10 ** 2 * s ** 3 \
+        - 2.574830800631310 * 10 ** 3 * s ** 2 \
+        + 3.462049327009730 * 10 ** 3 * s \
+        + 9.209837906396910 * 10 ** (-1) * p ** 3 * s \
+        - 5.163305566700450 * 10 ** (-1) * p ** 2 * s ** 2 \
+        + 4.076727767130210 * p * s ** 3 \
+        - 8.967168786520070 * p ** 2 * s \
+        - 2.062021416757910 * 10 * p * s ** 2 \
+        + 9.510257675728610 * 10 * p * s \
+        - 1.476914346214130 * 10 ** 3
+
+
+def get_f_s_gas(p: float, h: float) -> float:
+    """
+    calculate specific entropy of the over heated vapour
+    Args:
+        p: pressure of the over heated vapour, MPa
+        h: specific enthalpy of the over heated vapour, kJ/kg
+    Returns:
+        specific entropy, kJ/kg K
+    """
+    return 5.823109493752840 * 10 ** (-2) * p ** 4 \
+        - 3.309666523931270 * 10 ** (-1) * p ** 3 \
+        + 7.700179914440890 * 10 ** (-1) * p ** 2 \
+        - 1.311726004718660 * p \
+        + 1.521486605815750 * 10 ** (-9) * h ** 4 \
+        - 2.703698863404160 * 10 ** (-6) * h ** 3 \
+        + 1.793443775071770 * 10 ** (-3) * h ** 2 \
+        - 5.227303746767450 * 10 ** (-1) * h \
+        + 1.100368875131490 * 10 ** (-4) * p ** 3 * h \
+        + 5.076769807083600 * 10 ** (-7) * p ** 2 * h ** 2 \
+        + 1.202580329499520 * 10 ** (-8) * p * h ** 3 \
+        - 7.278049214744230 * 10 ** (-4) * p ** 2 * h \
+        - 1.449198550965620 * 10 ** (-5) * p * h ** 2 \
+        + 5.716086851760640 * 10 ** (-3) * p * h \
+        + 5.818448621582900 * 10
+
+
+def get_f_h_liq(p: float, theta: float) -> float:
+    """
+    calculate specific enthalpy of the over cooled liquid, kJ/kg
+    Args:
+        p: pressure of the over cooled liquid, MPa
+        theta: temperature of the over cooled liquid, degree C
+    Returns:
+        specific enthalpy of the over cooled liquid, kJ/kg
+    """
+
+    return 1.7902915 * 10 ** (-2) * p ** 3 \
+        + 7.96830322 * 10 ** (-1) * p ** 2 \
+        + 5.985874958 * 10 * p \
+        + 0 * (theta + 273.15) ** 3 \
+        + 9.86677 * 10 ** (-4) * (theta + 273.15) ** 2 \
+        + 9.8051677 * 10 ** (-1) * (theta + 273.15) \
+        - 3.58645 * 10 ** (-3) * p ** 2 * (theta + 273.15) \
+        + 8.23122 * 10 ** (-4) * p * (theta + 273.15) ** 2 \
+        - 4.42639115 * 10 ** (-1) * p * (theta + 273.15) \
+        - 1.415490404 * 10 ** 2
+
+
+# endregion
 
 # endregion
 
