@@ -7,7 +7,6 @@ import read_conditions
 import envelope
 import read_load
 import appendix
-from appendix import SystemSpec
 
 
 # region functions
@@ -48,7 +47,6 @@ def get_system_spec(region: int, a_a: float, system_spec: dict) -> (bool, float,
 
 def get_rated_capacity(region: int, a_a: float) -> (float, float):
     """
-    calculate rated heating and cooling capacity of heat source
     Args:
         region: region, 1-8
         a_a: total floor area

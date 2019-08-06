@@ -5,6 +5,7 @@ import envelope
 import read_conditions
 
 
+# 使用していないと思われる
 class SystemSpec:
     def __init__(self, cap_rtd_h: float, cap_rtd_c: float,
                  supply_air_rtd_h: float, supply_air_rtd_c: float,
