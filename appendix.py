@@ -103,6 +103,22 @@ def get_default_rated_supply_air_volume(q_rtd_h: float, q_rtd_c: float) -> (floa
     return v_rtd_h, v_rtd_c
 
 
+def get_default_rated_fan_power(v_rtd_h: float, v_rtd_c: float) -> (float, float):
+    """
+    Args:
+        v_rtd_h: rated supply air volume for heating, m3/h
+        v_rtd_c: rated supply air volume for cooling, m3/h
+    Returns:
+        rated fan power for heating, W
+        rated fan power for cooling, W
+    """
+
+    p_fan_rtd_h = 8.0 * v_rtd_h / 60 + 20.7
+    p_fan_rtd_c = 8.0 * v_rtd_c / 60 + 20.7
+
+    return p_fan_rtd_h, p_fan_rtd_c
+
+
 def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     """
     calculate the maximum heating output of heat source

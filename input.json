@@ -7,9 +7,7 @@
     "insulation": "h11",
     "solar_gain": "middle",
     "system_spec": {
-      "default_heat_source_spec": true,
-      "v_hs_rtd_h": 1800.0,
-      "v_hs_rtd_c": 1800.0,
+      "input": "default",
       "is_duct_insulated": true,
       "vav_system": false
     }

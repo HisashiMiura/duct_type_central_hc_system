@@ -186,9 +186,7 @@ def draw_sum_bar_graph(x_title, ys):
 def get_main_value(cn: int) -> dict:
     spec = get_spec(cn)
     system_spec = {
-        'default_heat_source_spec': True,
-        'v_hs_rtd_h': spec[7],
-        'v_hs_rtd_c': spec[8],
+        'input': 'default',
         'is_duct_insulated': spec[9],
         'vav_system': spec[10]
     }

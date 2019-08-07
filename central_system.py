@@ -15,39 +15,70 @@ import appendix
 # region system spec
 
 def get_system_spec(region: int, a_a: float, system_spec: dict)\
-        -> (bool, float, float, bool, bool, float, float, float, float):
+        -> (str, bool, bool, float, float, float, float, float, float, float,
+            float, float, float, float, float, float, float, float, float):
     """
     Args:
         region: region
         a_a: total floor area, m2
         system_spec: system spec dictionary
     Returns:
-        does use the default value for rated heating and cooling capacity
-        rated supply air volume for heating, m3/h
-        rated supply air volume for cooling, m3/h
+        input method = 'default', 'rated', 'rated_and_middle'
         is the duct inside the insulated area or not
         is VAV system applied
         rated heating capacity, W
         rated cooling capacity, W
+        rated supply air volume for heating, m3/h
+        rated supply air volume for cooling, m3/h
         rated power for heating, W
         rated power for cooling, W
+        rated fan power for heating, W
+        rated fan power for cooling, W
+        middle heating capacity, W
+        middle cooling capacity, W
+        middle supply air volume for heating, m3/h
+        middle supply air volume for cooling, m3/h
+        middle power for heating, W
+        middle power for cooling, W
+        middle fan power for heating, W
+        middle fan power for cooling, W
     """
 
     is_duct_insulated = system_spec['is_duct_insulated']
     vav_system = system_spec['vav_system']
 
-    # set default value for heating and cooling capacity, W
-    if system_spec['default_heat_source_spec']:
+    input_method = system_spec['input']
+
+    # set rated value
+    if input_method == 'default':
         q_rtd_h, q_rtd_c = appendix.get_default_rated_capacity(region, a_a)
         v_hs_rtd_h, v_hs_rtd_c = appendix.get_default_rated_supply_air_volume(q_rtd_h, q_rtd_c)
         p_rtd_h, p_rtd_c = appendix.get_default_rated_power(q_rtd_h, q_rtd_c)
-    else:
+        p_fan_rtd_h, p_fan_rtd_c = appendix.get_default_rated_fan_power(v_hs_rtd_h, v_hs_rtd_c)
+    elif input_method == 'rated' or input_method == 'rated_and_middle':
         q_rtd_h, q_rtd_c = system_spec['cap_rtd_h'], system_spec['cap_rtd_c']
         v_hs_rtd_h, v_hs_rtd_c = system_spec['v_hs_rtd_h'], system_spec['v_hs_rtd_c']
         p_rtd_h, p_rtd_c = system_spec['p_rtd_h'], system_spec['p_rtd_c']
+        p_fan_rtd_h, p_fan_rtd_c = system_spec['p_fan_rtd_h', 'p_fan_rtd_c']
+    else:
+        raise ValueError
 
-    return v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c, p_rtd_h, p_rtd_c
+    if input_method == 'default' or input_method == 'rated':
+        q_mid_h, q_mid_c = None, None
+        v_hs_mid_h, v_hs_mid_c = None, None
+        p_mid_h, p_mid_c = None, None
+        p_fan_mid_h, p_fan_mid_c = None, None
+    elif input_method == 'rated_and_middle':
+        q_mid_h, q_mid_c = system_spec['q_mid_h'], system_spec['q_mid_c']
+        v_hs_mid_h, v_hs_mid_c = system_spec['v_hs_mid_h'], system_spec['v_hs_mid_c']
+        p_mid_h, p_mid_c = system_spec['p_mid_h'], system_spec['p_mid_c']
+        p_fan_mid_h, p_fan_mid_c = system_spec['p_fan_mid_h'], system_spec['p_fan_mid_c']
+    else:
+        raise ValueError
 
+    return input_method, is_duct_insulated, vav_system, \
+        q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, p_rtd_h, p_rtd_c, p_fan_rtd_h, p_fan_rtd_c, \
+        q_mid_h, q_mid_c, v_hs_mid_h, v_hs_mid_c, p_mid_h, p_mid_c, p_fan_mid_h, p_fan_mid_c
 
 # endregion
 
@@ -2860,8 +2891,10 @@ def get_main_value(
 
     # region system spec
 
-    v_hs_rtd_h, v_hs_rtd_c, is_duct_insulated, vav_system, q_rtd_h, q_rtd_c, p_rtd_h, p_rtd_c = \
-        get_system_spec(region, a_a, system_spec)
+    input_method, is_duct_insulated, vav_system, \
+        q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, p_rtd_h, p_rtd_c, p_fan_rtd_h, p_fan_rtd_c, \
+        q_mid_h, q_mid_c, v_hs_mid_h, v_hs_mid_c, p_mid_h, p_mid_c, p_fan_mid_h, p_fan_mid_c \
+        = get_system_spec(region, a_a, system_spec)
 
     # endregion
 
