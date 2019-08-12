@@ -141,7 +141,9 @@ def get_maximum_heating_output(region: int, q_rtd_h: float) -> np.ndarray:
     # coefficient for defrosting, (8760 times)
     c_df_h = np.where((theta_ex < 5.0) & (h_ex >= 80.0), 0.77, 1.0)
 
-    return q_rtd_h * c_df_h * 3600 * 10**(-6)
+    alpha_max_h = 1.0
+
+    return q_rtd_h * c_df_h * 3600 * 10**(-6) * alpha_max_h
 
 
 def get_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l_d_cl: np.ndarray) -> (np.ndarray, np.ndarray):
@@ -178,8 +180,10 @@ def get_maximum_cooling_output(q_rtd_c: float, l_d_cs: np.ndarray, l_d_cl: np.nd
     # corrected SHF for cooling load, (8760 times)
     shf_dash = np.vectorize(lambda x, y: x / y if y > 0.0 else 0.0)(l_d_cs_total, l_d2_c)
 
+    alpha_max_c = 1.11
+
     # maximum cooling output, MJ/h, (8760 times)
-    q_hs_max_c = np.full(8760, q_rtd_c * 3600 * 10**(-6))
+    q_hs_max_c = np.full(8760, q_rtd_c * 3600 * 10**(-6) * alpha_max_c)
 
     # maximum sensible cooling output, MJ/h, (8760 times)
     q_hs_max_cs = q_hs_max_c * shf_dash

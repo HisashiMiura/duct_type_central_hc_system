@@ -9,6 +9,7 @@
     "system_spec": {
       "input": "default",
       "is_duct_insulated": true,
-      "vav_system": false
+      "vav_system": false,
+      "ventilation_included": true
     }
 }

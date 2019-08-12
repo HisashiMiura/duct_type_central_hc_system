@@ -1,4 +1,4 @@
-﻿from typing import List, Tuple
+﻿from typing import List, Tuple, Union, Optional
 import numpy as np
 import pandas as pd
 from scipy import optimize
@@ -46,19 +46,19 @@ def get_system_spec(region: int, a_a: float, system_spec: dict)\
 
     is_duct_insulated = system_spec['is_duct_insulated']
     vav_system = system_spec['vav_system']
-
     input_method = system_spec['input']
+    ventilation_included = system_spec['ventilation_included']
 
     # set rated value
     if input_method == 'default':
         q_rtd_h, q_rtd_c = appendix.get_default_rated_capacity(region, a_a)
-        v_hs_rtd_h, v_hs_rtd_c = appendix.get_default_rated_supply_air_volume(q_rtd_h, q_rtd_c)
         p_rtd_h, p_rtd_c = appendix.get_default_rated_power(q_rtd_h, q_rtd_c)
+        v_hs_rtd_h, v_hs_rtd_c = appendix.get_default_rated_supply_air_volume(q_rtd_h, q_rtd_c)
         p_fan_rtd_h, p_fan_rtd_c = appendix.get_default_rated_fan_power(v_hs_rtd_h, v_hs_rtd_c)
     elif input_method == 'rated' or input_method == 'rated_and_middle':
         q_rtd_h, q_rtd_c = system_spec['cap_rtd_h'], system_spec['cap_rtd_c']
-        v_hs_rtd_h, v_hs_rtd_c = system_spec['v_hs_rtd_h'], system_spec['v_hs_rtd_c']
         p_rtd_h, p_rtd_c = system_spec['p_rtd_h'], system_spec['p_rtd_c']
+        v_hs_rtd_h, v_hs_rtd_c = system_spec['v_hs_rtd_h'], system_spec['v_hs_rtd_c']
         p_fan_rtd_h, p_fan_rtd_c = system_spec['p_fan_rtd_h', 'p_fan_rtd_c']
     else:
         raise ValueError
@@ -76,7 +76,7 @@ def get_system_spec(region: int, a_a: float, system_spec: dict)\
     else:
         raise ValueError
 
-    return input_method, is_duct_insulated, vav_system, \
+    return input_method, is_duct_insulated, vav_system, ventilation_included,\
         q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, p_rtd_h, p_rtd_c, p_fan_rtd_h, p_fan_rtd_c, \
         q_mid_h, q_mid_c, v_hs_mid_h, v_hs_mid_c, p_mid_h, p_mid_c, p_fan_mid_h, p_fan_mid_c
 
@@ -770,13 +770,14 @@ def get_rated_output(cap_rtd_h: float, cap_rtd_c: float) -> (float, float):
 
 
 def get_heat_source_supply_air_volume(
-        hc_period: np.ndarray,
+        hc_period: np.ndarray, ventilation_included: bool,
         q_d_hs_h: np.ndarray, q_d_hs_c: np.ndarray, q_hs_rtd_h: float, q_hs_rtd_c: float,
         v_hs_min: float, v_hs_rtd_h: float, v_hs_rtd_c: float) -> np.ndarray:
     """
     calculate the supply air volume
     Args:
         hc_period: heating and cooling schedule (8760 times)
+        ventilation_included: is ventilation included ?
         q_d_hs_h: heating output of the system for estimation of the supply air volume, MJ/h
         q_d_hs_c: cooling output of the system for estimation of the supply air volume, MJ/h
         q_hs_rtd_h: rated heating output, MJ/h
@@ -789,12 +790,20 @@ def get_heat_source_supply_air_volume(
     """
 
     def get_v(q, q_hs_rtd, v_hs_rtd):
-        if q < 0.0:
-            return v_hs_min
-        elif q < q_hs_rtd:
-            return (v_hs_rtd - v_hs_min) / q_hs_rtd * q + v_hs_min
+        if ventilation_included:
+            if q < 0.0:
+                return v_hs_min
+            elif q < q_hs_rtd:
+                return (v_hs_rtd - v_hs_min) / q_hs_rtd * q + v_hs_min
+            else:
+                return v_hs_rtd
         else:
-            return v_hs_rtd
+            if q < 0.0:
+                return v_hs_min
+            elif q < q_hs_rtd:
+                return v_hs_rtd / q_hs_rtd * q + v_hs_min
+            else:
+                return v_hs_rtd + v_hs_min
 
     # supply air volume of heat source for heating and cooling, m3/h
     v_d_hs_supply_h = np.vectorize(get_v)(q_d_hs_h, q_hs_rtd_h, v_hs_rtd_h)
@@ -2096,7 +2105,7 @@ def get_alpha_c_hex_c(v_hs: float, x_hs_in_c: float) -> (float, float):
     # effective area for heat exchange of front projected area of heat exchanger of the internal unit, m2
     a_f_hex = get_a_f_hex()
 
-    v_hs = max(v_hs, 400.0)
+    v_hs = np.clip(v_hs, 400.0, None)
 
     alpha_d_hex_c = 0.050 * np.log(v_hs / 3600 / a_f_hex) + 0.073
 
@@ -2259,7 +2268,8 @@ def get_refrigerant_temperature_heating(theta_ex: float, theta_surf_hex_h: float
     """
 
     theta_ref_cnd_h = np.clip(theta_surf_hex_h, None, 65.0)
-    theta_ref_evp_h = np.clip(theta_ex - (0.1 * theta_ref_cnd_h + 2.95), -50.0, None)
+#    theta_ref_evp_h = np.clip(theta_ex - (0.1 * theta_ref_cnd_h + 2.95), -50.0, None)
+    theta_ref_evp_h = np.clip(theta_ex - (0.1 * theta_ref_cnd_h + 2.95), -50.0, theta_ref_cnd_h - 5.0)
     theta_ref_sc_h = 0.245 * theta_ref_cnd_h - 1.72
     theta_ref_sh_h = 4.49 - 0.036 * theta_ref_cnd_h
 
@@ -2280,9 +2290,10 @@ def get_refrigerant_temperature_cooling(theta_ex: float, theta_surf_hex_c: float
     """
 
     theta_ref_evp_c = np.clip(theta_surf_hex_c, -50.0, None)
-    theta_ref_cnd_c = np.clip(np.clip(theta_ex + 27.4 - 1.35 * theta_ref_evp_c, theta_ex, None), None, 65.0)
-    theta_ref_sc_c = 0.772 * theta_ref_cnd_c - 25.6
-    theta_ref_sh_c = 0.194 * theta_ref_cnd_c - 3.86
+#    theta_ref_cnd_c = np.clip(np.clip(theta_ex + 27.4 - 1.35 * theta_ref_evp_c, theta_ex, None), None, 65.0)
+    theta_ref_cnd_c = np.clip(np.clip(theta_ex + 27.4 - 1.35 * theta_ref_evp_c, theta_ex, None), theta_ref_evp_c + 5.0, 65.0)
+    theta_ref_sc_c = np.clip(0.772 * theta_ref_cnd_c - 25.6, 0.0, None)
+    theta_ref_sh_c = np.clip(0.194 * theta_ref_cnd_c - 3.86, 0.0, None)
 
     return theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c
 
@@ -2376,6 +2387,11 @@ def get_heat_pump_theoretical_efficiency(
     # theoretical cooling efficiency of heat pump
     e_ref_c_th = e_ref_h_th - 1
 
+    # maximum e_ref_h_th value is 25.0
+    # maximum e_ref_c_th value is 24.0
+#    e_ref_h_th = np.clip(e_ref_h_th, 0.0, 25.0)
+#    e_ref_c_th = np.clip(e_ref_c_th, 0.0, 24.0)
+
     return e_ref_h_th, e_ref_c_th
 
 
@@ -2441,6 +2457,69 @@ def get_saturated_vapour_pressure_by_temperature(theta: float) -> float:
 
     return p_vs
 
+
+def get_e_th_h_test(
+        theta_hs_in_h: float, q_hs_h: float, v_hs: float, theta_ex: float) -> (float, float, float, float, float):
+    """
+    Args:
+        theta_hs_in_h: inlet air temperature, degree C
+        q_hs_h: sensible heating capacity, W
+        v_hs: supply air volume, m3/h
+        theta_ex: external temperature, degree C
+    Returns:
+        theoretical heat pump efficiency
+        evaporator temperature, degree C
+        condenser temperature, degree C
+        super heat, degree C
+        sub cool, degree C
+    """
+
+    # surface temperature, degree C
+    theta_surf_hex_test_h = get_theta_surf_hex_test_h(theta_hs_in_h, q_hs_h, v_hs)
+
+    # evaporator temperature, condenser temperature, super heat temperature, suc cool temperature, degree C
+    theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h \
+        = get_refrigerant_temperature_heating(theta_ex, theta_surf_hex_test_h)
+
+    e_th_h_test = get_heat_pump_theoretical_efficiency_heating(
+        theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h)
+
+    return e_th_h_test, theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h
+
+
+def get_e_th_c_test(
+        theta_hs_in_c: float, x_hs_in_c: float, q_hs_c: float, v_hs: float, theta_ex: float
+                    ) -> (float, float, float, float, float):
+    """
+    Args:
+        theta_hs_in_c: inlet air temperature, degree C
+        x_hs_in_c: inlet air absolute humidity, kg/kgDA
+        q_hs_c: sensible and latent cooling capacity, W
+        v_hs: supply air volume, m3/h
+        theta_ex: external temperature, degree C
+    Returns:
+        theoretical heat pump efficiency
+        evaporator temperature, degree C
+        condenser temperature, degree C
+        super heat, degree C
+        sub cool, degree C
+    """
+
+    # surface temperature, degree C
+    theta_surf_hex_test_c = get_theta_surf_hex_test_c(theta_hs_in_c, x_hs_in_c, v_hs, q_hs_c)
+
+    # evaporator temperature, condenser temperature, super heat temperature, suc cool temperature, degree C
+    theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c = get_refrigerant_temperature_cooling(
+        theta_ex, theta_surf_hex_test_c)
+
+    # theoretical efficiency
+    e_th_c_test = get_heat_pump_theoretical_efficiency_cooling(
+        theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c)
+
+    return e_th_c_test, theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c
+
+
+# region heat pump cycle
 
 def get_f_p_sgas(theta: float) -> float:
     """
@@ -2556,6 +2635,569 @@ def get_f_h_liq(p: float, theta: float) -> float:
         + 8.23122 * 10 ** (-4) * p * (theta + 273.15) ** 2 \
         - 4.42639115 * 10 ** (-1) * p * (theta + 273.15) \
         - 1.415490404 * 10 ** 2
+
+# endregion
+
+# endregion
+
+
+# region energy
+
+
+def get_comp_eta_rtd_h(q_hs_rtd_h: float, v_hs_rtd_h: float, p_hs_rtd_h: float, p_fan_rtd_h: float)\
+        -> (float, float, float, float, float):
+    """
+    Args:
+        q_hs_rtd_h: rated heating capacity, W
+        v_hs_rtd_h: rated air supply volume for heating, m3/h
+        p_hs_rtd_h: rated power for heating, W
+        p_fan_rtd_h: rated fan power for heating, W
+    Returns:
+        rated compression efficiency of compressor for heating
+        rated compressor efficiency for heating
+        rated theoretical efficiency of heat pump cycle for heating
+        evaporator temperature in rated condition for heating, degree C
+        condenser temperature in rated condition for heating, degree C
+    """
+
+    e_comp_th_rtd_h, theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h = get_e_th_h_test(
+        theta_hs_in_h=20.0, q_hs_h=q_hs_rtd_h, v_hs=v_hs_rtd_h, theta_ex=7.0)
+    e_comp_rtd_h = q_hs_rtd_h / (p_hs_rtd_h - p_fan_rtd_h)
+    eta_comp_rtd_h = e_comp_rtd_h / e_comp_th_rtd_h
+    eta_comp_rtd_h = np.clip(eta_comp_rtd_h, 0.0, 1.0)
+    return eta_comp_rtd_h, e_comp_rtd_h, e_comp_th_rtd_h, theta_ref_evp_h, theta_ref_cnd_h
+
+
+def get_comp_eta_mid_h(
+        input_method: str, eta_comp_rtd_h: float, q_hs_mid_h: Optional[float],
+        v_hs_mid_h: Optional[float], p_hs_mid_h: Optional[float], p_fan_mid_h: Optional[float])\
+        -> (float, Union[float, str], Union[float, str], Union[float, str], Union[float, str]):
+    """
+    Args:
+        input_method: 'default', 'rated' or 'rated_and_middle'
+        eta_comp_rtd_h: rated compression efficiency of compressor for heating
+        q_hs_mid_h: middle heating capacity [option], W
+        v_hs_mid_h: middle air supply volume for heating [option], m3/h
+        p_hs_mid_h: middle power for heating [option], W
+        p_fan_mid_h: middle fan power for heating [option], W
+    Returns:
+        middle compression efficiency of compressor for heating
+        middle compressor efficiency for heating [option]
+        middle theoretical efficiency of heat  pump cycle for heating [option]
+        evaporator temperature in middle condition for heating [option], degree C
+        condenser temperature in middle condition for heating [option], degree C
+    """
+
+    if input_method == 'rated_and_middle':
+        e_comp_th_mid_h, theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h = get_e_th_h_test(
+            theta_hs_in_h=20.0, q_hs_h=q_hs_mid_h, v_hs=v_hs_mid_h, theta_ex=7.0)
+        e_comp_mid_h = q_hs_mid_h / (p_hs_mid_h - p_fan_mid_h)
+        eta_comp_mid_h = e_comp_mid_h / e_comp_th_mid_h
+        eta_comp_mid_h = np.clip(eta_comp_mid_h, 0.0, 1.0)
+        return eta_comp_mid_h, e_comp_mid_h, e_comp_th_mid_h, theta_ref_evp_h, theta_ref_cnd_h
+    else:
+        return eta_comp_rtd_h * 0.95, None, None, None, None
+
+
+def get_q_hs_mid_h(input_method: str, q_hs_rtd_h: float, q_hs_mid_h: Optional[float]) -> float:
+    """
+    Args:
+        input_method: 'default', 'rated' or 'rated_and_middle'
+        q_hs_rtd_h: rated heating capacity, W
+        q_hs_mid_h: middle heating capacity [option], W
+    Returns:
+        middle heating capacity, W
+    """
+
+    if input_method == 'rated_and_middle':
+        return q_hs_mid_h
+    else:
+        return q_hs_rtd_h * 0.5
+
+
+def get_comp_eta_min_h(eta_comp_rtd_h: float) -> float:
+    """
+    Args:
+        eta_comp_rtd_h: rated compression efficiency of compressor for heating
+    Returns:
+        minimum compression efficiency of compressor for heating
+    """
+
+    return eta_comp_rtd_h * 0.65
+
+
+def get_q_hs_min_h(q_hs_rtd_h: float) -> float:
+    """
+    Args:
+        q_hs_rtd_h: rated heating capacity, W
+    Returns:
+        minimum heating capacity, W
+    """
+
+    return q_hs_rtd_h * 0.35
+
+
+def get_comp_eta_rtd_c(q_hs_rtd_c: float, v_hs_rtd_c: float, p_hs_rtd_c: float, p_fan_rtd_c: float)\
+        -> (float, float, float, float):
+    """
+    Args:
+        q_hs_rtd_c: rated cooling capacity, W
+        v_hs_rtd_c: rated air supply volume for cooling, m3/h
+        p_hs_rtd_c: rated power for cooling, W
+        p_fan_rtd_c: rated fan power for cooling, W
+    Returns:
+        rated compression efficiency of compressor for cooling
+        rated compressor efficiency for cooling
+        rated theoretical efficiency of heat pump cycle for cooling
+        evaporator temperature in rated condition for cooling, degree C
+        condenser temperature in rated condition for cooling, degree C
+    """
+
+    e_comp_th_rtd_c, theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c = get_e_th_c_test(
+        theta_hs_in_c=27.0, x_hs_in_c=0.010376, q_hs_c=q_hs_rtd_c, v_hs=v_hs_rtd_c, theta_ex=35.0)
+    e_comp_rtd_c = q_hs_rtd_c / (p_hs_rtd_c - p_fan_rtd_c)
+    eta_comp_rtd_c = e_comp_rtd_c / e_comp_th_rtd_c
+    eta_comp_rtd_c = np.clip(eta_comp_rtd_c, 0.0, 1.0)
+    return eta_comp_rtd_c, e_comp_rtd_c, e_comp_th_rtd_c, theta_ref_evp_c, theta_ref_cnd_c
+
+
+def get_comp_eta_mid_c(
+        input_method: str, eta_comp_rtd_c: float, q_hs_mid_c: Optional[float],
+        v_hs_mid_c: Optional[float], p_hs_mid_c: Optional[float], p_fan_mid_c: Optional[float])\
+        -> (float, Union[float, str], Union[float, str], Union[float, str], Union[float, str]):
+    """
+    Args:
+        input_method: 'default', 'rated' or 'rated_and_middle'
+        eta_comp_rtd_c: rated compression efficiency of compressor for cooling
+        q_hs_mid_c: middle cooling capacity [option], W
+        v_hs_mid_c: middle air supply volume for cooling [option], m3/h
+        p_hs_mid_c: middle power for cooling [option], W
+        p_fan_mid_c: middle fan power for cooling [option], W
+    Returns:
+        middle compression efficiency of compressor for cooling
+        middle compressor efficiency for cooling [option]
+        middle theoretical efficiency of heat  pump cycle for cooling [option]
+        evaporator temperature in middle condition for cooling [option], degree C
+        condenser temperature in middle condition for cooling [option], degree C
+    """
+
+    if input_method == 'rated_and_middle':
+        e_comp_th_mid_c, theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c = get_e_th_c_test(
+            theta_hs_in_c=27.0, x_hs_in_c=0.010376, q_hs_c=q_hs_mid_c, v_hs=v_hs_mid_c, theta_ex=35.0)
+        e_comp_mid_c = q_hs_mid_c / (p_hs_mid_c - p_fan_mid_c)
+        eta_comp_mid_c = e_comp_mid_c / e_comp_th_mid_c
+        eta_comp_mid_c = np.clip(eta_comp_mid_c, 0.0, 1.0)
+        return eta_comp_mid_c, e_comp_mid_c, e_comp_th_mid_c, theta_ref_evp_c, theta_ref_cnd_c
+    else:
+        return eta_comp_rtd_c * 0.95, None, None, None, None
+
+
+def get_q_hs_mid_c(input_method: str, q_hs_rtd_c: float, q_hs_mid_c: Optional[float]) -> float:
+    """
+    Args:
+        input_method: 'default', 'rated' or 'rated_and_middle'
+        q_hs_rtd_c: rated cooling capacity, W
+        q_hs_mid_c: middle cooling capacity [option], W
+    Returns:
+        middle cooling capacity, W
+    """
+
+    if input_method == 'rated_and_middle':
+        return q_hs_mid_c
+    else:
+        return q_hs_rtd_c * 0.5
+
+
+def get_comp_eta_min_c(eta_comp_rtd_c: float) -> float:
+    """
+    Args:
+        eta_comp_rtd_c: rated compression efficiency of compressor for cooling
+    Returns:
+        minimum compression efficiency of compressor for cooling
+    """
+
+    return eta_comp_rtd_c * 0.65
+
+
+def get_q_hs_min_c(q_hs_rtd_c: float) -> float:
+    """
+    Args:
+        q_hs_rtd_c: rated cooling capacity, W
+    Returns:
+        minimum cooling capacity, W
+    """
+
+    return q_hs_rtd_c * 0.35
+
+
+def get_heat_source_heating_capacity(
+        theta_ex: np.ndarray, h_ex: np.ndarray, operation: np.ndarray,
+        theta_hs_out_h: np.ndarray, theta_hs_in: np.ndarray, v_supply: np.ndarray):
+    """
+    Args:
+        theta_ex: outdoor temperature (8760 times), degree C
+        h_ex: outdoor relative humidity (8760 times), kg/kgDA
+        operation: operation (8760 times) = 'h', 'c' or 'm'
+        theta_hs_out_h: supply air temperature (8760 times), degree C
+        theta_hs_in: inlet air temperature of the heat source (8760 times), degree C
+        v_supply: supply air volume for heating (5 rooms * 8760 times), m3/h
+    Returns:
+        heating capacity (8760 times), W
+    """
+
+    # coefficient for defrosting, (8760 times)
+    c_df_h = np.where((theta_ex < 5.0) & (h_ex >= 80.0), 0.77, 1.0)
+
+    c = get_specific_heat()
+    rho = get_air_density()
+
+    q_hs_cap_h = np.maximum(
+        (theta_hs_out_h - theta_hs_in) * c * rho * np.sum(v_supply, axis=0) / 3600 / c_df_h, 0.0)
+
+    return np.where(operation == 'h', q_hs_cap_h, 0.0)
+
+
+def get_heat_source_cooling_capacity(
+        theta_hs_in: np.ndarray, x_hs_in: np.ndarray, theta_hs_out_c: np.ndarray, x_hs_out_c: np.ndarray,
+        v_supply: np.ndarray, operation: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    Args:
+        theta_hs_in: inlet air temperature of the heat source for cooling (8760 times), degree C
+        x_hs_in: inlet air absolute humidity of the heat source (8760 times), kg/kgDA
+        theta_hs_out_c: supply air temperature (8760 times), degree C
+        x_hs_out_c: supply air absolute humidity (8760 times), kg/kgDA
+        v_supply: supply air volume for cooling (5 rooms * 8760 times), m3/h
+        operation: operation (8760 times)
+    Returns:
+        cooling capacity (8760 times), W
+        sensible cooling capacity (8760 times), W
+        latent cooling capacity (8760 times), W
+    """
+
+    c = get_specific_heat()
+    rho = get_air_density()
+    l_wtr = get_evaporation_latent_heat()
+
+    q_hs_cap_cs = np.maximum((theta_hs_in - theta_hs_out_c) * c * rho * np.sum(v_supply, axis=0) / 3600, 0.0)
+    q_hs_cap_cs = np.where(operation == 'c', q_hs_cap_cs, 0.0)
+
+    q_hs_cap_cl = np.maximum((x_hs_in - x_hs_out_c) * rho * l_wtr * np.sum(v_supply, axis=0) * 10**3 / 3600, 0.0)
+    q_hs_cap_cl = np.where(operation == 'c', q_hs_cap_cl, 0.0)
+
+    q_hs_cap_c = q_hs_cap_cs + q_hs_cap_cl
+
+    return q_hs_cap_c, q_hs_cap_cs, q_hs_cap_cl
+
+
+def get_e_th_h(
+        operation: np.ndarray,
+        theta_hs_in_h: np.ndarray, theta_hs_out_h: np.ndarray, v_hs: np.ndarray, theta_ex: np.ndarray)\
+        -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    Args:
+        operation: operation mode (8760 times)
+        theta_hs_in_h: inlet air temperature (8760 times), degree C
+        theta_hs_out_h: outlet air temperature (8760 times), degree C
+        v_hs: supply air volume (8760 times), m3/h
+        theta_ex: external temperature (8760 times), degree C
+    Returns:
+        theoretical heat pump efficiency (8760 times)
+        evaporator temperature (8760 times), degree C
+        condenser temperature (8760 times), degree C
+    """
+
+    # surface temperature, degree C
+    theta_surf_hex_h = get_theta_surf_hex_h(theta_hs_in_h, theta_hs_out_h, v_hs)
+
+    # evaporator temperature, condenser temperature, super heat temperature, suc cool temperature, degree C
+    theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h = get_refrigerant_temperature_heating(
+        theta_ex, theta_surf_hex_h)
+
+    e_th_h = get_heat_pump_theoretical_efficiency_heating(
+        theta_ref_evp_h, theta_ref_cnd_h, theta_ref_sh_h, theta_ref_sc_h)
+
+    e_th_h = np.where(operation == 'h', e_th_h, 0.0)
+    theta_ref_evp_h = np.where(operation == 'h', theta_ref_evp_h, 0.0)
+    theta_ref_cnd_h = np.where(operation == 'h', theta_ref_cnd_h, 0.0)
+
+    return e_th_h, theta_ref_evp_h, theta_ref_cnd_h
+
+
+def get_e_th_c(
+        operation: np.ndarray, theta_hs_in_c: np.ndarray, x_hs_in_c: np.ndarray,
+        theta_hs_out_c: np.ndarray, v_hs: np.ndarray, theta_ex: np.ndarray)\
+        -> (np.ndarray, np.ndarray, np.ndarray):
+    """
+    Args:
+        operation: operation mode (8760 times)
+        theta_hs_in_c: inlet air temperature (8760 times), degree C
+        x_hs_in_c: inlet air absolute humidity (8760 times), kg/kgDA
+        theta_hs_out_c: outlet air temperature (8760 times), degree C
+        v_hs: supply air volume (8760 times), m3/h
+        theta_ex: external temperature (8760 times), degree C
+    Returns:
+        theoretical heat pump efficiency (8760 times)
+        evaporator temperature (8760 times), degree C
+        condenser temperature (8760 times), degree C
+    """
+
+    # surface temperature, degree C
+    theta_surf_hex_c = get_theta_surf_hex_c(theta_hs_in_c, x_hs_in_c, theta_hs_out_c, v_hs)
+
+    # evaporator temperature, condenser temperature, super heat temperature, suc cool temperature, degree C
+    theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c = get_refrigerant_temperature_cooling(
+        theta_ex, theta_surf_hex_c)
+
+    e_th_c = get_heat_pump_theoretical_efficiency_cooling(
+        theta_ref_evp_c, theta_ref_cnd_c, theta_ref_sh_c, theta_ref_sc_c)
+
+    e_th_c = np.where(operation == 'c', e_th_c, 0.0)
+    theta_ref_evp_c = np.where(operation == 'c', theta_ref_evp_c, 0.0)
+    theta_ref_cnd_c = np.where(operation == 'c', theta_ref_cnd_c, 0.0)
+
+    return e_th_c, theta_ref_evp_c, theta_ref_cnd_c
+
+
+def get_eta_comp_h(q_hs_h: np.ndarray, eta_comp_min_h: float, eta_comp_mid_h: float, eta_comp_rtd_h: float,
+                   q_hs_min_h: float, q_hs_mid_h: float, q_hs_rtd_h: float) -> np.ndarray:
+    """
+    Args:
+        q_hs_h: average heating capacity (8760 times), W
+        eta_comp_min_h: compression efficiency of compressor at the minimum heating condition
+        eta_comp_mid_h: compression efficiency of compressor at the middle heating condition
+        eta_comp_rtd_h: compression efficiency of compressor at the rated heating condition
+        q_hs_min_h: minimum heating capacity, W
+        q_hs_mid_h: middle heating capacity, W
+        q_hs_rtd_h: rated heating capacity, W
+    Returns:
+        compression efficiency of compressor for cooling
+
+    """
+
+    def f(q):
+        if q <= q_hs_min_h:
+            return eta_comp_min_h - (q_hs_min_h - q) * eta_comp_min_h / q_hs_min_h
+        elif q <= q_hs_mid_h:
+            return eta_comp_mid_h - (q_hs_mid_h - q) * (eta_comp_mid_h - eta_comp_min_h) / (q_hs_mid_h - q_hs_min_h)
+        elif q <= q_hs_rtd_h:
+            return eta_comp_rtd_h - (q_hs_rtd_h - q) * (eta_comp_rtd_h - eta_comp_mid_h) / (q_hs_rtd_h - q_hs_mid_h)
+        else:
+            return max(0.4, eta_comp_rtd_h - (q - q_hs_rtd_h) * eta_comp_rtd_h / q_hs_rtd_h)
+
+    return np.vectorize(f)(q_hs_h)
+
+
+def get_eta_comp_c(q_hs_c: np.ndarray, eta_comp_min_c: float, eta_comp_mid_c: float, eta_comp_rtd_c: float,
+                   q_hs_min_c: float, q_hs_mid_c: float, q_hs_rtd_c: float) -> np.ndarray:
+    """
+    Args:
+        q_hs_c: average cooling capacity (8760 times), W
+        eta_comp_min_c: compression efficiency of compressor at the minimum cooling condition
+        eta_comp_mid_c: compression efficiency of compressor at the middle cooling condition
+        eta_comp_rtd_c: compression efficiency of compressor at the rated cooling condition
+        q_hs_min_c: minimum cooling capacity, W
+        q_hs_mid_c: middle cooling capacity, W
+        q_hs_rtd_c: rated cooling capacity, W
+    Returns:
+        compression efficiency of compressor for cooling
+    """
+
+    def f(q):
+        if q <= q_hs_min_c:
+            return eta_comp_min_c - (q_hs_min_c - q) * eta_comp_min_c / q_hs_min_c
+        elif q <= q_hs_mid_c:
+            return eta_comp_mid_c - (q_hs_mid_c - q) * (eta_comp_mid_c - eta_comp_min_c) / (q_hs_mid_c - q_hs_min_c)
+        elif q <= q_hs_rtd_c:
+            return eta_comp_rtd_c - (q_hs_rtd_c - q) * (eta_comp_rtd_c - eta_comp_mid_c) / (q_hs_rtd_c - q_hs_mid_c)
+        else:
+            return max(0.4, eta_comp_rtd_c - (q - q_hs_rtd_c) * eta_comp_rtd_c / q_hs_rtd_c)
+
+    return np.vectorize(f)(q_hs_c)
+
+
+def get_e_comp_h(e_comp_th_h: np.ndarray, eta_comp_h: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        e_comp_th_h: theoretical heat pump efficiency for heating (8760 times)
+        eta_comp_h: compression efficiency of compressor for heating (8760 times)
+    Returns:
+        compressor efficiency for heating (8760 times)
+    """
+
+    return e_comp_th_h * eta_comp_h
+
+
+def get_e_comp_c(e_comp_th_c: np.ndarray, eta_comp_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        e_comp_th_c: theoretical heat pump efficiency for cooling (8760 times)
+        eta_comp_c: compression efficiency of compressor for cooling (8760 times)
+    Returns:
+        compressor efficiency for heating (8760 times)
+    """
+
+    return e_comp_th_c * eta_comp_c
+
+
+def get_e_e_comp_h(q_hs_cap_h: np.ndarray, e_comp_h: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        q_hs_cap_h: heating capacity (8760 times), W
+        e_comp_h: compression efficiency of compressor for heating (8760 times)
+    Returns:
+        Energy consumption of compressor for heating (8760 times), kWh/h
+    """
+
+    def f(q, e):
+        if q > 0.0:
+            return q / e * 10 ** (-3)
+        else:
+            return 0.0
+
+    return np.vectorize(f)(q_hs_cap_h, e_comp_h)
+
+
+def get_e_e_comp_c(q_hs_cap_c: np.ndarray, e_comp_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        q_hs_cap_c: cooling capacity (8760 times), W
+        e_comp_c: compression efficiency of compressor for cooling (8760 times)
+    Returns:
+        Energy consumption of compressor for cooling, kWh/h
+    """
+
+    def f(q, e):
+        if q > 0.0:
+            return q / e * 10 ** (-3)
+        else:
+            return 0.0
+
+    return np.vectorize(f)(q_hs_cap_c, e_comp_c)
+
+
+def get_e_e_fan_h(
+        operation: np.ndarray,
+        ventilation_included: bool, p_fan_rtd_h: float, v_vent: np.ndarray, v_supply: np.ndarray, v_fan_rtd_h: float
+) -> np.ndarray:
+    """
+    Args:
+        operation: operation
+        ventilation_included: is ventilation included ?
+        p_fan_rtd_h: rated fan power for heating, W
+        v_vent: mechanical ventilation amount (5 rooms), m3/h
+        v_supply: air supply volume(5 rooms * 8760 times), m3/h
+        v_fan_rtd_h: air supply volume of heat source in the rated heating capacity operation, m3/h
+    Returns:
+        the amount added to the heating system of the fan power, kWh/h
+    """
+
+    vent = np.sum(v_vent)
+
+    f_sfp = 0.4 * 0.36
+
+    if ventilation_included:
+        e_e_fan_h = (p_fan_rtd_h - f_sfp * vent) * (np.sum(v_supply, axis=0) - vent) / (v_fan_rtd_h - vent) * 10 ** (-3)
+    else:
+        e_e_fan_h = p_fan_rtd_h * (np.sum(v_supply, axis=0) - vent) / v_fan_rtd_h * 10 ** (-3)
+
+    return np.where(operation == 'h', e_e_fan_h, 0.0)
+
+
+def get_e_e_fan_c(
+        operation: np.ndarray,
+        ventilation_included: bool, p_fan_rtd_c: float, v_vent: np.ndarray, v_supply: np.ndarray, v_fan_rtd_c: float
+) -> np.ndarray:
+    """
+    Args:
+        operation: operation
+        ventilation_included: is ventilation inculded ?
+        p_fan_rtd_c: rated fan power for cooling, W
+        v_vent: mechanical ventilation amount (5 rooms * 8760 times), m3/h
+        v_supply: air supply volume(5 rooms * 8760 times), m3/h
+        v_fan_rtd_c: air supply volume of heat source in the rated cooling capacity operation, m3/h
+    Returns:
+        the amount added to the cooling system of the fan power, kWh/h
+    """
+
+    vent = np.sum(v_vent)
+
+    f_sfp = 0.4 * 0.36
+
+    if ventilation_included:
+        e_e_fan_c = (p_fan_rtd_c - f_sfp * vent) * (np.sum(v_supply, axis=0) - vent) / (v_fan_rtd_c - vent) * 10 ** (-3)
+    else:
+        e_e_fan_c = p_fan_rtd_c * (np.sum(v_supply, axis=0) - vent) / v_fan_rtd_c * 10 ** (-3)
+
+    return np.where(operation == 'c', e_e_fan_c, 0.0)
+
+
+def get_e_e_h(e_e_comp_h: np.ndarray, e_e_fan_h: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        e_e_comp_h: energy consumption of compressor for heating, kWh/h (8760 times)
+        e_e_fan_h: energy consumption of fan for heating, kWh/h (8760 times)
+    Returns:
+        energy consumption for heating, kWh/h (8760 times)
+    """
+
+    return e_e_comp_h + e_e_fan_h
+
+
+def get_e_e_c(e_e_comp_c: np.ndarray, e_e_fan_c: np.ndarray) -> np.ndarray:
+    """
+    Args:
+        e_e_comp_c: energy consumption of compressor for heating, kWh/h (8760 times)
+        e_e_fan_c: energy consumption of fan for cooling, kWh/h (8760 times)
+    Returns:
+        energy consumption for cooling, kWh/h (8760 times)
+    """
+
+    return e_e_comp_c + e_e_fan_c
+
+
+def get_e(
+        region: int, e_e_h: np.ndarray, e_e_c: np.ndarray,
+        q_ut_h: np.ndarray, q_ut_cs: np.ndarray, q_ut_cl: np.ndarray
+) -> (np.ndarray, np.ndarray, np.ndarray, np.ndarray):
+    """
+    Args:
+        region: region
+        e_e_h: energy consumption for heating (8760 times), kWh/h
+        e_e_c: energy consumption for cooling (8760 times), kWh/h
+        q_ut_h: untreated heating load of heating system, MJ/h
+        q_ut_cs: untreated sensible cooling load of cooling system, MJ/h
+        q_ut_cl: untreated latent cooling load of cooling system, MJ/h
+    Returns:
+        designed primary energy consumption of heating system, MJ/h
+        designed primary energy consumption equivalent to untreated load of heating system, MJ/h
+        designed primary energy consumption of cooling system, MJ/h
+        designed primary energy consumption equivalent to untreated load of cooling system, MJ/h
+    """
+
+    # conversion coefficient, kJ/kWh
+    f_prim = 9760
+
+    # equivalent conversion coefficient
+    alpha_ut_h = {
+        1: 1.61,
+        2: 1.46,
+        3: 1.32,
+        4: 1.30,
+        5: 1.20,
+        6: 1.09,
+        7: 1.12,
+        8: None
+    }[region]
+
+    alpha_ut_c = 1.0
+
+    e_h_t = e_e_h * f_prim * 10 ** (-3)
+    e_h_ut = np.sum(q_ut_h, axis=0) * alpha_ut_h
+
+    e_c_t = e_e_c * f_prim * 10 ** (-3)
+    e_c_ut = np.sum(q_ut_cs + q_ut_cl, axis=0) * alpha_ut_c
+
+    return e_h_t, e_h_ut, e_c_t, e_c_ut
 
 
 # endregion
@@ -2889,15 +3531,6 @@ def get_main_value(
         system_spec: system spec
     """
 
-    # region system spec
-
-    input_method, is_duct_insulated, vav_system, \
-        q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, p_rtd_h, p_rtd_c, p_fan_rtd_h, p_fan_rtd_c, \
-        q_mid_h, q_mid_c, v_hs_mid_h, v_hs_mid_c, p_mid_h, p_mid_c, p_fan_mid_h, p_fan_mid_c \
-        = get_system_spec(region, a_a, system_spec)
-
-    # endregion
-
     # region house spec
 
     # floor area of non occupant room, m2
@@ -2921,6 +3554,15 @@ def get_main_value(
 
     # mechanical ventilation, m3/h, (5 rooms)
     v_vent = get_mechanical_ventilation(a_hcz_r, a_hcz)
+
+    # endregion
+
+    # region system spec
+
+    input_method, is_duct_insulated, vav_system, ventilation_included, \
+        q_rtd_h, q_rtd_c, v_hs_rtd_h, v_hs_rtd_c, p_rtd_h, p_rtd_c, p_fan_rtd_h, p_fan_rtd_c, \
+        q_mid_h, q_mid_c, v_hs_mid_h, v_hs_mid_c, p_mid_h, p_mid_c, p_fan_mid_h, p_fan_mid_c \
+        = get_system_spec(region, a_a, system_spec)
 
     # endregion
 
@@ -3000,7 +3642,7 @@ def get_main_value(
 
     # supply air volume of heat source, m3/h
     v_d_hs_supply = get_heat_source_supply_air_volume(
-        hc_period, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
+        hc_period, ventilation_included, q_d_hs_h, q_d_hs_c, q_hs_rtd_h, q_hs_rtd_c, v_hs_min, v_hs_rtd_h, v_hs_rtd_c)
 
     # the ratio of the supply air volume valance for each 5 rooms
     r_supply_des = get_supply_air_volume_valance(a_hcz)
@@ -3147,6 +3789,70 @@ def get_main_value(
         theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, operation)
 
     # endregion
+
+    # region energy
+
+    # heating test
+    #  rated
+    eta_comp_rtd_h, e_comp_rtd_h, e_comp_th_rtd_h, _, _ = get_comp_eta_rtd_h(
+        q_rtd_h, v_hs_rtd_h, p_rtd_h, p_fan_rtd_h)
+    # middle
+    eta_comp_mid_h, e_comp_mid_h, e_comp_th_mid_h, _, _ = get_comp_eta_mid_h(
+        input_method, eta_comp_rtd_h, q_mid_h, v_hs_mid_h, p_mid_h, p_fan_mid_h)
+    q_mid_h = get_q_hs_mid_h(input_method, q_rtd_h, q_mid_h)
+    #  minimum
+    eta_comp_min_h = get_comp_eta_min_h(eta_comp_rtd_h)
+    q_min_h = get_q_hs_min_h(q_rtd_h)
+
+    # cooling test
+    #  rated
+    eta_comp_rtd_c, e_comp_rtd_c, e_comp_th_rtd_c, _, _ = get_comp_eta_rtd_c(
+        q_rtd_c, v_hs_rtd_c, p_rtd_c, p_fan_rtd_c)
+    #  middle
+    eta_comp_mid_c, e_comp_mid_c, e_comp_th_mid_c, _, _ = get_comp_eta_mid_c(
+        input_method, eta_comp_rtd_c, q_mid_c, v_hs_mid_c, p_mid_c, p_fan_mid_c)
+    q_mid_c = get_q_hs_mid_c(input_method, q_rtd_c, q_mid_c)
+    #  minimum
+    eta_comp_min_c = get_comp_eta_min_c(eta_comp_rtd_c)
+    q_min_c = get_q_hs_min_c(q_rtd_c)
+
+    # capacity
+    q_hs_cap_h = get_heat_source_heating_capacity(theta_ex, h_ex, operation, theta_hs_out_h, theta_hs_in, v_supply)
+    q_hs_cap_c, q_hs_cap_cs, q_hs_cap_cl = get_heat_source_cooling_capacity(
+        theta_hs_in, x_hs_in, theta_hs_out_c, x_hs_out_c, v_supply, operation)
+
+    # theoretical efficiency
+    e_comp_th_h, theta_ref_evp_h, theta_ref_cnd_h = get_e_th_h(
+        operation, theta_hs_in, theta_hs_out_h, np.sum(v_supply, axis=0), theta_ex)
+    e_comp_th_c, theta_ref_evp_c, theta_ref_cnd_c = get_e_th_c(
+        operation, theta_hs_in, x_hs_in, theta_hs_out_c, np.sum(v_supply, axis=0), theta_ex)
+
+    # compression efficiency
+    eta_comp_h = get_eta_comp_h(
+        q_hs_cap_h, eta_comp_min_h, eta_comp_mid_h, eta_comp_rtd_h, q_min_h, q_mid_h, q_rtd_h)
+    eta_comp_c = get_eta_comp_c(
+        q_hs_cap_c, eta_comp_min_c, eta_comp_mid_c, eta_comp_rtd_c, q_min_c, q_mid_c, q_rtd_c)
+
+    # compressor efficiency
+    e_comp_h = get_e_comp_h(e_comp_th_h, eta_comp_h)
+    e_comp_c = get_e_comp_c(e_comp_th_c, eta_comp_c)
+
+    # compressor power, kWh/h
+    e_e_comp_h = get_e_e_comp_h(q_hs_cap_h, e_comp_h)
+    e_e_comp_c = get_e_e_comp_c(q_hs_cap_c, e_comp_c)
+
+    # fan power, kWh/h
+    e_e_fan_h = get_e_e_fan_h(operation, is_duct_insulated, p_fan_rtd_h, v_vent, v_supply, v_hs_rtd_h)
+    e_e_fan_c = get_e_e_fan_c(operation, is_duct_insulated, p_fan_rtd_c, v_vent, v_supply, v_hs_rtd_c)
+
+    # power, kWh/h
+    e_e_h = get_e_e_h(e_e_comp_h, e_e_fan_h)
+    e_e_c = get_e_e_c(e_e_comp_c, e_e_fan_c)
+
+    # primary energy, MJ/h
+    e_h_t, e_h_ut, e_c_t, e_c_ut = get_e(region, e_e_h, e_e_c, q_ut_h, q_ut_cs, q_ut_cl)
+
+    # end region
 
     # region make output data class
 

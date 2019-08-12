@@ -188,7 +188,8 @@ def get_main_value(cn: int) -> dict:
     system_spec = {
         'input': 'default',
         'is_duct_insulated': spec[9],
-        'vav_system': spec[10]
+        'vav_system': spec[10],
+        'ventilation_included': True
     }
     return cs.get_main_value(region=spec[0],
                              a_mr=spec[1], a_or=spec[2], a_a=spec[3], r_env=spec[4],
