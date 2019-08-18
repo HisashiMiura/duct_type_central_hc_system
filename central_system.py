@@ -3504,6 +3504,30 @@ class OutputData:
             'output_of_heat_source_cooling': self.q_hs_c,  # MJ/h
             'output_of_heat_source_sensible_cooling': self.q_hs_cs,  # MJ/h
             'output_of_heat_source_latent_cooling': self.q_hs_cl,  # MJ/h
+            'heat_source_heating_capacity': self.q_hs_cap_h,
+            'heat_source_cooling_capacity': self.q_hs_cap_c,
+            'heat_source_sensible_cooling_capacity': self.q_hs_cap_cs,
+            'heat_source_latent_cooling_capacity': self.q_hs_cap_cl,
+            'theoretical_compressor_efficiency_heating': self.e_comp_th_h,
+            'evaporator_temperature_heating': self.theta_ref_evp_h,
+            'condenser_temperature_heating': self.theta_ref_cnd_h,
+            'theoretical_compressor_efficiency_cooling': self.e_comp_th_c,
+            'evaporator_temperature_cooling': self.theta_ref_evp_c,
+            'condenser_temperature_cooling': self.theta_ref_cnd_c,
+            'compression efficiency heating': self.eta_comp_h,
+            'compression efficiency cooling': self.eta_comp_c,
+            'compressor efficiency heating': self.e_comp_h,
+            'compressor efficiency cooling': self.e_comp_c,
+            'compressor power heating': self.e_e_comp_h,
+            'compressor power cooling': self.e_e_comp_c,
+            'fan power heating': self.e_e_fan_h,
+            'fan power cooling': self.e_e_fan_c,
+            'power heating': self.e_e_h,
+            'power cooling': self.e_e_c,
+            'primary energy for heating treated': self.e_h_t,
+            'primary energy for heating untreated': self.e_h_ut,
+            'primary energy for cooling treated': self.e_c_t,
+            'primary energy for cooling untreated': self.e_c_ut
         }
 
 
@@ -3929,6 +3953,50 @@ def get_main_value(
     od.q_hs_c = q_hs_c
     od.q_hs_cs = q_hs_cs
     od.q_hs_cl = q_hs_cl
+
+    od.eta_comp_rtd_h = eta_comp_rtd_h
+    od.e_comp_rtd_h = e_comp_rtd_h
+    od.e_comp_th_rtd_h = e_comp_th_rtd_h
+    od.eta_comp_mid_h = eta_comp_mid_h
+    od.e_comp_mid_h = e_comp_mid_h
+    od.e_comp_th_mid_h = e_comp_th_mid_h
+    od.q_mid_h = q_mid_h
+    od.eta_comp_min_h = eta_comp_min_h
+    od.q_min_h = q_min_h
+    od.eta_comp_rtd_c = eta_comp_rtd_c
+    od.e_comp_rtd_c = e_comp_rtd_c
+    od.e_comp_th_rtd_c = e_comp_th_rtd_c
+    od.eta_comp_mid_c = eta_comp_mid_c
+    od.e_comp_mid_c = e_comp_mid_c
+    od.e_comp_th_mid_c = e_comp_th_mid_c
+    od.q_mid_c = q_mid_c
+    od.eta_comp_min_c = eta_comp_min_c
+    od.q_min_c = q_min_c
+
+    od.q_hs_cap_h = q_hs_cap_h  # capacity
+    od.q_hs_cap_c = q_hs_cap_c
+    od.q_hs_cap_cs = q_hs_cap_cs
+    od.q_hs_cap_cl = q_hs_cap_cl  # capacity
+    od.e_comp_th_h = e_comp_th_h
+    od.theta_ref_evp_h = theta_ref_evp_h
+    od.theta_ref_cnd_h = theta_ref_cnd_h  # theoretical efficiency
+    od.e_comp_th_c = e_comp_th_c
+    od.theta_ref_evp_c = theta_ref_evp_c
+    od.theta_ref_cnd_c = theta_ref_cnd_c  # theoretical efficiency
+    od.eta_comp_h = eta_comp_h  # compression efficiency
+    od.eta_comp_c = eta_comp_c  # compression efficiency
+    od.e_comp_h = e_comp_h  # compressor efficiency
+    od.e_comp_c = e_comp_c  # compressor efficiency
+    od.e_e_comp_h = e_e_comp_h  # compressor power, kWh/h
+    od.e_e_comp_c = e_e_comp_c  # compressor power, kWh/h
+    od.e_e_fan_h = e_e_fan_h  # fan power, kWh/h
+    od.e_e_fan_c = e_e_fan_c  # fan power, kWh/h
+    od.e_e_h = e_e_h  # power, kWh/h
+    od.e_e_c = e_e_c  # power, kWh/h
+    od.e_h_t = e_h_t
+    od.e_h_ut = e_h_ut
+    od.e_c_t = e_c_t
+    od.e_c_ut = e_c_ut  # primary energy, MJ/h
 
     # endregion
 
