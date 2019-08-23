@@ -20,4 +20,9 @@ if __name__ == '__main__':
 
     df_t = pd.DataFrame(t)
 
+    print("sum:")
+    print(d.e_h_t.sum()/1000)
+    print(d.e_h_ut.sum()/1000)
+    print(d.e_c_t.sum()/1000)
+    print(d.e_c_ut.sum()/1000)
     df_t.to_csv('result.csv')
