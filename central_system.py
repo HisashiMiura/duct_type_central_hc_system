@@ -3535,7 +3535,7 @@ def get_main_value(
         region: int,
         a_mr: float, a_or: float, a_a: float, r_env: float,
         insulation: str, solar_gain: str,
-        system_spec: dict) -> (OutputData, dict):
+        system_spec: dict) -> OutputData:
     """
     Args:
         region: region, 1-8
