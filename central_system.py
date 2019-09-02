@@ -59,7 +59,7 @@ def get_system_spec(region: int, a_a: float, system_spec: dict)\
         q_rtd_h, q_rtd_c = system_spec['cap_rtd_h'], system_spec['cap_rtd_c']
         p_rtd_h, p_rtd_c = system_spec['p_rtd_h'], system_spec['p_rtd_c']
         v_hs_rtd_h, v_hs_rtd_c = system_spec['v_hs_rtd_h'], system_spec['v_hs_rtd_c']
-        p_fan_rtd_h, p_fan_rtd_c = system_spec['p_fan_rtd_h', 'p_fan_rtd_c']
+        p_fan_rtd_h, p_fan_rtd_c = system_spec['p_fan_rtd_h'], system_spec['p_fan_rtd_c']
     else:
         raise ValueError
 
